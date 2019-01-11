@@ -1,3 +1,6 @@
+#!/usr/bin/env bash
+
+#
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -15,29 +18,25 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# This script was based on one made by @kimoonkim for kubernetes-hdfs
+set -euo pipefail
 
-#!/usr/bin/env bash
+DIRNAME=$(cd "$(dirname "$0")"; pwd)
 
-set -ex
+FQDN=`hostname`
+ADMIN="admin"
+PASS="airflow"
+KRB5_KTNAME=/etc/airflow.keytab
 
-if [[ ! -x /usr/local/bin/minikube ]]; then
-  exit 0
+
+if [[ ${AIRFLOW_CI_VERBOSE:="false"} == "true" ]]; then
+    set -x
+    cat /etc/hosts
+    echo "hostname: ${FQDN}"
 fi
 
-# Fix file permissions
-# TODO: Check this - this should be travis-independent
-if [[ "${TRAVIS}" == true ]]; then
-  sudo chown -R travis.travis $HOME/.kube $HOME/.minikube
-fi
+sudo cp ${DIRNAME}/krb5/krb5.conf /etc/krb5.conf
 
-sudo minikube status
-if [[ $? = 0 ]]; then
-  sudo minikube delete
-  sudo rm -rf HOME/.kube $HOME/.minikube
-  if [[ "${TRAVIS}" == true ]]; then
-    sudo rm -rf /etc/kubernetes/*.conf
-  fi
-fi
-
-sudo chown -R travis.travis .
+echo -e "${PASS}\n${PASS}" | sudo kadmin -p ${ADMIN}/admin -w ${PASS} -q "addprinc -randkey airflow/${FQDN}" >/dev/null 2>&1
+sudo kadmin -p ${ADMIN}/admin -w ${PASS} -q "ktadd -k ${KRB5_KTNAME} airflow" >/dev/null 2>&1
+sudo kadmin -p ${ADMIN}/admin -w ${PASS} -q "ktadd -k ${KRB5_KTNAME} airflow/${FQDN}" >/dev/null 2>&1
+sudo chmod 0644 ${KRB5_KTNAME}

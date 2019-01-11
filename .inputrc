@@ -1,3 +1,4 @@
+#
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -14,30 +15,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
-# This script was based on one made by @kimoonkim for kubernetes-hdfs
-
-#!/usr/bin/env bash
-
-set -ex
-
-if [[ ! -x /usr/local/bin/minikube ]]; then
-  exit 0
-fi
-
-# Fix file permissions
-# TODO: Check this - this should be travis-independent
-if [[ "${TRAVIS}" == true ]]; then
-  sudo chown -R travis.travis $HOME/.kube $HOME/.minikube
-fi
-
-sudo minikube status
-if [[ $? = 0 ]]; then
-  sudo minikube delete
-  sudo rm -rf HOME/.kube $HOME/.minikube
-  if [[ "${TRAVIS}" == true ]]; then
-    sudo rm -rf /etc/kubernetes/*.conf
-  fi
-fi
-
-sudo chown -R travis.travis .
+## arrow up
+"\e[A":history-search-backward
+## arrow down
+"\e[B":history-search-forward
