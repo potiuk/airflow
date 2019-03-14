@@ -17,7 +17,6 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-
 from flask import g
 from flask_appbuilder.security.sqla import models as sqla_models
 from flask_appbuilder.security.sqla.manager import SecurityManager
