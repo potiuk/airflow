@@ -75,7 +75,7 @@ RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - \
     && apt-get install -y --no-install-recommends \
            # Packages to install \
            libsasl2-dev freetds-bin build-essential \
-           default-libmysqlclient-dev apt-utils curl rsync netcat locales  \
+            default-libmysqlclient-dev apt-utils curl rsync netcat locales  \
            freetds-dev libkrb5-dev libssl-dev libffi-dev libpq-dev git \
            nodejs sudo \
     && apt-get autoremove -yqq --purge \
