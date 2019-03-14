@@ -26,7 +26,7 @@ export DOCKERHUB_USER=${DOCKERHUB_USER:="potiuk"} # TODO: change back to "airflo
 export AIRFLOW_CI_VERBOSE="true"
 
 KUBERNETES_VERSION=${KUBERNETES_VERSION:=}
-
+exit 
 if [[ -z "${KUBERNETES_VERSION}" ]]; then
   docker-compose --log-level INFO \
       -f /opt/airflow/scripts/ci/docker-compose.yml \
