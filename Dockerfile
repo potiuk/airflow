@@ -114,7 +114,7 @@ RUN if [[ "${APT_DEPS_IMAGE}" == "airflow-ci-apt-deps" ]]; then \
           gnupg \
           dirmngr \
           openjdk-8-jdk \
-          vim \
+           vim \
           wget \
           tmux \
           less \
