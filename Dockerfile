@@ -32,7 +32,7 @@ ARG ADDITIONAL_PYTHON_DEPS=""
 # PIP version used to install dependencies
 ARG PIP_VERSION="19.0.1"
 # By increasing this number we can do force build of all dependencies
-ARG FORCE_REINSTALL_ALL_DEPENDENCIES="1"
+ARG FORCE_REINSTALL_ALL_DEPENDENCIES="2"
 ############################################################################################################
 # This is base image with APT dependencies needed by Airflow. It is based on a python slim image
 # Parameters:
