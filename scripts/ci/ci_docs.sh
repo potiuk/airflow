@@ -31,7 +31,8 @@ export AIRFLOW_CONTAINER_BUILD_NPM="false"
 . ./hooks/build
 
 set -x
-docker run --entrypoint /opt/airflow/scripts/ci/in_container/run_pylint.sh "${LOCAL_IMAGE}"
+docker run -v "$(pwd)./docs/_build":/opt/airflow/docs/_build -t --entrypoint /opt/airflow/docs/build.sh \
+       --env HOST_USER_ID="$(id -ur)" --env HOST_GROUP_ID="$(id -gr)" "${LOCAL_IMAGE}"
 set +x
 
 popd || exit 1

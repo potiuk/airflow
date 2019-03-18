@@ -16,22 +16,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-set -euo pipefail
 
-MY_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# Script to run Pylint on all code. Can be started from any working directory
+# ./scripts/ci/run_pylint.sh
 
-pushd ${MY_DIR}/../../ || exit 1
+set -uo pipefail
 
-export AIRFLOW_CONTAINER_SKIP_MAIN_IMAGE="false"
-export AIRFLOW_CONTAINER_SKIP_CI_IMAGE="true"
-export AIRFLOW_CONTAINER_PUSH_IMAGES="false"
-export AIRFLOW_CONTAINER_FORCE_PULL_IMAGES="true"
-export AIRFLOW_CONTAINER_BUILD_NPM="false"
+find "${AIRFLOW_HOME}" -exec sudo chmod og-w {} +
 
-. ./hooks/build
-
-set -x
-docker run --entrypoint /opt/airflow/scripts/ci/in_container/run_pylint.sh "${LOCAL_IMAGE}"
-set +x
-
-popd || exit 1
+sudo chmod og-rx /root

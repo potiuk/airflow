@@ -18,38 +18,74 @@
 # specific language governing permissions and limitations
 # under the License.
 
-set -e
+set -euo pipefail
 
-FWDIR="$(cd "`dirname "$0"`"; pwd)"
-cd "$FWDIR"
+MY_DIR="$(cd "`dirname "$0"`"; pwd)"
+pushd "${MY_DIR}" || exit 1
 
-NUM_INCORRECT_USE_LITERALINCLUDE_DIRECTIVE=$(grep -inR --include \*.rst 'literalinclude::.\+example_dags' .\
-    tee /dev/tty |\
-    wc -l |\
-    tr -d '[:space:]')
-
-if [[ "${NUM_INCORRECT_USE_LITERALINCLUDE_DIRECTIVE}" -ne "0" ]]; then
-    echo "Unexpected problems found in the documentation. "
-    echo "You should use a exampleinclude directive to include example DAGs."
-    echo "Currently, ${NUM_INCORRECT_USE_LITERALINCLUDE_DIRECTIVE} problem found."
-    exit 1
+if [[ ${APT_DEPS_IMAGE:=""} != "" ]]; then
+    # We are inside the container which means that we should fix permissions of the _build folder files
+    # Those files are mounted from the host!
+    echo "Changing ownership of docs/_build folder to ${AIRFLOW_USER}:${AIRFLOW_USER}"
+    sudo chown ${AIRFLOW_USER}:${AIRFLOW_USER} _build
+    echo "Changed ownership of docs/_build folder to ${AIRFLOW_USER}:${AIRFLOW_USER}"
 fi
 
-[[ -d "_build" ]] && rm -r _build
-[[ -d "_api" ]] && rm -r _api
+echo "Removing content of the  _build folder"
+rm -rf "_build/*"
+echo "Removed content of the _build folder"
+
+mkdir -pv _build
+
+
+set +e
+# shellcheck disable=SC2063
+NUM_INCORRECT_USE_LITERALINCLUDE=$(grep -inR --include \*.rst 'literalinclude::.\+example_dags' . | \
+    tee /dev/tty |
+    wc -l |\
+    tr -d '[:space:]')
+set -e
+
+echo
+echo "Checking for presence of literalinclude in example DAGs"
+echo
+
+if [[ "${NUM_INCORRECT_USE_LITERALINCLUDE}" -ne "0" ]]; then
+    echo
+    echo "Unexpected problems found in the documentation. "
+    echo "You should use a exampleinclude directive to include example DAGs."
+    echo "Currently, ${NUM_INCORRECT_USE_LITERALINCLUDE} problem found."
+    echo
+    exit 1
+else
+    echo
+    echo "No literalincludes in example DAGs found"
+    echo
+fi
 
 SUCCEED_LINE=$(make html |\
     tee /dev/tty |\
     grep 'build succeeded' |\
     head -1)
 
-NUM_CURRENT_WARNINGS=$(echo $SUCCEED_LINE |\
+NUM_CURRENT_WARNINGS=$(echo ${SUCCEED_LINE} |\
     sed -E 's/build succeeded, ([0-9]+) warnings?\./\1/g')
 
-if echo $SUCCEED_LINE | grep -q "warning"; then
+if [[ ${APT_DEPS_IMAGE:=""} != "" ]]; then
+    # We are inside the container which means that we should fix back the permissions of the _build folder files
+    # Those files are mounted from the host!
+    echo "Changing ownership of docs/_build folder back to ${HOST_USER_ID}:${HOST_GROUP_ID}"
+    sudo chown ${HOST_USER_ID}:${HOST_GROUP_ID} _build
+    echo "Changed ownership of docs/_build folder back to ${HOST_USER_ID}:${HOST_GROUP_ID}"
+fi
+
+
+if echo ${SUCCEED_LINE} | grep -q "warning"; then
     echo
     echo "Unexpected problems found in the documentation. "
     echo "Currently, ${NUM_CURRENT_WARNINGS} warnings found. "
     echo
     exit 1
 fi
+
+popd || exit 1

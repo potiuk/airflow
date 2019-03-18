@@ -18,6 +18,8 @@
 # under the License.
 
 import unittest
+import boto3
+from moto import mock_s3
 
 from airflow import configuration
 from airflow import models
@@ -29,9 +31,6 @@ from airflow.utils import timezone
 from airflow.utils.timezone import datetime
 from airflow.contrib.hooks.ssh_hook import SSHHook
 from airflow.hooks.S3_hook import S3Hook
-
-import boto3
-from moto import mock_s3
 
 BUCKET = 'test-bucket'
 S3_KEY = 'test/test_1_file.csv'

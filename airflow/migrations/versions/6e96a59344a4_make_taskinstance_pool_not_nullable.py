@@ -94,7 +94,7 @@ def upgrade():
         session.commit()
 
     # use batch_alter_table to support SQLite workaround
-    with op.batch_alter_table('task_instance') as batch_op:
+    with op.batch_alter_table('task_instance') as batch_op:  # pylint: disable=no-member
         batch_op.alter_column(
             column_name='pool',
             type_=sa.String(50),
@@ -107,7 +107,7 @@ def downgrade():
     Make TaskInstance.pool field nullable.
     """
     # use batch_alter_table to support SQLite workaround
-    with op.batch_alter_table('task_instance') as batch_op:
+    with op.batch_alter_table('task_instance') as batch_op:  # pylint: disable=no-member
         batch_op.alter_column(
             column_name='pool',
             type_=sa.String(50),

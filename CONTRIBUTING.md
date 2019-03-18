@@ -129,7 +129,7 @@ There are three ways to setup an Apache Airflow development environment.
 
   # To install all of airflows dependencies to run all tests (this is a lot)
   pip install -e .
-  
+
   # To run only certain tests install the devel requirements and whatever is required
   # for your test.  See setup.py for the possible requirements. For example:
   pip install -e '.[gcp,devel]'
@@ -158,60 +158,138 @@ There are three ways to setup an Apache Airflow development environment.
 
 3. Using [Docker Compose](https://docs.docker.com/compose/) and Airflow's CI scripts
 
-  Start a docker container through Compose for development to avoid installing the packages directly on your system. The following will give you a shell inside a container, run all required service containers (MySQL, PostgresSQL, krb5 and so on) and install all the dependencies:
+  Start a docker container through Compose for development to avoid installing the packages directly
+  on your system. The following will start all required service containers
+  (MySQL, PostgresSQL, krb5 and so on) and will download latest airflow container.
+  Setting up Docker-compose is automated by
+  [./scripts/ci/ci_run_airflow_testing.sh](./scripts/ci/ci_run_airflow_testing.sh).
+
+  In order to use the scripts, you need to provide appropriate environment variables to choose the right
+  backend and environment (see [.travis.yml](.travis.yml) for environment variable combinations that
+  can be used:
+
+  The following will start all the containers and start full test suite for Airflow for mysql:
 
   ```bash
-  docker-compose -f scripts/ci/docker-compose.yml run airflow-testing bash
-  # From the container
-  export TOX_ENV=py35-backend_mysql-env_docker
-  /app/scripts/ci/run-ci.sh
+  BACKEND=mysql ENV=docker ./scripts/ci/ci_run_airflow_testing.sh
   ```
 
-  If you wish to run individual tests inside of Docker environment you can do as follows:
+  You can also chose to skip running tests and enter bash shell within the airflow container:
 
   ```bash
-  # From the container (with your desired environment) with druid hook
-  export TOX_ENV=py35-backend_mysql-env_docker
-  /app/scripts/ci/run-ci.sh -- tests/hooks/test_druid_hook.py
+  RUN_TESTS=false BACKEND=mysql ENV=docker ./scripts/ci/ci_run_airflow_testing.sh
   ```
 
+  When you are in the container note that following directories are used:
 
-### Running unit tests
+  ```
+  /opt/airflow - here sources of Airflow are mounted from the host
+  /root/airflow - all the "dynamic" Airflow files are created here:
+      airflow.db - sqlite database in case sqlite is used
+      dags - folder where non-test dags are stored (test dags are in /opt/airflow/tests/dags)
+      logs - logs from airflow executions are created there
+      unittest.cfg - unit test configuration generated when entering the environment
+      webserver_config.py - webserver configuration generated when running airflow in the container
+  ```
 
-To run tests locally, once your unit test environment is setup (directly on your
-system or through our Docker setup) you should be able to simply run
-``./run_unit_tests.sh`` at will.
+  Note that when run in your local environment `/root/logs` folder is actually mounted from your `logs`
+  directory in airflow sources, so all logs created in the container are automatically visible in the host
+  as well. Every time you enter the container the logs directory is cleaned so that logs do not accumulate.
 
-For example, in order to just execute the "core" unit tests, run the following:
+  Once in the container you can use `./scripts/ci/in_container/run_ci_tests.sh` script to run tests manually.
+  You can specify tests module, class or method following nosetest syntax:
 
-```
-./run_unit_tests.sh tests.core:CoreTest -s --logging-level=DEBUG
-```
+  ```
+  <module>[:<Test_Case>.[<test_method>]]
+  ```
+  If you do not provide the extra args - the script will run all the tests.
 
-or a single test method:
+  You can also specify extra args that will be passed to nosetests. For example:
 
-```
-./run_unit_tests.sh tests.core:CoreTest.test_check_operators -s --logging-level=DEBUG
-```
-or another example:
-```
-./run_unit_tests.sh tests.contrib.operators.test_dataproc_operator:DataprocClusterCreateOperatorTest.test_create_cluster_deletes_error_cluster  -s --logging-level=DEBUG
-```
+  ```
+  ./scripts/ci/in_container/run_ci_tests.sh tests.core:CoreTest -s --logging-level=DEBUG
+  ```
 
-To run the whole test suite with Docker Compose, do:
+  or a single test method:
 
-```
-# Install Docker Compose first, then this will run the tests
-docker-compose -f scripts/ci/docker-compose.yml run airflow-testing /app/scripts/ci/run-ci.sh
-```
+  ```
+  ./run_unit_tests.sh tests.core:CoreTest.test_check_operators -s --logging-level=DEBUG
+  ```
 
 Alternatively, you can also set up [Travis CI](https://travis-ci.org/) on your repo to automate this.
 It is free for open source projects.
 
-Another great way of automating linting and testing is to use [Git Hooks](https://git-scm.com/book/uz/v2/Customizing-Git-Git-Hooks). For example you could create a `pre-commit` file based on the Travis CI Pipeline so that before each commit a local pipeline will be triggered and if this pipeline fails (returns an exit code other than `0`) the commit does not come through.
-This "in theory" has the advantage that you can not commit any code that fails that again reduces the errors in the Travis CI Pipelines.
+### Running linting locally
 
-Since there are a lot of tests the script would last very long so you probably only should test your new feature locally.
+We have a number of lint checks that are run in Travis CI but you can run them locally as well. All the
+scripts are available in [scripts/ci](scripts/ci/) folder.
+
+* [ci_check_license.sh](scripts/ci/ci_check_license.sh) - checks if all licences are present in source files.
+  This script requires java and runs in host environment - this means that the check can behave differently
+  on your machine than in the Travis CI.
+
+The checks below are run in a docker environment, which means that if you run them locally, they should
+give the same results as the tests run in TravisCI:
+
+* [ci_docs.sh](scripts/ci/ci_docs.sh) - checks that documentation can be built without warnings.
+  Documentation is available in [docs/_build/html](docs/_build/html) folder after the script is run
+  and succeeds.
+* [ci_flake8.sh](scripts/ci/ci_flake8.sh) - runs flake8 source code style guide enforcement tool
+* [ci_mypy.sh](scripts/ci/ci_mypy.sh) - runs mypy type annotation consistency check
+* [ci_pylint.sh](scripts/ci/ci_pylint.sh) - runs pylint static code checker
+* [ci_lint_dockerfile.sh](scripts/ci/ci_lint_dockerfile.sh) - runs lint checker for the Dockerfile
+
+### Pylint checks - work in-progress
+
+Note that for pylint we are in the process of fixing pylint code checks for the whole Airflow code. This is
+a huge task so we implemented an incremental approach for the process. Currently most of the code is
+excluded from pylint checks via [pylint_todo.txt](scripts/ci/pylint_todo.txt). We have an open JIRA
+issue [AIRFLOW-4364](https://issues.apache.org/jira/browse/AIRFLOW-4364) in JIRA which has a number of
+JIRA sub-tasks for each of the modules that should be made compatible. Fixing pylint problems is one of
+straightforward and easy tasks to do (but time-consuming) so if you are a first-time contributor to
+Airflow you can choose one of the sub-tasks as your first issue to fix. The process to fix the issue looks
+as follows:
+
+1) Remove module/modules from the [pylint_todo.txt](scripts/ci/pylint_todo.txt)
+2) Run [ci_pylint.sh](scripts/ci/ci_pylint.sh)
+3) Fix all the issues reported by pylint
+4) Re-run [ci_pylint.sh](scripts/ci/ci_pylint.sh)
+5) If you see "success" - submit PR following [Pull Request guidelines](#pull-request-guidelines)
+
+There are following guidelines when fixing pylint errors:
+
+* Ideally fix the errors rather than disable pylint checks - often you can easily refactor the code
+  (IntelliJ/PyCharm might be helpful when extracting methods in complex code or moving methods around)
+* When disabling particular problem - make sure to disable only that error-via the symbolic name
+  of the error as reported by pylint
+* If there is a single line where to disable particular error you can add comment following the line
+  that causes the problem. For example:
+```python
+def MakeSummary(pcoll, metric_fn, metric_keys):  # pylint: disable=invalid-name
+```
+* When there are multiple lines/block of code to disable an error you can surround the block with
+  comment only pylint:disable/pylint:enable lines. For example:
+
+```python
+# pylint: disable=too-few-public-methods
+class LoginForm(Form):
+    """Form for the user"""
+    username = StringField('Username', [InputRequired()])
+    password = PasswordField('Password', [InputRequired()])
+# pylint: enable=too-few-public-methods
+```
+
+### Git hooks
+
+Another great way of automating linting and testing is to use
+[Git Hooks](https://git-scm.com/book/uz/v2/Customizing-Git-Git-Hooks). For example you could create a
+`pre-commit` file based on the Travis CI Pipeline so that before each commit a local pipeline will be
+triggered and if this pipeline fails (returns an exit code other than `0`) the commit does not come through.
+This "in theory" has the advantage that you can not commit any code that fails that again reduces the errors
+in the Travis CI Pipelines.
+
+Since there are a lot of tests the script would last very long so you probably only should test your new
+feature locally.
 
 The following example of a `pre-commit` file allows you..
 - to lint your code via flake8
