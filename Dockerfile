@@ -360,13 +360,6 @@ COPY --chown=airflow:airflow . ${AIRFLOW_SOURCES}/
 
 WORKDIR ${AIRFLOW_SOURCES}
 
-# Always add-get update/upgrade here to get latest dependencies before
-# we redo pip install
-RUN apt-get update \
-    && apt-get upgrade -y --no-install-recommends \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
 # Additional python deps to install
 ARG ADDITIONAL_PYTHON_DEPS=""
 
@@ -375,6 +368,29 @@ RUN if [[ -n "${ADDITIONAL_PYTHON_DEPS}" ]]; then \
     fi
 
 COPY --chown=airflow:airflow ./scripts/docker/entrypoint.sh /entrypoint.sh
+
+# Generate list of all tests to aid auto-complete of run-test command
+RUN \
+    if [[ "${APT_DEPS_IMAGE}" == "airflow-ci-apt-deps" ]]; then \
+        gosu "${AIRFLOW_USER}" nosetests --collect-only --with-xunit \
+        --xunit-file="${HOME}/all_tests.xml" && \
+        gosu "${AIRFLOW_USER}" python "${AIRFLOW_SOURCES}/tests/test_utils/get_all_tests.py" \
+            "${HOME}/all_tests.xml" >"${HOME}/all_tests.txt"; \
+    fi
+
+COPY .bash_completion run-tests-complete run-tests ${HOME}/
+
+RUN \
+    if [[ "${APT_DEPS_IMAGE}" == "airflow-ci-apt-deps" ]]; then \
+        echo ". ${HOME}/.bash_completion" >> "${HOME}/.bashrc"; \
+    fi
+
+RUN \
+    if [[ "${APT_DEPS_IMAGE}" == "airflow-ci-apt-deps" ]]; then \
+        chmod +x "${HOME}/run-tests-complete" "${HOME}/run-tests" && \
+        chown "${AIRFLOW_USER}.${AIRFLOW_USER}" "${HOME}/.bashrc" \
+              "${HOME}/run-tests-complete" "${HOME}/run-tests"; \
+    fi
 
 USER ${AIRFLOW_USER}
 

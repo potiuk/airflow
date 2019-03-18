@@ -23,7 +23,6 @@ Contributions are welcome and are greatly appreciated! Every
 little bit helps, and credit will always be given.
 
 # Table of Contents
-  * [TOC](#table-of-contents)
   * [Types of Contributions](#types-of-contributions)
       - [Report Bugs](#report-bugs)
       - [Fix Bugs](#fix-bugs)
@@ -31,44 +30,48 @@ little bit helps, and credit will always be given.
       - [Improve Documentation](#improve-documentation)
       - [Submit Feedback](#submit-feedback)
   * [Documentation](#documentation)
-  * [Development and Testing](#development-and-testing)
-      - [Setting up a development environment](#setting-up-a-development-environment)
-      - [Running unit tests](#running-unit-tests)
+  * [Setting up a development environment](#setting-up-a-development-environment)
+      - [Local virtualenv development environment](#local-virtualenv-development-environment)
+      - [Docker container development environment](#docker-container-development-environment)
+      - [Integration test development environment](#integration-test-development-environment)
+  * [Running linting and tests in git hook](#running-linting-and-tests-in-git-hook)
   * [Pull requests guidelines](#pull-request-guidelines)
   * [Changing the Metadata Database](#changing-the-metadata-database)
 
-## Types of Contributions
+# Types of Contributions
 
-### Report Bugs
+## Report Bugs
 
 Report bugs through [Apache Jira](https://issues.apache.org/jira/browse/AIRFLOW)
 
 Please report relevant information and preferably code that exhibits
 the problem.
 
-### Fix Bugs
+## Fix Bugs
 
 Look through the Jira issues for bugs. Anything is open to whoever wants
 to implement it.
 
-### Implement Features
+## Implement Features
 
-Look through the [Apache Jira](https://issues.apache.org/jira/browse/AIRFLOW) for features. Any unassigned "Improvement" issue is open to whoever wants to implement it.
+Look through the [Apache Jira](https://issues.apache.org/jira/browse/AIRFLOW) for features.
+Any unassigned "Improvement" issue is open to whoever wants to implement it.
 
 We've created the operators, hooks, macros and executors we needed, but we
 made sure that this part of Airflow is extensible. New operators,
 hooks, macros and executors are very welcomed!
 
-### Improve Documentation
+## Improve Documentation
 
 Airflow could always use better documentation,
 whether as part of the official Airflow docs,
 in docstrings, `docs/*.rst` or even on the web as blog posts or
 articles.
 
-### Submit Feedback
+## Submit Feedback
 
-The best way to send feedback is to open an issue on [Apache Jira](https://issues.apache.org/jira/browse/AIRFLOW)
+The best way to send feedback is to open an issue on
+[Apache Jira](https://issues.apache.org/jira/browse/AIRFLOW)
 
 If you are proposing a feature:
 
@@ -76,7 +79,7 @@ If you are proposing a feature:
 - Keep the scope as narrow as possible, to make it easier to implement.
 - Remember that this is a volunteer-driven project, and that contributions are welcome :)
 
-## Documentation
+# Documentation
 
 The latest API documentation is usually available
 [here](https://airflow.apache.org/). To generate a local version,
@@ -95,129 +98,240 @@ cd docs
 ./start_doc_server.sh
 ```
 
-Only a subset of the API reference documentation builds. Install additional
-extras to build the full API reference.
+# Setting up a development environment
 
-## Development and Testing
+There are three ways to setup an Apache Airflow development environment:
 
-### Setting up a development environment
+* [Local virtualenv development environment](#local-virtualenv-development-environment)
+  using tools and libraries directly on your system
+* [Docker container development environment](#docker-container-development-environment)
+  using simple manually managed docker container
+* [Integration test development environment](#integration-test-development-environment)
+  using Docker compose based environment - the same that we use to run integration tests in Travis CI
 
-There are three ways to setup an Apache Airflow development environment.
+##  Local virtualenv development environment
 
-1. Using tools and libraries installed directly on your system
+You can create local virtualenv with all requirements required by Airflow.
 
-  Install Python (2.7.x or 3.5.x), MySQL, and libxml by using system-level package
-  managers like yum, apt-get for Linux, or Homebrew for Mac OS at first. Refer to the [base CI Dockerfile](https://github.com/apache/airflow-ci/blob/master/Dockerfile) for
-  a comprehensive list of required packages.
+Advantage of local installation is that everything works locally, you do not have to enter Docker/container
+environment and you can easily debug the code locally. You can also have access to python virtualenv that
+contains all the necessary requirements and use it in your local IDE - this aids autocompletion, and
+running tests directly from within the IDE.
 
-  Then install python development requirements. It is usually best to work in a virtualenv:
+The disadvantage is that you have to maintain your dependencies and local environment consistent with
+other development environments that you have on your local machine.
 
-  ```bash
-  cd $AIRFLOW_HOME
-  virtualenv env
-  source env/bin/activate
-  pip install -e '.[devel]'
-  ```
+Another disadvantage is that you you cannot run tests that require
+external components - mysql, postgres database, hadoop, mongo, cassandra, redis etc..
+The tests in Airflow are a mixture of unit and integration tests and some of them
+require those components to be setup. Only real unit tests can be run bu default in local environment.
 
-2. Using a Docker container
+If you want to run integration tests, you need to configure and install the dependencies on your own.
 
-  Go to your Airflow directory and start a new docker container. You can choose between Python 2 or 3, whatever you prefer.
+It's also very difficult to make sure that your local environment is consistent with other's environments.
+This  can often lead to "works for me" syndrome. It's better to use the Docker Compose integration test
+environment in case you want reproducible environment consistent with other people.
 
-  ```
-  # Start docker in your Airflow directory
-  docker run -t -i -v `pwd`:/airflow/ -w /airflow/ python:3 bash
+### Installation
 
-  # To install all of airflows dependencies to run all tests (this is a lot)
-  pip install -e .
+Install Python (2.7.x or 3.5.x), MySQL, and libxml by using system-level package
+managers like yum, apt-get for Linux, or Homebrew for Mac OS at first.
+Refer to the [Dockerfile](Dockerfile) for a comprehensive list of required packages.
 
-  # To run only certain tests install the devel requirements and whatever is required
-  # for your test.  See setup.py for the possible requirements. For example:
-  pip install -e '.[gcp,devel]'
+In order to use your IDE you need you can use the virtual environment. Ideally
+you should setup virtualenv for all python versions that Airflow supports (2.7, 3.5, 3.6).
+An easy way to create the virtualenv is to use
+[virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) - it allows
+you to easily switch between virtualenvs using `workon` command and mange
+your virtual environments more easily. Typically creating the environment can be done by:
 
-  # Init the database
-  airflow initdb
+```
+mkvirtualenv <ENV_NAME> --python=python<VERSION>
+```
 
-  nosetests -v tests/hooks/test_druid_hook.py
+Then you need to install python PIP requirements. Typically it can be done with:
+`pip install -e ".[devel]"`. Then you need to run `airflow initdb` to create sqlite database.
 
-    test_get_first_record (tests.hooks.test_druid_hook.TestDruidDbApiHook) ... ok
-    test_get_records (tests.hooks.test_druid_hook.TestDruidDbApiHook) ... ok
-    test_get_uri (tests.hooks.test_druid_hook.TestDruidDbApiHook) ... ok
-    test_get_conn_url (tests.hooks.test_druid_hook.TestDruidHook) ... ok
-    test_submit_gone_wrong (tests.hooks.test_druid_hook.TestDruidHook) ... ok
-    test_submit_ok (tests.hooks.test_druid_hook.TestDruidHook) ... ok
-    test_submit_timeout (tests.hooks.test_druid_hook.TestDruidHook) ... ok
-    test_submit_unknown_response (tests.hooks.test_druid_hook.TestDruidHook) ... ok
+This can be automated if you do it within a virtualenv.
+The [./breeze](./breeze) script has a flag
+(-e or --initialize-local-virtualenv) that automatically installs dependencies
+in the virtualenv you are logged in and resets the sqlite database as described below.
 
-    ----------------------------------------------------------------------
-    Ran 8 tests in 3.036s
+After the virtualenv is created, you must initialize it. Simply enter the environment
+(using `workon`) and once you are in it run:
+```
+./breeze --initialize-local-virtualenv
+````
 
-    OK
-  ```
+Once initialization is done, you should select the virtualenv you initialized as the
+project's default virtualenv in your IDE and run tests efficiently.
 
-  The Airflow code is mounted inside of the Docker container, so if you change something using your favorite IDE, you can directly test it in the container.
+After setting it up - you can use the usual "Run Test" option of the IDE and have
+the autocomplete and documentation support from IDE as well as you can
+debug and view the sources of Airflow - which is very helpful during
+development.
 
-3. Using [Docker Compose](https://docs.docker.com/compose/) and Airflow's CI scripts
+### Running tests
 
-  Start a docker container through Compose for development to avoid installing the packages directly
-  on your system. The following will start all required service containers
-  (MySQL, PostgresSQL, krb5 and so on) and will download latest airflow container.
-  Setting up Docker-compose is automated by
-  [./scripts/ci/ci_run_airflow_testing.sh](./scripts/ci/ci_run_airflow_testing.sh).
+To run tests locally, once you activate virtualenv you should be able to simply run
+``run-tests`` at will. Note that if you want to pass extra parameters to nose
+you should do it after '--'
 
-  In order to use the scripts, you need to provide appropriate environment variables to choose the right
-  backend and environment (see [.travis.yml](.travis.yml) for environment variable combinations that
-  can be used:
+For example, in order to just execute the "core" unit tests, run the following:
 
-  The following will start all the containers and start full test suite for Airflow for mysql:
+```bash
+run-tests tests.core:CoreTest -- -s --logging-level=DEBUG
+```
+or a single test method:
 
-  ```bash
-  BACKEND=mysql ENV=docker ./scripts/ci/ci_run_airflow_testing.sh
-  ```
+```bash
+run-tests tests.core:CoreTest.test_check_operators -- -s --logging-level=DEBUG
+```
 
-  You can also chose to skip running tests and enter bash shell within the airflow container:
+### Running tests directly from the IDE
 
-  ```bash
-  RUN_TESTS=false BACKEND=mysql ENV=docker ./scripts/ci/ci_run_airflow_testing.sh
-  ```
+Once you configure your tests to use the virtualenv you created. running tests
+from IDE is as simple as:
 
-  When you are in the container note that following directories are used:
+![Run unittests](images/run_unittests.png)
 
-  ```
-  /opt/airflow - here sources of Airflow are mounted from the host
-  /root/airflow - all the "dynamic" Airflow files are created here:
-      airflow.db - sqlite database in case sqlite is used
-      dags - folder where non-test dags are stored (test dags are in /opt/airflow/tests/dags)
-      logs - logs from airflow executions are created there
-      unittest.cfg - unit test configuration generated when entering the environment
-      webserver_config.py - webserver configuration generated when running airflow in the container
-  ```
+Note that while most of the tests are typical "unit" tests that do not
+require external components, there are a number of tests that are more of
+"integration" ot even "system" tests (depending on the convention you use).
+Those tests interact with external components. For those tests
+you need to run complete Docker Compose - based
+[Integration test development environment](#integration-test-development-environment).
 
-  Note that when run in your local environment `/root/logs` folder is actually mounted from your `logs`
-  directory in airflow sources, so all logs created in the container are automatically visible in the host
-  as well. Every time you enter the container the logs directory is cleaned so that logs do not accumulate.
+## Docker container development environment
 
-  Once in the container you can use `./scripts/ci/in_container/run_ci_tests.sh` script to run tests manually.
-  You can specify tests module, class or method following nosetest syntax:
+You can develop and run unit tests by using simple, manually managed docker container environment.
 
-  ```
-  <module>[:<Test_Case>.[<test_method>]]
-  ```
-  If you do not provide the extra args - the script will run all the tests.
+Advantage of Docker container is that your development environment is isolated from other development
+environments you have and you can run quickly unit tests without messing with your local dependencies and
+installation.
 
-  You can also specify extra args that will be passed to nosetests. For example:
+The disadvantage is that you you cannot run tests that require
+external components - mysql, postgres database, hadoop, mongo, cassandra, redis etc..
+The tests in Airflow are a mixture of unit and integration tests and some of them
+require those components to be setup. Only real unit tests can be run here.
 
-  ```
-  ./scripts/ci/in_container/run_ci_tests.sh tests.core:CoreTest -s --logging-level=DEBUG
-  ```
+Also by default you have to start docker container airflow every time you want to run it.
+You can persist the installation of airflow in your containers but this is fairly manual process.
 
-  or a single test method:
+### Installation
 
-  ```
-  ./run_unit_tests.sh tests.core:CoreTest.test_check_operators -s --logging-level=DEBUG
-  ```
+There are those prerequisites that you have to fulfill:
 
-Alternatively, you can also set up [Travis CI](https://travis-ci.org/) on your repo to automate this.
-It is free for open source projects.
+* Docker Community Edition installed and on the PATH. It should be
+  configured to be able to run `docker` commands directly and not only via root user
+  - your user should be in `docker` group. See [Docker installation guide](https://docs.docker.com/install/)
+
+Go to your Airflow directory and start a new docker container. You can choose between
+different versions of Python as base image - whatever you prefer. You can pick your own name
+for the container if you do not want the name to be randomly assigned by docker.
+
+```bash
+
+# Start docker in your Airflow directory
+docker run -t -i -v `pwd`:/airflow/ -w /airflow/ --name "airflow-3.6" python:3.6 bash
+
+# To install all of airflows dependencies to run all tests (this is a lot)
+pip install -e .
+
+# To run only certain tests install the devel requirements and whatever is required
+# for your test.  See setup.py for the possible requirements. For example:
+pip install -e '.[gcp,devel]'
+
+# Init the database
+airflow initdb
+```
+
+Then while you are in the container you can run the tests with nosetests:
+
+```
+nosetests -v tests/hooks/test_druid_hook.py
+
+  test_get_first_record (tests.hooks.test_druid_hook.TestDruidDbApiHook) ... ok
+  test_get_records (tests.hooks.test_druid_hook.TestDruidDbApiHook) ... ok
+  test_get_uri (tests.hooks.test_druid_hook.TestDruidDbApiHook) ... ok
+  test_get_conn_url (tests.hooks.test_druid_hook.TestDruidHook) ... ok
+  test_submit_gone_wrong (tests.hooks.test_druid_hook.TestDruidHook) ... ok
+  test_submit_ok (tests.hooks.test_druid_hook.TestDruidHook) ... ok
+  test_submit_timeout (tests.hooks.test_druid_hook.TestDruidHook) ... ok
+  test_submit_unknown_response (tests.hooks.test_druid_hook.TestDruidHook) ... ok
+
+  ----------------------------------------------------------------------
+  Ran 8 tests in 3.036s
+
+  OK
+```
+
+The Airflow code is mounted inside of the Docker container, so if you change something using your
+favorite IDE, you can directly test it in the container.
+
+You can persist your container so that you do not have to run install every time you enter the
+environment. You can do it after you exit the container environment.
+
+```bash
+docker commit "airflow-3.6" "local-aiflow:3.6"
+```
+
+You can choose your own image label/tag to save the image as. Then you can enter back the environment with:
+
+```bash
+docker run -t -i -v `pwd`:/airflow/ -w /airflow/ "local-airflow:3.6" bash
+```
+
+### Running tests
+Once you enter docker container you should be able to simply run
+`run-tests` at will. Note that if you want to pass extra parameters to nose
+you should do it after '--'
+
+For example, in order to just execute the "core" unit tests, run the following:
+```bash
+run-tests tests.core:CoreTest -- -s --logging-level=DEBUG
+```
+or a single test method:
+```bash
+run-tests tests.core:CoreTest.test_check_operators -- -s --logging-level=DEBUG
+```
+or another example:
+```
+./run_unit_tests.sh tests.contrib.operators.test_dataproc_operator:DataprocClusterCreateOperatorTest.test_create_cluster_deletes_error_cluster  -s --logging-level=DEBUG
+```
+
+## Integration test development environment
+
+Airflow has a super-easy-to-use integration test environment managed via
+[Docker Compose](https://docs.docker.com/compose/) and used by Airflow's CI Travis tests.
+
+It's called **Airflow Breeze** as in "_It's a breeze to develop Airflow_"
+
+All details about using and running Airflow Breeze can be found in [BREEZE.rst](BREEZE.rst)
+
+The advantage of the Airflow Breeze Integration Tests environment is that it is a full environment
+including external components - mysql database, hadoop, mongo, cassandra, redis etc. Some of the tests in
+Airflow require those external components. Integration test environment provides preconfigured environment
+where all those services are running and can be used by tests automatically.
+
+Another advantage is that the Airflow Breeze environment is pretty much the same
+as used in [Travis CI](https://travis-ci.com/) automated builds, and if the tests run in
+your local environment they will most likely work on Travis as well.
+
+The disadvantage of Airflow Breeze is that it is fairly complex and requires time to setup. However it is all
+automated and easy to setup. Another disadvantage is that it takes a lot of space in your local Docker cache.
+There is a separate environment for different python versions and airflow versions and each of the images take
+around 3GB in total. Building and preparing the environment by default uses pre-built images from DockerHub
+(requires time to download and extract those GB of images) and less than 10 minutes per python version
+to build.
+
+The images can also be built from scratch with --force-clean-rebuild flag. It takes around 30 minutes on
+typical machine per python version.
+
+Note that those images are not supposed to be used in production environments. They are optimised
+for repeatability of tests, maintainability and speed of building rather than performance.
+
+## Running linting and tests in git hook
 
 ### Running linting locally
 
@@ -282,13 +396,14 @@ class LoginForm(Form):
 ### Git hooks
 
 Another great way of automating linting and testing is to use
-[Git Hooks](https://git-scm.com/book/uz/v2/Customizing-Git-Git-Hooks). For example you could create a
+ [Git Hooks](https://git-scm.com/book/uz/v2/Customizing-Git-Git-Hooks). For example you could create a
 `pre-commit` file based on the Travis CI Pipeline so that before each commit a local pipeline will be
 triggered and if this pipeline fails (returns an exit code other than `0`) the commit does not come through.
-This "in theory" has the advantage that you can not commit any code that fails that again reduces the errors
-in the Travis CI Pipelines.
+This "in theory" has the advantage that you can not commit any code that fails that again reduces the
+errors in the Travis CI Pipelines.
 
-Since there are a lot of tests the script would last very long so you probably only should test your new
+Since there are a lot of tests the script would last very long so you probably only should test your
+ new
 feature locally.
 
 The following example of a `pre-commit` file allows you..
@@ -345,16 +460,35 @@ Feel free to customize based on the extras available in [setup.py](./setup.py)
 Before you submit a pull request from your forked repo, check that it
 meets these guidelines:
 
-1. The pull request should include tests, either as doctests, unit tests, or both. The airflow repo uses [Travis CI](https://travis-ci.org/apache/airflow) to run the tests and [codecov](https://codecov.io/gh/apache/airflow) to track coverage. You can set up both for free on your fork (see the "Testing on Travis CI" section below). It will help you making sure you do not break the build with your PR and that you help increase coverage.
-1. Please [rebase your fork](http://stackoverflow.com/a/7244456/1110993), squash commits, and resolve all conflicts.
-1. Every pull request should have an associated [JIRA](https://issues.apache.org/jira/browse/AIRFLOW/?selectedTab=com.atlassian.jira.jira-projects-plugin:summary-panel). The JIRA link should also be contained in the PR description.
-1. Preface your commit's subject & PR's title with **[AIRFLOW-XXX]** where *XXX* is the JIRA number. We compose release notes (i.e. for Airflow releases) from all commit titles in a release. By placing the JIRA number in the commit title and hence in the release notes, Airflow users can look into JIRA and GitHub PRs for more details about a particular change.
+1. The pull request should include tests, either as doctests, unit tests, or both. The airflow repo uses
+[Travis CI](https://travis-ci.org/apache/airflow) to run the tests and
+[codecov](https://codecov.io/gh/apache/airflow) to track coverage.
+You can set up both for free on your fork (see the "Testing on Travis CI" section below).
+It will help you making sure you do not break the build with your PR and that you help increase coverage.
+1. Please [rebase your fork](http://stackoverflow.com/a/7244456/1110993), squash commits, and
+resolve all conflicts.
+1. Every pull request should have an associated
+[JIRA](https://issues.apache.org/jira/browse/AIRFLOW/?selectedTab=com.atlassian.jira.jira-projects-plugin:summary-panel).
+The JIRA link should also be contained in the PR description.
+1. Preface your commit's subject & PR's title with **[AIRFLOW-XXX]** where *XXX* is the JIRA number.
+We compose release notes (i.e. for Airflow releases) from all commit titles in a release.
+By placing the JIRA number in the commit title and hence in the release notes, Airflow users can look into
+JIRA and GitHub PRs for more details about a particular change.
 1. Add an [Apache License](http://www.apache.org/legal/src-headers.html) header to all new files
-1. If the pull request adds functionality, the docs should be updated as part of the same PR. Doc string are often sufficient.  Make sure to follow the Sphinx compatible standards.
-1. The pull request should work for Python 2.7 and 3.5. If you need help writing code that works in both Python 2 and 3, see the documentation at the [Python-Future project](http://python-future.org) (the future package is an Airflow requirement and should be used where possible).
-1. As Airflow grows as a project, we try to enforce a more consistent style and try to follow the Python community guidelines. We currently enforce most [PEP8](https://www.python.org/dev/peps/pep-0008/) and a few other linting rules. It is usually a good idea to lint locally as well using [flake8](https://flake8.readthedocs.org/en/latest/) using `flake8 airflow tests`. `git diff upstream/master -u -- "*.py" | flake8 --diff` will return any changed files in your branch that require linting.
+1. If the pull request adds functionality, the docs should be updated as part of the same PR. Doc string
+are often sufficient.  Make sure to follow the Sphinx compatible standards.
+1. The pull request should work for Python 2.7 and 3.5. If you need help writing code that works in both
+Python 2 and 3, see the documentation at the [Python-Future project](http://python-future.org) (the future
+package is an Airflow requirement and should be used where possible).
+1. As Airflow grows as a project, we try to enforce a more consistent style and try to follow the Python
+community guidelines. We currently enforce most [PEP8](https://www.python.org/dev/peps/pep-0008/) and a
+few other linting rules. It is usually a good idea to lint locally as well using
+[flake8](https://flake8.readthedocs.org/en/latest/) using `flake8 airflow tests`.
+`git diff upstream/master -u -- "*.py" | flake8 --diff` will return any changed files in your branch that
+require linting.
 1. We also apply [Pylint](https://www.pylint.org) for linting (static code analysis). Run locally with `./scripts/ci/ci_pylint.sh`.
-1. Please read this excellent [article](http://chris.beams.io/posts/git-commit/) on commit messages and adhere to them. It makes the lives of those who come after you a lot easier.
+1. Please read this excellent [article](http://chris.beams.io/posts/git-commit/) on commit messages and
+adhere to them. It makes the lives of those who come after you a lot easier.
 
 ### Testing on Travis CI
 
@@ -449,14 +583,15 @@ managed with npm.
 
 ### Node/npm versions
 
-Make sure you are using recent versions of node and npm. No problems have been found with node>=8.11.3 and npm>=6.1.3
+Make sure you are using recent versions of node and npm. No problems have been found with node>=8.11.3 and
+npm>=6.1.3
 
 ### Using npm to generate bundled files
 
 #### npm
 
-First, npm must be available in your environment. If it is not you can run the following commands
-(taken from [this source](https://gist.github.com/DanHerbert/9520689))
+First, npm must be available in your environment. If you are on Mac and it is not installed,
+you can run the following commands (taken from [this source](https://gist.github.com/DanHerbert/9520689)):
 
 ```
 brew install node --without-npm
@@ -470,6 +605,9 @@ Add something like this to your `.bashrc` file, then `source ~/.bashrc` to refle
 ```
 export PATH="$HOME/.npm-packages/bin:$PATH"
 ```
+
+You can also follow
+[the general npm installation instructions](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm).
 
 #### npm packages
 
@@ -506,8 +644,8 @@ and push the newly generated `package-lock.json` file so we get the reproducible
 We try to enforce a more consistent style and try to follow the JS community guidelines.
 Once you add or modify any javascript code in the project, please make sure it follows the guidelines
 defined in [Airbnb JavaScript Style Guide](https://github.com/airbnb/javascript).
-Apache Airflow uses [ESLint](https://eslint.org/) as a tool for identifying and reporting on patterns in JavaScript,
-which can be used by running any of the following commands.
+Apache Airflow uses [ESLint](https://eslint.org/) as a tool for identifying and reporting on patterns
+in JavaScript, which can be used by running any of the following commands.
 
 ```bash
 # Check JS code in .js and .html files, and report any errors/warnings

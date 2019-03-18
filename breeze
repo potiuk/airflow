@@ -1,0 +1,1100 @@
+#!/usr/bin/env bash
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+MY_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Bash sanity settings (error on exit, complain for undefined vars, error when pipe fails)
+set -euo pipefail
+
+SEPARATOR_WIDTH=$(tput cols)
+
+CMDNAME="$(basename -- "$0")"
+
+# Update short and long options in the breeze-complete script
+# This way autocomplete will work automagically with all options
+# shellcheck source=breeze-complete
+. "${MY_DIR}/breeze-complete"
+
+# Whether to actually run docker compose with the command set given
+ENTER_ENVIRONMENT="true"
+
+# If true, the docker images are rebuilt locally. Can be disabled with -i
+DOCKER_REBUILD="false"
+
+# Whether to cleanup local image
+CLEANUP_IMAGE="false"
+
+# Skips mounting local Airflow sources
+SKIP_MOUNTING_LOCAL_SOURCES="false"
+
+# If set, we initialize local virtualenv and install all dependencies
+INITIALIZE_LOCAL_VIRTUALENV=false
+
+# If set, we setup autocomplete for breeze
+SETUP_AUTOCOMPLETE=false
+
+# Holds chosen command if the -x flag is used.
+RUN_COMMAND=""
+
+# Holds the test target if the -t flag is used.
+TEST_TARGET=""
+
+# Holds docker compose command if the -d flag is used.
+DOCKER_COMPOSE_COMMAND=""
+
+# By default we only pull images if we do not have them locally.
+# This can be overridden by -p flag
+export AIRFLOW_CONTAINER_FORCE_PULL_IMAGES="false"
+
+# We use docker image caches by default to speed up the builds
+export AIRFLOW_CONTAINER_USE_DOCKER_CACHE=${AIRFLOW_CONTAINER_USE_DOCKER_CACHE:="true"}
+
+# By default we do not push images. This can be overridden by -u flag.
+export AIRFLOW_CONTAINER_PUSH_IMAGES=${AIRFLOW_CONTAINER_PUSH_IMAGES:="false"}
+
+# For local builds we fix file permissions only for setup-related files
+export AIRFLOW_FIX_PERMISSIONS=${AIRFLOW_FIX_PERMISSIONS:="setup"}
+
+# Skip building main image locally - we only need CI image
+export AIRFLOW_CONTAINER_SKIP_MAIN_IMAGE="true"
+
+# Skip building main image locally - we only need CI image
+export AIRFLOW_CONTAINER_SKIP_CI_IMAGE="false"
+
+# Determine version of the Airflow from version.py
+AIRFLOW_VERSION=$(cat airflow/version.py - << EOF | python
+print(version.replace("+",""))
+EOF
+)
+export AIRFLOW_VERSION
+
+# Verbosity in running ci scripts
+export AIRFLOW_CI_VERBOSE="false"
+
+# Enter environment by default, rather than run tests or bash command
+export RUN_TESTS="false"
+export RUN_DOCKER_COMPOSE="false"
+export RUN_IN_BASH="false"
+
+# if set to true, rebuild is done without asking user
+export SKIP_BUILD_CHECK="false"
+# if set to true, it means that pulling images was forced
+export FORCE_PULL="false"
+# if set to true, it means that building images was forced
+export FORCE_BUILD="false"
+
+# Files determining whether asciiart/cheatsheet are suppressed
+
+SUPPRESS_CHEATSHEET_FILE="${MY_DIR}/.suppress_cheatsheet"
+SUPPRESS_ASCIIART_FILE="${MY_DIR}/.suppress_asciiart"
+
+export WEBSERVER_HOST_PORT=${WEBSERVER_HOST_PORT:="28080"}
+export POSTGRES_HOST_PORT=${POSTGRES_HOST_PORT:="25433"}
+export MYSQL_HOST_PORT=${MYSQL_HOST_PORT:="23306"}
+
+# The script that performs build of docker images
+DOCKER_BUILD_SCRIPT="${MY_DIR}/hooks/build"
+
+# Directory where all CI scripts are located
+SCRIPTS_CI_DIR=${MY_DIR}/scripts/ci
+
+FILES_FOR_REBUILD_CHECK="\
+setup.py \
+setup.cfg \
+Dockerfile \
+airflow/version.py \
+airflow/www/package.json \
+airflow/www/package-lock.json
+"
+
+function print_badge {
+    if [[ ! -f "${SUPPRESS_ASCIIART_FILE}" ]]; then
+        cat <<EOF
+
+
+
+
+                                  @&&&&&&@
+                                 @&&&&&&&&&&&@
+                                &&&&&&&&&&&&&&&&
+                                        &&&&&&&&&&
+                                            &&&&&&&
+                                             &&&&&&&
+                           @@@@@@@@@@@@@@@@   &&&&&&
+                          @&&&&&&&&&&&&&&&&&&&&&&&&&&
+                         &&&&&&&&&&&&&&&&&&&&&&&&&&&&
+                                         &&&&&&&&&&&&
+                                             &&&&&&&&&
+                                           &&&&&&&&&&&&
+                                      @@&&&&&&&&&&&&&&&@
+                   @&&&&&&&&&&&&&&&&&&&&&&&&&&&&  &&&&&&
+                  &&&&&&&&&&&&&&&&&&&&&&&&&&&&    &&&&&&
+                 &&&&&&&&&&&&&&&&&&&&&&&&         &&&&&&
+                                                 &&&&&&
+                                               &&&&&&&
+                                            @&&&&&&&&
+            @&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+           &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+          &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+
+
+     @&&&@       &&  @&&&&&&&&&&&   &&&&&&&&&&&&  &&            &&&&&&&&&&  &&&     &&&     &&&
+    &&& &&&      &&  @&&       &&&  &&            &&          &&&       &&&@ &&&   &&&&&   &&&
+   &&&   &&&     &&  @&&&&&&&&&&&&  &&&&&&&&&&&   &&          &&         &&&  &&& &&& &&@ &&&
+  &&&&&&&&&&&    &&  @&&&&&&&&&     &&            &&          &&@        &&&   &&@&&   &&@&&
+ &&&       &&&   &&  @&&     &&&@   &&            &&&&&&&&&&&  &&&&&&&&&&&&     &&&&   &&&&
+
+&&&&&&&&&&&&   &&&&&&&&&&&&   &&&&&&&&&&&@  &&&&&&&&&&&&   &&&&&&&&&&&   &&&&&&&&&&&
+&&&       &&&  &&        &&&  &&            &&&                  &&&&    &&
+&&&&&&&&&&&&@  &&&&&&&&&&&&   &&&&&&&&&&&   &&&&&&&&&&&       &&&&       &&&&&&&&&&
+&&&        &&  &&   &&&&      &&            &&&             &&&&         &&
+&&&&&&&&&&&&&  &&     &&&&@   &&&&&&&&&&&@  &&&&&&&&&&&&  @&&&&&&&&&&&   &&&&&&&&&&&
+
+
+                               Airflow version:    ${AIRFLOW_VERSION}
+                               Python version:     ${PYTHON_VERSION}
+                               DockerHub user:     ${DOCKERHUB_USER}
+                               DockerHub repo:     ${DOCKERHUB_REPO}
+                               Backend:            ${BACKEND}
+                               Env:                ${ENV}
+                               Kubernetes version: ${KUBERNETES_VERSION}
+
+
+
+
+EOF
+    else
+        cat <<EOF
+
+
+   Airflow version:    ${AIRFLOW_VERSION}
+   Python version:     ${PYTHON_VERSION}
+   DockerHub user:     ${DOCKERHUB_USER}
+   DockerHub repo:     ${DOCKERHUB_REPO}
+   Backend:            ${BACKEND}
+   Env:                ${ENV}
+   Kubernetes version: ${KUBERNETES_VERSION}
+
+
+EOF
+    fi
+}
+
+function check_file_md5sum {
+    local FILE="${1}"
+    local MD5SUM
+    MD5SUM=$(md5sum "${FILE}")
+    local MD5SUM_FILE
+    MD5SUM_FILE=${BREEZE_CACHE_DIR}/$(basename "${FILE}").md5sum
+    local MD5SUM_FILE_NEW
+    MD5SUM_FILE_NEW=${BREEZE_CACHE_DIR}/$(basename "${FILE}").md5sum.new
+    echo "${MD5SUM}" > "${MD5SUM_FILE_NEW}"
+    local RET_CODE=0
+    if [[ ! -f "${MD5SUM_FILE}" ]]; then
+        echo "Missing md5sum for ${FILE}"
+        RET_CODE=1
+    else
+        diff "${MD5SUM_FILE_NEW}" "${MD5SUM_FILE}" >/dev/null
+        RES=$?
+        if [[ "${RES}" != "0" ]]; then
+            echo "The md5sum changed for ${FILE}"
+            RET_CODE=1
+        fi
+    fi
+    return ${RET_CODE}
+}
+
+function move_file_md5sum {
+    local FILE="${1}"
+    local MD5SUM_FILE
+    MD5SUM_FILE=${BREEZE_CACHE_DIR}/$(basename "${FILE}").md5sum
+    local MD5SUM_FILE_NEW
+    MD5SUM_FILE_NEW=${BREEZE_CACHE_DIR}/$(basename "${FILE}").md5sum.new
+    if [[ -f "${MD5SUM_FILE_NEW}" ]]; then
+        mv "${MD5SUM_FILE_NEW}" "${MD5SUM_FILE}"
+        echo "Updated md5sum file ${MD5SUM_FILE} for ${FILE}."
+    fi
+}
+
+function prepare_command_file() {
+    local FILE="${1}"
+    local CMD="${2}"
+    local TESTS="${3}"
+    local EXPANSION="${4-@}"
+    cat <<EOF > "${FILE}"
+#!/usr/bin/env bash
+cd "\$(pwd)" || exit
+export DOCKERHUB_USER=${DOCKERHUB_USER}
+export DOCKERHUB_REPO=${DOCKERHUB_REPO}
+export COMPOSE_FILE="${COMPOSE_FILE}"
+export PYTHON_VERSION="${PYTHON_VERSION}"
+export BACKEND="${BACKEND}"
+export ENV="${ENV}"
+export KUBERNETES_VERSION="${KUBERNETES_VERSION}"
+export AIRFLOW_VERSION="${AIRFLOW_VERSION}"
+export RUN_TESTS="${TESTS}"
+export WEBSERVER_HOST_PORT="${WEBSERVER_HOST_PORT}"
+export POSTGRES_HOST_PORT="${POSTGRES_HOST_PORT}"
+export MYSQL_HOST_PORT="${MYSQL_HOST_PORT}"
+docker-compose --log-level INFO ${CMD}\$${EXPANSION}"
+EOF
+    chmod u+x "${FILE}"
+}
+
+build_images() {
+    if [[ -f "${USE_LOCALLY_BUILD_IMAGES_AS_CACHE}" ]]; then
+        # Use cache from locally built images instead of pulled images
+        export AIRFLOW_CONTAINER_USE_PULLED_IMAGES_CACHE="false"
+    fi
+    if [[ -f "${BREEZE_CACHE_DIR}/${LAST_DC_RUN_ONLY_AT_FILE}" ]]; then
+        echo
+        echo Cleaning up generated files
+        echo
+            CLEAN_FILES="true" "${BREEZE_CACHE_DIR}/${LAST_DC_RUN_ONLY_AT_FILE}" \
+            "git clean -x -f -e \'*.iml\' -e \'.breeze\' -e \'*breeze*\' -e \'.bash*\' -e \'.inputrc\'" \
+                >/dev/null || true
+        echo
+        echo Generated files are cleaned up
+        echo
+    fi
+    ${DOCKER_BUILD_SCRIPT}
+    # Record that we built the images locally so that next time we use "standard" cache
+    touch "${USE_LOCALLY_BUILD_IMAGES_AS_CACHE}"
+    echo
+    echo "Updating md5sum files"
+    echo
+    for FILE in ${FILES_FOR_REBUILD_CHECK}
+    do
+        move_file_md5sum "${MY_DIR}/${FILE}"
+    done
+}
+
+# Default values
+
+_BREEZE_DEFAULT_ENV="docker"
+_BREEZE_DEFAULT_BACKEND="sqlite"
+_BREEZE_DEFAULT_KUBERNETES_VERSION="v1.13.0"
+
+usage() {
+      echo """
+
+Usage: ${CMDNAME} [FLAGS] [-t <TARGET>]|[-d <COMMAND>]|[-x <COMMAND>][-x] -- <EXTRA_ARGS>
+
+Enters integration test environment for Airflow. It can be used to enter interactive environment (when no
+EXTRA_ARGS are specified), run test target specified (when -t, --test-target flag is used or to
+execute arbitrary command in the environment (when no test target is specified but extra args are).
+
+
+Flags:
+
+-h, --help
+        Shows this help message.
+
+-P, --python <PYTHON_VERSION>
+        Python version used for the image. This is always major/minor version.
+        One of [${_BREEZE_ALLOWED_PYTHON_VERSIONS:=}]. Default is the python3 or python on the path.
+
+-E, --env <ENVIRONME§NT>
+        Environment to use for tests. It determines which types of tests can be run.
+        One of [${_BREEZE_ALLOWED_ENVS:=}]. Default: ${_BREEZE_DEFAULT_ENV:=}
+
+-B, --backend <BACKEND>
+        Backend to use for tests - it determines which database is used.
+        One of [${_BREEZE_ALLOWED_BACKENDS:=}]. Default: ${_BREEZE_DEFAULT_BACKEND:=}
+
+-K, --kubernetes-version <KUBERNETES_VERSION>
+        Kubernetes version - only used in case of 'kubernetes' environment.
+        One of [${_BREEZE_ALLOWED_KUBERNETES_VERSIONS:=}]. Default: ${_BREEZE_DEFAULT_KUBERNETES_VERSION:=}
+
+-s, --skip-mounting-source-volume
+        Skips mounting local volume with sources - you get exactly what is in the
+        docker image rather than your current local sources of airflow.
+
+-b, --build-only
+        Only build docker images but do not enter the airflow-testing docker container.
+
+-v, --verbose
+        Show verbose information about executed commands (enabled by default for running test)
+
+-y, --assume-yes
+        Assume 'yes' answer to all questions.
+
+-C, --toggle-suppress-cheatsheet
+        Toggles on/off cheatsheet displayed before starting bash shell
+
+-A, --toggle-suppress-asciiart
+        Toggles on/off asciiart displayed before starting bash shell
+
+
+Setting up your local environment:
+
+-e, --initialize-local-virtualenv
+        Initializes locally created virtualenv installing all dependencies of Airflow.
+        This local virtualenv can be used to aid autocompletion and IDE support as
+        well as run unit tests directly from the IDE. You need to have virtualenv
+        activated before running this command.
+
+-a, --setup-autocomplete
+        Sets up autocomplete for breeze commands. Once you do it you need to re-enter the bash
+        shell and when typing breeze command <TAB> will provide autocomplete for parameters and values.
+
+Managing of the docker compose images:
+
+-D, --dockerhub-user
+        DockerHub user used to pull, push and build images. Default: ${_BREEZE_DEFAULT_DOCKERHUB_USER:=}.
+
+-H, --dockerhub-repo
+        DockerHub repository used to pull, push, build images. Default: ${_BREEZE_DEFAULT_DOCKERHUB_REPO:=}.
+
+-r, --force-rebuild-images
+        Forces rebuilding of the local docker images. The images are rebuilt
+        automatically for the first time or when changes are detected in
+        package-related files, but you can force it using this flag.
+
+-R, --force-rebuild-clean-images
+        Force rebuild images without cache. This will remove the pulled or build images
+        and start building images from scratch. This might take a long time.
+
+-p, --force-pull-images
+        Forces pulling of images from DockerHub before building to populate cache. The
+        images are pulled by default only for the first time you run the
+        environment, later the locally build images are used as cache.
+
+-u, --push-images
+        After rebuilding - uploads the images to DockerHub
+        It is useful in case you use your own DockerHub user to store images and you want
+        to build them locally. Note that you need to use 'docker login' before you upload images.
+
+-c, --cleanup-images
+        Cleanup your local docker cache of the airflow docker images. This will not reclaim space in
+        docker cache. You need to 'docker system prune' to actually reclaim that space.
+
+
+By default the script enters IT environment and drops you to bash shell,
+but you can also choose one of the commands to run specific actions instead:
+
+
+-t, --test-target <TARGET>
+        Run the specified unit test target. There might be multiple
+        targets specified separated with comas. The <EXTRA_ARGS> passed after -- are treated
+        as additional options passed to nosetest. For example
+
+        '${0} --test-target tests.core -- --logging-level=DEBUG'
+
+-x, --execute-command <COMMAND>
+        Run chosen command instead of entering the environment. The command is run using
+        'bash -c \"<command with args>\" if you need to pass arguments to your command, you need
+        to pass them together with command surrounded with \" or '. Alternatively you can pass arguments as
+         <EXTRA_ARGS> passed after --. For example
+
+        '${0} --execute-command \"ls -la\"' or
+        '${0} --execute-command ls -- --la'
+
+-d, --docker-compose <COMMAND>
+        Run docker-compose command instead of entering the environment. Use 'help' command
+        to see available commands. The <EXTRA_ARGS> passed after -- are treated
+        as additional options passed to docker-compose. For example
+
+        '${0} --docker-compose pull -- --ignore-pull-failures'
+
+Killing docker compose.
+
+-k, --docker-compose-down
+        Bring down running docker compose. When you start the environment, the docker containers will
+        continue running so that startup time is shorter. This command stops all running containers.
+        It is equivalent to running '---docker-compose down'
+"""
+}
+
+echo
+
+set +e
+
+getopt -T >/dev/null
+GETOPT_RETVAL=$?
+
+if [[ $(uname -s) == 'Darwin' ]] ; then
+    command -v gstat >/dev/null
+    STAT_PRESENT=$?
+else
+    command -v stat >/dev/null
+    STAT_PRESENT=$?
+fi
+
+command -v md5sum >/dev/null
+MD5SUM_PRESENT=$?
+
+set -e
+
+####################  Parsing options/arguments
+if [[ ${GETOPT_RETVAL} != 4 || "${STAT_PRESENT}" != "0" || "${MD5SUM_PRESENT}" != "0" ]]; then
+    echo
+    if [[ $(uname -s) == 'Darwin' ]] ; then
+        echo "You are running ${CMDNAME} in OSX environment"
+        echo "And you need to install gnu commands"
+        echo
+        echo "Run 'brew install gnu-getopt coreutils'"
+        echo
+        echo "Then link the gnu-getopt to become default as suggested by brew by typing:"
+        echo "echo 'export PATH=\"/usr/local/opt/gnu-getopt/bin:\$PATH\"' >> ~/.bash_profile"
+        echo ". ~/.bash_profile"
+        echo
+        echo "Login and logout afterwards"
+        echo
+    else
+        echo "You do not have necessary tools in your path (getopt, stat, md5sum). Please install the"
+        echo "Please install latest/GNU version of getopt and coreutils."
+        echo "This can usually be done with 'apt install util-linux coreutils'"
+    fi
+    echo
+    exit 1
+fi
+
+if ! PARAMS=$(getopt \
+    -o "${_BREEZE_GETOPT_SHORT_OPTIONS:=}" \
+    -l "${_BREEZE_GETOPT_LONG_OPTIONS:=}" \
+    --name "$CMDNAME" -- "$@")
+then
+    usage
+    exit 1
+fi
+
+
+eval set -- "${PARAMS}"
+unset PARAMS
+
+# Parse Flags.
+# Please update short and long options in the breeze-complete script
+# This way autocomplete will work out-of-the-box
+while true
+do
+  case "${1}" in
+    -h|--help)
+      usage;
+      exit 0 ;;
+    -P|--python)
+      export PYTHON_VERSION="${2}";
+      echo
+      echo "Python version: ${PYTHON_VERSION}"
+      echo
+      shift 2 ;;
+    -E|--env)
+      export ENV="${2}";
+      echo
+      echo "Environment: ${ENV}"
+      echo
+      shift 2 ;;
+    -B|--backend)
+      export BACKEND="${2}";
+      echo
+      echo "Backend: ${BACKEND}"
+      echo
+      shift 2 ;;
+    -K|--kubernetes-version)
+      export KUBERNETES_VERSION="${2}";
+      echo
+      echo "Kubernetes version: ${KUBERNETES_VERSION}"
+      echo
+      shift 2 ;;
+    -s|--skip-mounting-local-sources)
+      SKIP_MOUNTING_LOCAL_SOURCES="true"
+      echo "Skip mounting local sources: ${SKIP_MOUNTING_LOCAL_SOURCES}"
+      echo
+      shift ;;
+    -b|--build-only)
+      ENTER_ENVIRONMENT="false"
+      SKIP_BUILD_CHECK="true"
+      DOCKER_REBUILD="true"
+      FORCE_BUILD="true"
+      echo "Only build. Do not enter airflow-testing container"
+      echo
+      shift ;;
+    -v|--verbose)
+      AIRFLOW_CI_VERBOSE="true"
+      echo "Verbose output"
+      echo
+      shift ;;
+    -y|--assume-yes)
+      export ASSUME_YES="true"
+      echo "Assuming 'yes' answer to all questions."
+      echo
+      shift ;;
+    -C|--toggle-suppress-cheatsheet)
+      if [[ -f "${SUPPRESS_CHEATSHEET_FILE}" ]]; then
+        rm -f "${SUPPRESS_CHEATSHEET_FILE}"
+      else
+        touch "${SUPPRESS_CHEATSHEET_FILE}"
+      fi
+      echo "Toggle suppress cheatsheet"
+      echo
+      shift ;;
+    -A|--toggle-suppress-asciiart)
+      if [[ -f "${SUPPRESS_ASCIIART_FILE}" ]]; then
+        rm -f "${SUPPRESS_ASCIIART_FILE}"
+      else
+        touch "${SUPPRESS_ASCIIART_FILE}"
+      fi
+      echo "Toggle suppress asciiart"
+      echo
+      shift ;;
+    -r|--force-rebuild-images)
+      echo
+      echo "Force rebuild images"
+      echo
+      DOCKER_REBUILD="true"
+      SKIP_BUILD_CHECK="true"
+      FORCE_BUILD="true"
+      shift ;;
+    -R|--force-rebuild-images-clean)
+      echo
+      echo "Clean rebuild of images without cache"
+      echo
+      export AIRFLOW_CONTAINER_USE_DOCKER_CACHE=false
+      export AIRFLOW_CONTAINER_USE_PULLED_IMAGES_CACHE=false
+      DOCKER_REBUILD="true"
+      SKIP_BUILD_CHECK="true"
+      FORCE_BUILD="true"
+      shift ;;
+    -p|--force-pull-images)
+      echo
+      echo "Force pulling images before build. Uses pulled images as cache."
+      echo
+      export AIRFLOW_CONTAINER_FORCE_PULL_IMAGES="true"
+      DOCKER_REBUILD="true"
+      SKIP_BUILD_CHECK="true"
+      FORCE_PULL="true"
+      shift ;;
+    -u|--push-images)
+      if [[ "${AIRFLOW_FIX_PERMISSIONS}" != "all" ]]; then
+        echo
+        echo "You cannot push images if you have AIRFLOW_FIX_PERMISSIONS set to other value than all"
+        echo "Your docker context is most likely wrong in this case"
+        echo "You need to set AIRFLOW_FIX_PERMISSIONS to false"
+        echo "And run the build again"
+        echo
+        exit 1
+      fi
+      echo
+      echo "Pushing images to DockerHub"
+      echo
+      export AIRFLOW_CONTAINER_PUSH_IMAGES="true"
+      DOCKER_REBUILD="true"
+      SKIP_BUILD_CHECK="true"
+      shift ;;
+    -c|--cleanup-images)
+      echo
+      echo "Cleanup the images"
+      echo
+      CLEANUP_IMAGE=true
+      shift ;;
+    -D|--dockerhub-user)
+      export DOCKERHUB_USER="${2}"
+      echo
+      echo "Dockerhub user ${DOCKERHUB_USER}"
+      echo
+      shift 2 ;;
+    -H|--dockerhub-repo)
+      export DOCKERHUB_REPO="${2}"
+      echo
+      echo "Dockerhub repo ${DOCKERHUB_REPO}"
+      echo
+      shift 2 ;;
+    -e|--initialize-local-virtualenv)
+      echo
+      echo Initializing local virtualenv
+      echo
+      INITIALIZE_LOCAL_VIRTUALENV="true"
+      SETUP_AUTOCOMPLETE="false"
+      ENTER_ENVIRONMENT=:"false"
+      shift ;;
+    -a|--setup-autocomplete)
+      echo
+      echo Setting up autocomplete
+      echo
+      INITIALIZE_LOCAL_VIRTUALENV="false"
+      SETUP_AUTOCOMPLETE="true"
+      ENTER_ENVIRONMENT=:"false"
+      shift ;;
+    -t|--test-target)
+      export TEST_TARGET="${2}"
+      export RUN_IN_BASH="false"
+      export RUN_TESTS="true"
+      export RUN_DOCKER_COMPOSE="false"
+      shift 2 ;;
+    -d|--docker-compose)
+      export DOCKER_COMPOSE_COMMAND="${2}"
+      export RUN_IN_BASH="false"
+      export RUN_TESTS="false"
+      export RUN_DOCKER_COMPOSE="true"
+      shift 2 ;;
+    -k|--kill-docker-compose)
+      export DOCKER_COMPOSE_COMMAND="down"
+      export RUN_IN_BASH="false"
+      export RUN_TESTS="false"
+      export RUN_DOCKER_COMPOSE="true"
+      shift ;;
+    -x|--execute-command)
+      export RUN_COMMAND="${2}"
+      export RUN_IN_BASH="true"
+      export RUN_TESTS="false"
+      export RUN_DOCKER_COMPOSE="false"
+      shift 2 ;;
+    --)
+      shift ;
+      break ;;
+    *)
+      usage
+      echo
+      echo "ERROR: Unknown argument ${1}"
+      echo
+      exit 1
+      ;;
+  esac
+done
+
+echo
+printf '=%.0s' $(seq "${SEPARATOR_WIDTH}")
+echo
+echo "         Initial diagnostics"
+echo
+echo
+
+if ! PYTHON_BIN=$(command -v python3); then
+   if ! PYTHON_BIN=$(command -v python); then
+        echo
+        echo "You must have python3 (preferred) or python in your PATH"
+        echo
+        exit 1
+   fi
+fi
+
+BREEZE_CACHE_DIR="${MY_DIR}/.breeze"
+
+mkdir -pv "${BREEZE_CACHE_DIR}"
+
+
+CMDNAME="$(basename -- "$0")"
+
+function save_to_file {
+    # shellcheck disable=SC2005
+    echo "$(eval echo "\$$1")" > "${BREEZE_CACHE_DIR}/.$1"
+}
+
+function read_from_file {
+    cat "${BREEZE_CACHE_DIR}/.$1" 2>/dev/null || true
+}
+
+
+export PYTHON_VERSION="${PYTHON_VERSION:=$(read_from_file PYTHON_VERSION)}"
+export PYTHON_VERSION=${PYTHON_VERSION:=$("${PYTHON_BIN}" -c \
+'import sys; print("%s.%s" % (sys.version_info.major, sys.version_info.minor))')}
+
+export ENV="${ENV:=$(read_from_file ENV)}"
+export BACKEND="${BACKEND:=$(read_from_file BACKEND)}"
+export KUBERNETES_VERSION="${KUBERNETES_VERSION:=$(read_from_file KUBERNETES_VERSION)}"
+
+# Here you read DockerHub user/account that you use
+# You can populate your own images in DockerHub this way and work with the,
+# You can override it with "-d" option and it will be stored in .breeze directory
+export DOCKERHUB_USER="${DOCKERHUB_USER:=$(read_from_file DOCKERHUB_USER)}"
+export DOCKERHUB_USER="${DOCKERHUB_USER:=${_BREEZE_DEFAULT_DOCKERHUB_USER}}"
+
+# Here you read DockerHub repo that you use
+# You can populate your own images in DockerHub this way and work with them
+# You can override it with "-d" option and it will be stored in .breeze directory
+export DOCKERHUB_REPO="${DOCKERHUB_REPO:=$(read_from_file DOCKERHUB_REPO)}"
+export DOCKERHUB_REPO="${DOCKERHUB_REPO:=${_BREEZE_DEFAULT_DOCKERHUB_REPO}}"
+
+# Default environment for tests
+export ENV=${ENV:-${_BREEZE_DEFAULT_ENV}}
+
+# Default backend for tests
+export BACKEND=${BACKEND:-${_BREEZE_DEFAULT_BACKEND}}
+
+# Default version of Kubernetes to use
+export KUBERNETES_VERSION=${KUBERNETES_VERSION:=${_BREEZE_DEFAULT_KUBERNETES_VERSION}}
+
+#################### Check python version ##########################################
+if [[ ${_BREEZE_ALLOWED_PYTHON_VERSIONS:=} != *" ${PYTHON_VERSION} "* ]]; then
+    echo
+    echo "ERROR! Allowed Python versions are [${_BREEZE_ALLOWED_PYTHON_VERSIONS}]. Used: '${PYTHON_VERSION}'."
+    echo
+    echo "Switch to virtualenv with the supported python version or specify python with --python flag."
+    echo
+    exit 1
+fi
+
+#################### Check environments ##########################################
+if [[ ${_BREEZE_ALLOWED_ENVS:=} != *" ${ENV} "* ]]; then
+    echo
+    echo "ERROR! Allowed environments are [${_BREEZE_ALLOWED_ENVS}]. Used: '${ENV}'"
+    echo
+    exit 1
+fi
+
+#################### Check backends ##########################################
+if [[ ${_BREEZE_ALLOWED_BACKENDS:=} != *" ${BACKEND} "* ]]; then
+    echo
+    echo "ERROR! Allowed backends are [${_BREEZE_ALLOWED_BACKENDS}]. Used: '${BACKEND}'"
+    echo
+    exit 1
+fi
+
+
+#################### Check environments ##########################################
+if [[ ${_BREEZE_ALLOWED_KUBERNETES_VERSIONS} != *" ${KUBERNETES_VERSION} "* ]]; then
+    echo
+    echo "ERROR! Allowed kubernetes versions" \
+         "are [${_BREEZE_ALLOWED_KUBERNETES_VERSIONS}]. Used: '${KUBERNETES_VERSION}'"
+    echo
+    exit 1
+fi
+
+# Those files are mounted into container when run locally
+# .bash_history is preserved and you can modify .bash_aliases and .inputrc
+# according to your liking
+touch "${MY_DIR}/.bash_history"
+touch "${MY_DIR}/.bash_aliases"
+touch "${MY_DIR}/.inputrc"
+
+save_to_file BACKEND
+save_to_file ENV
+save_to_file KUBERNETES_VERSION
+save_to_file PYTHON_VERSION
+save_to_file DOCKERHUB_USER
+save_to_file DOCKERHUB_REPO
+
+# Image built locally depends on python version
+USE_LOCALLY_BUILD_IMAGES_AS_CACHE="${BREEZE_CACHE_DIR}/.use_locally_built_images_as_cache_${PYTHON_VERSION}"
+
+#################### Cleanup image if requested ########################################
+if [[ "${CLEANUP_IMAGE}" == "true" ]]; then
+    export AIRFLOW_CONTAINER_CLEANUP_IMAGES=true
+    rm -f "${USE_LOCALLY_BUILD_IMAGES_AS_CACHE}"
+    build_images
+    exit 0
+fi
+
+#################### Initializes local virtualenv ########################################
+if [[ ${INITIALIZE_LOCAL_VIRTUALENV} == "true" ]]; then
+   # Check if we are in virtualenv
+   set +e
+   echo -e "import sys\nif not hasattr(sys,'real_prefix'):\n  sys.exit(1)" | "${PYTHON_BIN}"
+   RES=$?
+   set -e
+   if [[ ${RES} != "0" ]]; then
+        echo
+        echo "Initializing local virtualenv only works when you have virtualenv activated"
+        echo
+        echo "Please enter your local virtualenv before (for example using 'workon' from virtualenvwrapper) "
+        echo
+        exit 1
+   else
+        # If no Airflow Home defined - fallback to ${HOME}/airflow
+        AIRFLOW_HOME_DIR=${AIRFLOW_HOME:=${HOME}/airflow}
+        echo
+        echo "Initializing the virtualenv: $(command -v python)!"
+        echo
+        echo "This will wipe out ${AIRFLOW_HOME_DIR} and reset all the databases!"
+        echo
+        "${MY_DIR}/confirm" "Proceeding with the initialization"
+        echo
+        pushd "${MY_DIR}"
+        SYSTEM=$(uname -s)
+        echo "#######################################################################"
+        echo "  If you have trouble installing all dependencies you might need to run:"
+        echo
+        if [[ ${SYSTEM} == "Darwin" ]]; then
+            echo "  brew install sqlite mysql postgresql"
+        else
+            echo "  sudo apt-get install openssl sqlite libmysqlclient-dev libmysqld-dev postgresql --confirm"
+        fi
+        echo
+        echo "#######################################################################"
+        pip install -e ".[devel]"
+        popd
+        echo
+        echo "Wiping and recreating ${AIRFLOW_HOME_DIR}"
+        echo
+        rm -rvf "${AIRFLOW_HOME_DIR}"
+        mkdir -p "${AIRFLOW_HOME_DIR}"
+        echo
+        echo "Resetting AIRFLOW sqlite database"
+        echo
+        unset AIRFLOW__CORE__UNIT_TEST_MODE
+        airflow resetdb -y
+        echo
+        echo "Resetting AIRFLOW sqlite unit test database"
+        echo
+
+        export AIRFLOW__CORE__UNIT_TEST_MODE=True
+        airflow resetdb -y
+        exit 0
+   fi
+fi
+
+
+#################### Sets up autocomplete for breeze commands ########################################
+if [[ ${SETUP_AUTOCOMPLETE} == "true" ]]; then
+    echo
+    echo "Installing bash completion for local user"
+    echo
+    set +e
+    grep "${HOME}/.bash_completion.d" "${HOME}/.bash_profile" >/dev/null 2>&1
+    RES=$?
+    set -e
+    if [[ "${RES}" == "0" ]]; then
+        echo "Bash completion already setup"
+        exit 1
+    fi
+    "${MY_DIR}/confirm" "This will create ~/.bash_completion.d/ directory and modify ~/.bash_profile file"
+    echo
+    echo
+    mkdir -pv ~/.bash_completion.d
+    touch ~/.bash_profile
+    cat >>~/.bash_profile <<"EOF"
+for BCFILE in ~/.bash_completion.d/* ; do
+  . ${BCFILE}
+done
+EOF
+    ln -sf "${MY_DIR}/breeze-complete" "${HOME}/.bash_completion.d/"
+    echo
+    echo
+    echo Breeze bash completion installed to ~/.bash_completion.d/breeze-complete
+    echo
+    echo
+    echo "Please re-enter bash or run '. ~/.bash_completion.d/breeze-complete'"
+    echo
+    exit 0
+fi
+
+
+
+if [[ "${BACKEND}" != "mysql" && "${BACKEND}" != "postgres" && "${BACKEND}" != "sqlite" ]]; then
+    echo
+    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    echo "Wrong backend ${BACKEND}"
+    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    exit 1
+fi
+
+
+MAIN_DOCKER_COMPOSE_FILE=${SCRIPTS_CI_DIR}/docker-compose.yml
+KUBERNETES_DOCKER_COMPOSE_FILE=${SCRIPTS_CI_DIR}/docker-compose-kubernetes.yml
+BACKEND_DOCKER_COMPOSE_FILE=${SCRIPTS_CI_DIR}/docker-compose-${BACKEND}.yml
+LOCAL_DOCKER_COMPOSE_FILE=${SCRIPTS_CI_DIR}/docker-compose-local.yml
+
+COMPOSE_FILE=${MAIN_DOCKER_COMPOSE_FILE}:${BACKEND_DOCKER_COMPOSE_FILE}
+
+if [[ "${ENV}" == "kubernetes" ]]; then
+    COMPOSE_FILE=${COMPOSE_FILE}:${KUBERNETES_DOCKER_COMPOSE_FILE}
+fi
+
+
+if [[ "${SKIP_MOUNTING_LOCAL_SOURCES}" != "true" ]]; then
+    COMPOSE_FILE=${COMPOSE_FILE}:${LOCAL_DOCKER_COMPOSE_FILE}
+fi
+
+export COMPOSE_FILE
+
+CI_ENTRYPOINT_FILE="/opt/airflow/scripts/ci/in_container/entrypoint_ci.sh"
+
+DC_RUN_COMMAND="run --service-ports --rm airflow-testing \"${CI_ENTRYPOINT_FILE} "
+DC_RUN_COMMAND_ONLY_AT="run --no-deps --service-ports --rm airflow-testing \"${CI_ENTRYPOINT_FILE} "
+
+LAST_DC_RUN_FILE="cmd_run"
+LAST_DC_RUN_ONLY_AT_FILE="cmd_only_at_run"
+LAST_DC_TEST_FILE="test_run"
+LAST_DC_FILE="dc"
+
+# Prepare script for "run command"
+prepare_command_file "${BREEZE_CACHE_DIR}/${LAST_DC_RUN_FILE}" "${DC_RUN_COMMAND}" "false" '*'
+
+# Prepare script for "run command"
+prepare_command_file "${BREEZE_CACHE_DIR}/${LAST_DC_RUN_ONLY_AT_FILE}" "${DC_RUN_COMMAND_ONLY_AT}" "false" '*'
+
+# Prepare script for "run test"
+prepare_command_file "${BREEZE_CACHE_DIR}/${LAST_DC_TEST_FILE}" "${DC_RUN_COMMAND}" "true" '*'
+
+# Prepare script for "run docker compose command"
+prepare_command_file "${BREEZE_CACHE_DIR}/${LAST_DC_FILE}" '"' "false"
+
+set +e
+
+for FILE in ${FILES_FOR_REBUILD_CHECK}
+do
+    check_file_md5sum "${MY_DIR}/${FILE}"
+    RES=$?
+    if [[ "${RES}" != "0" ]]; then
+        DOCKER_REBUILD="true"
+    fi
+done
+
+set -e
+
+if [[ "${DOCKER_REBUILD}" == "true" ]]; then
+    if [[ "${FORCE_BUILD}" == "true" ]]; then
+        echo
+        echo "!!!!!!! You asked to force build your images !!!!!!!!!!!!!!!!"
+        echo
+    else
+        echo
+        echo "!!!!!!! Your docker images are not up-to-date !!!!!!!!!!!!!!!"
+        echo
+    fi
+    echo
+    echo "Linting Dockerfile"
+    echo
+    docker run \
+        -v "${MY_DIR}/Dockerfile:/root/Dockerfile" \
+        -v "${MY_DIR}/.hadolint.yaml:/root/.hadolint.yaml" \
+        -w /root hadolint/hadolint /bin/hadolint Dockerfile
+    echo
+    echo "Dockerfile is good!"
+    echo
+    echo
+    set +e
+    "${MY_DIR}/confirm" "Rebuilding the images (this might take few minutes)"
+    RES=$?
+    set -e
+    if [[ "${RES}" == "0" ]]; then
+        # Bring down running docker compose
+        "${BREEZE_CACHE_DIR}/${LAST_DC_FILE}" down --remove-orphans
+        if [[ "${AIRFLOW_CONTAINER_FORCE_PULL_IMAGES}" == "true" ]]; then
+            # Make sure to pull images first before building
+            docker-compose pull
+            rm -f "${USE_LOCALLY_BUILD_IMAGES_AS_CACHE}"
+        fi
+        build_images
+    else
+        echo
+        echo "OK. Not rebuilding the images now but you will be asked next time"
+        echo
+    fi
+else
+    echo
+    echo "Skipped automated rebuilding of the images as no checksum changed on any of important files."
+    echo
+    echo "You can force rebuild the images by adding --force-rebuild-images flag"
+    echo
+fi
+
+printf '=%.0s' $(seq "${SEPARATOR_WIDTH}")
+
+if [[ "${TEST_TARGET}" == "." ]]; then
+    TEST_TARGET=""
+fi
+
+print_badge
+
+function print_line {
+    printf '#%.0s' $(seq "${SEPARATOR_WIDTH}")
+}
+
+if [[ ! -f ${SUPPRESS_CHEATSHEET_FILE} ]]; then
+    echo
+    echo
+    print_line
+    echo
+    echo "                                  Airflow Breeze CHEATSHEET"
+    echo
+    print_line
+    echo
+    echo
+    print_line
+    echo
+    echo " Quick scripts:"
+    echo "    * Enter the full environment        : ${BREEZE_CACHE_DIR}/${LAST_DC_RUN_FILE}"
+    echo "    * Run command in full environment   : ${BREEZE_CACHE_DIR}/${LAST_DC_RUN_FILE} "\
+                                                     "[command with args] [bash options]"
+    echo "    * Run command airflow-testing only  : ${BREEZE_CACHE_DIR}/${LAST_DC_RUN_ONLY_AT_FILE} "\
+                                                     "[command with args] [bash options]"
+    echo "    * Run tests in the full environment : ${BREEZE_CACHE_DIR}/${LAST_DC_TEST_FILE} "\
+                                                     "[test target] [nosetest options]"
+    echo "    * Run Docker compose command        : ${BREEZE_CACHE_DIR}/${LAST_DC_FILE} "\
+                                                     "[docker compose command] [docker-compose options]"
+    echo
+
+    set +e
+    if ! command -v breeze; then
+        print_line
+        echo
+        echo " Adding breeze to your path:"
+        echo "    When you exit the environment, you can add sources of airflow to the path - you can"
+        echo "    run breeze or the scripts above from any directory by calling 'breeze' commands directly"
+        echo
+        echo "     export PATH=\${PATH}:\"${MY_DIR}\""
+        echo
+    fi
+    set -e
+    print_line
+
+    echo
+    echo " Port forwarding:"
+    echo
+    echo "   Ports are forwarded to the running docker containers for webserver and database"
+    echo "     * ${WEBSERVER_HOST_PORT} -> forwarded to airflow webserver -> airflow-testing:8080"
+    echo "     * ${POSTGRES_HOST_PORT} -> forwarded to postgres database -> postgres:5432"
+    echo "     * ${MYSQL_HOST_PORT} -> forwarded to mysql database  -> mysql:3306"
+    echo
+    echo "   Here are links to those services that you can use on host:"
+    echo "     * Webserver: http://127.0.0.1:28080"
+    echo "     * Postgres:  jdbc:postgresql://127.0.0.1:25433/airflow?user=postgres&password=airflow"
+    echo "     * Mysql:     jdbc:mysql://localhost:23306/airflow?user=root"
+    echo
+else
+    echo
+fi
+
+# shellcheck disable=SC2034  # Unused variables left for comp_breeze usage
+if typeset -f "_comp_breeze" > /dev/null; then
+    print_line
+    echo
+    echo "  You can setup autocomplete by running '$0 --setup-autocomplete'"
+    echo
+    echo
+fi
+print_line
+echo
+echo "  You can toggle ascii/cheatsheet by adding this flag:"
+echo "      * --toggle-suppress-cheatsheet"
+echo "      * --toggle-suppress-asciiart"
+echo
+print_line
+echo
+echo
+echo
+echo
+
+if [[ "${ENTER_ENVIRONMENT}" == "true" ]]; then
+    if [[ "${RUN_TESTS}" == "true" ]]; then
+        set -x
+        "${BREEZE_CACHE_DIR}/${LAST_DC_TEST_FILE}" "\"${TEST_TARGET}\" $*"
+    elif [[ "${RUN_DOCKER_COMPOSE}" == "true" ]]; then
+        set -x
+        "${BREEZE_CACHE_DIR}/${LAST_DC_FILE}" "${DOCKER_COMPOSE_COMMAND} $*"
+    elif [[ "${RUN_IN_BASH}" == "true" ]]; then
+        set -x
+        "${BREEZE_CACHE_DIR}/${LAST_DC_RUN_FILE}" "${RUN_COMMAND} $*"
+    else
+        set -x
+        "${BREEZE_CACHE_DIR}/${LAST_DC_RUN_FILE}"
+    fi
+fi

@@ -16,9 +16,38 @@
 
 version: "2.2"
 services:
+  mysql:
+    ports:
+      - "${MYSQL_HOST_PORT}:3306"
+  postgres:
+    ports:
+      - "${POSTGRES_HOST_PORT}:5432"
   airflow-testing:
+    # We need to mount files an directories individually because some files
+    # such apache_airflow.egg-info should not be mounted from host
+    # we only mount those files that it makes sense to edit while developing
+    # or those that might be useful to see in the host as output of the
+    # tests (such as logs)
     volumes:
-      - ../../:/opt/airflow
+      - ../../airflow:/opt/airflow/airflow
+      - ../../logs:/opt/airflow/logs
+      - ../../dags:/opt/airflow/dags
+      - ../../dev:/opt/airflow/dev
+      - ../../docs:/opt/airflow/docs
+      - ../../scripts:/opt/airflow/scripts
+      - ../../tests:/opt/airflow/tests
+      - ../../.coveragerc:/opt/airflow/.coveragerc
+      - ../../.rat-excludes:/opt/airflow/.rat-excludes
+      - ../../LICENSE:/opt/airflow/LICENSE
+      - ../../MANIFEST.in:/opt/airflow/MANIFEST.in
+      - ../../NOTICE:/opt/airflow/NOTICE
+      - ../../.flake8:/opt/airflow/.flake8
+      - ../../setup.cfg:/opt/airflow/setup.cfg
+      - ../../setup.py:/opt/airflow/setup.py
+      - ../../run-tests:/root/run-tests
+      - ../../run-tests-complete:/root/run-tests-complete
+      - ../../.bash_completion.d:/root/.bash_completion.d
+      - ../../.bash_completion:/root/.bash_completion
       - ../../.bash_history:/root/.bash_history
       - ../../.bash_aliases:/root/.bash_aliases
       - ../../.inputrc:/root/.inputrc
