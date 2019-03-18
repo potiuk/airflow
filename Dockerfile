@@ -86,13 +86,144 @@ RUN adduser airflow \
     && chmod 0440 /etc/sudoers.d/airflow
 
 ############################################################################################################
+# This is an image with all APT dependencies needed by CI. It is built on top of the airlfow APT image
+# Parameters:
+#     airflow-apt-deps - this is the base image for CI deps image.
+############################################################################################################
+FROM airflow-apt-deps as airflow-ci-apt-deps
+
+SHELL ["/bin/bash", "-o", "pipefail", "-e", "-u", "-x", "-c"]
+
+ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/
+
+ARG APT_DEPS_IMAGE
+ENV APT_DEPS_IMAGE=${APT_DEPS_IMAGE}
+
+RUN echo "${APT_DEPS_IMAGE}"
+
+# Note the ifs below might be removed if Buildkit will become usable. It should skip building this
+# image automatically if it is not used. For now we still go through all layers below but they are empty
+# Note missing directories on debian-stretch https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=863199
+RUN if [[ "${APT_DEPS_IMAGE}" == "airflow-ci-apt-deps" ]]; then \
+        mkdir -pv /usr/share/man/man1 \
+        && mkdir -pv /usr/share/man/man7 \
+        && apt-get update \
+        && apt-get install --no-install-recommends -y \
+          lsb-release \
+          gnupg \
+          dirmngr \
+          openjdk-8-jdk \
+          vim \
+          tmux \
+          less \
+          unzip \
+          ldap-utils \
+          postgresql-client \
+          sqlite3 \
+          krb5-user \
+          openssh-client \
+          openssh-server \
+          python-selinux \
+          sasl2-bin \
+        && apt-get autoremove -yqq --purge \
+        && apt-get clean \
+        && rm -rf /var/lib/apt/lists/* \
+        ;\
+    fi
+
+RUN if [[ "${APT_DEPS_IMAGE}" == "airflow-ci-apt-deps" ]]; then \
+        KEY="A4A9406876FCBD3C456770C88C718D3B5072E1F5" \
+        && GNUPGHOME="$(mktemp -d)" \
+        && export GNUPGHOME \
+        && for KEYSERVER in $(shuf -e \
+                ha.pool.sks-keyservers.net \
+                hkp://p80.pool.sks-keyservers.net:80 \
+                keyserver.ubuntu.com \
+                hkp://keyserver.ubuntu.com:80 \
+                pgp.mit.edu) ; do \
+              gpg --keyserver "${KEYSERVER}" --recv-keys "${KEY}" && break || true ; \
+           done \
+        && gpg --export "${KEY}" > /etc/apt/trusted.gpg.d/mysql.gpg \
+        && gpgconf --kill all \
+        rm -rf "${GNUPGHOME}"; \
+        apt-key list > /dev/null \
+        && echo "deb http://repo.mysql.com/apt/ubuntu/ trusty mysql-5.7" | \
+            tee -a /etc/apt/sources.list.d/mysql.list \
+        && apt-get update \
+        && MYSQL_PASS="secret" \
+        && debconf-set-selections <<< \
+            "mysql-community-server mysql-community-server/data-dir select ''" \
+        && debconf-set-selections <<< \
+            "mysql-community-server mysql-community-server/root-pass password ${MYSQL_PASS}" \
+        && debconf-set-selections <<< \
+            "mysql-community-server mysql-community-server/re-root-pass password ${MYSQL_PASS}" \
+        && apt-get install --no-install-recommends -y mysql-client libmysqlclient-dev \
+        && apt-get autoremove -yqq --purge \
+        && apt-get clean \
+        && rm -rf /var/lib/apt/lists/* \
+        ;\
+    fi
+
+ENV HADOOP_DISTRO=cdh HADOOP_MAJOR=5 HADOOP_DISTRO_VERSION=5.11.0 HADOOP_VERSION=2.6.0 HIVE_VERSION=1.1.0
+ENV HADOOP_URL=https://archive.cloudera.com/${HADOOP_DISTRO}${HADOOP_MAJOR}/${HADOOP_DISTRO}/${HADOOP_MAJOR}/
+ENV HADOOP_HOME=/tmp/hadoop-cdh HIVE_HOME=/tmp/hive
+
+RUN \
+if [[ "${APT_DEPS_IMAGE}" == "airflow-ci-apt-deps" ]]; then \
+    mkdir -pv ${HADOOP_HOME} \
+    && mkdir -pv ${HIVE_HOME} \
+    && mkdir /tmp/minicluster \
+    && mkdir -pv /user/hive/warehouse \
+    && chmod -R 777 ${HIVE_HOME} \
+    && chmod -R 777 /user/ \
+    ;\
+fi
+# Install Hadoop
+# --absolute-names is a work around to avoid this issue https://github.com/docker/hub-feedback/issues/727
+RUN \
+if [[ "${APT_DEPS_IMAGE}" == "airflow-ci-apt-deps" ]]; then \
+    HADOOP_URL=${HADOOP_URL}hadoop-${HADOOP_VERSION}-${HADOOP_DISTRO}${HADOOP_DISTRO_VERSION}.tar.gz \
+    && HADOOP_TMP_FILE=/tmp/hadoop.tar.gz \
+    && curl -sL ${HADOOP_URL} > ${HADOOP_TMP_FILE} \
+    && tar xzf ${HADOOP_TMP_FILE} --absolute-names --strip-components 1 -C ${HADOOP_HOME} \
+    && rm ${HADOOP_TMP_FILE} \
+    ;\
+fi
+
+# Install Hive
+RUN \
+if [[ "${APT_DEPS_IMAGE}" == "airflow-ci-apt-deps" ]]; then \
+    HIVE_URL=${HADOOP_URL}hive-${HIVE_VERSION}-${HADOOP_DISTRO}${HADOOP_DISTRO_VERSION}.tar.gz \
+    && HIVE_TMP_FILE=/tmp/hive.tar.gz \
+    && curl -sL ${HIVE_URL} > ${HIVE_TMP_FILE} \
+    && tar xzf ${HIVE_TMP_FILE} --strip-components 1 -C ${HIVE_HOME} \
+    && rm ${HIVE_TMP_FILE} \
+    ;\
+fi
+
+ENV MINICLUSTER_URL=https://github.com/bolkedebruin/minicluster/releases/download/
+ENV MINICLUSTER_VER=1.1
+# Install MiniCluster TODO: install it differently. Installing to /tmp is probably a bad idea
+RUN \
+if [[ "${APT_DEPS_IMAGE}" == "airflow-ci-apt-deps" ]]; then \
+    MINICLUSTER_URL=${MINICLUSTER_URL}${MINICLUSTER_VER}/minicluster-${MINICLUSTER_VER}-SNAPSHOT-bin.zip \
+    && MINICLUSTER_TMP_FILE=/tmp/minicluster.zip \
+    && curl -sL ${MINICLUSTER_URL} > ${MINICLUSTER_TMP_FILE} \
+    && unzip ${MINICLUSTER_TMP_FILE} -d /tmp \
+    && rm ${MINICLUSTER_TMP_FILE} \
+    ;\
+fi
+
+ENV PATH "$PATH:/tmp/hive/bin:$ADDITIONAL_PATH"
+
+############################################################################################################
 # This is the target image - it installs PIP and NPN dependencies including efficient caching
 # mechanisms - it might be used to build the bare airflow build or CI build
 # Parameters:
 #    APT_DEPS_IMAGE - image with APT dependencies. It might either be base deps image with airflow
 #                     dependencies or CI deps image that contains also CI-required dependencies
 ############################################################################################################
-FROM airflow-apt-deps as main
+FROM ${APT_DEPS_IMAGE} as main
 
 SHELL ["/bin/bash", "-o", "pipefail", "-e", "-u", "-x", "-c"]
 
