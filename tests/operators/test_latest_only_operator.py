@@ -19,7 +19,6 @@
 
 import datetime
 import unittest
-
 from freezegun import freeze_time
 
 from airflow import configuration, DAG, settings

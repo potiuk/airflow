@@ -16,60 +16,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-# Script to run Pylint on all code. Can be started from any working directory
-# ./scripts/ci/ci_pylint.sh
-
-set -uo pipefail
-
-# Uncomment to see the commands executed
-# set -x
+set -euo pipefail
 
 MY_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 pushd ${MY_DIR}/../../ || exit 1
 
-echo
-echo "Running in $(pwd)"
-echo
+export AIRFLOW_CONTAINER_SKIP_SLIM_CI_IMAGE="false"
+export AIRFLOW_CONTAINER_SKIP_CI_IMAGE="true"
+export AIRFLOW_CONTAINER_PUSH_IMAGES="false"
+export AIRFLOW_CONTAINER_FORCE_PULL_IMAGES="true"
+export AIRFLOW_CONTAINER_BUILD_NPM="false"
 
-echo
-echo "Running pylint for source code without tests"
-echo
+. ./hooks/build
 
-find . -name "*.py" \
--not -path "./.eggs/*" \
--not -path "./airflow/www/node_modules/*" \
--not -path "./airflow/_vendor/*" \
--not -path "./build/*" \
--not -path "./tests/*" \
--not -name 'webserver_config.py' | grep -vFf scripts/ci/pylint_todo.txt | xargs pylint --output-format=colorized
-RES_MAIN=$?
-
-echo
-echo "Running pylint for tests"
-echo
-
-find . -name "*.py" -path './tests/*' | \
-grep -vFf scripts/ci/pylint_todo.txt | \
-xargs pylint --disable="
-    missing-docstring,
-    no-self-use,
-    too-many-public-methods,
-    protected-access
-    " \
-    --output-format=colorized
-RES_TESTS=$?
+set -x
+docker run --entrypoint /opt/airflow/scripts/ci/in_container/run_pylint.sh "${LOCAL_IMAGE}"
+set +x
 
 popd || exit 1
-
-if [[ "${RES_TESTS}" != 0 || "${RES_MAIN}" != 0 ]]; then
-    echo
-    echo "There were some pylint errors. Exiting"
-    echo
-    exit 1
-else
-    echo
-    echo "Pylint check succeeded"
-    echo
-fi

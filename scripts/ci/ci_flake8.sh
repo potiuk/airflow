@@ -16,13 +16,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-set -xeuo pipefail
+set -euo pipefail
 
 MY_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 pushd ${MY_DIR}/../../ || exit 1
 
-docker run -v "$(pwd)/Dockerfile:/root/Dockerfile" -v "$(pwd)/.hadolint.yaml:/root/.hadolint.yaml" \
-    -w /root hadolint/hadolint /bin/hadolint Dockerfile
+export AIRFLOW_CONTAINER_SKIP_SLIM_CI_IMAGE="false"
+export AIRFLOW_CONTAINER_SKIP_CI_IMAGE="true"
+export AIRFLOW_CONTAINER_PUSH_IMAGES="false"
+export AIRFLOW_CONTAINER_FORCE_PULL_IMAGES="true"
+export AIRFLOW_CONTAINER_BUILD_NPM="false"
+
+. ./hooks/build
+
+set -x
+docker run --entrypoint flake8 "${LOCAL_IMAGE}"
+set +x
 
 popd || exit 1

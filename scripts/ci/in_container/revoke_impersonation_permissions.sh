@@ -16,13 +16,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-set -xeuo pipefail
 
-MY_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# Script to run Pylint on all code. Can be started from any working directory
+# ./scripts/ci/run_pylint.sh
 
-pushd ${MY_DIR}/../../ || exit 1
+set -uo pipefail
 
-docker run -v "$(pwd)/Dockerfile:/root/Dockerfile" -v "$(pwd)/.hadolint.yaml:/root/.hadolint.yaml" \
-    -w /root hadolint/hadolint /bin/hadolint Dockerfile
+find "${AIRFLOW_HOME}" -exec sudo chmod og-w {} +
 
-popd || exit 1
+sudo chmod og-rx /root

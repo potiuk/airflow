@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -15,14 +13,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
-set -xeuo pipefail
 
-MY_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-pushd ${MY_DIR}/../../ || exit 1
-
-docker run -v "$(pwd)/Dockerfile:/root/Dockerfile" -v "$(pwd)/.hadolint.yaml:/root/.hadolint.yaml" \
-    -w /root hadolint/hadolint /bin/hadolint Dockerfile
-
-popd || exit 1
+version: "2.2"
+services:
+  airflow-testing:
+    volumes:
+      - ../../:/opt/airflow
+      - ../../.bash_history:/root/.bash_history
+      - ../../.bash_aliases:/root/.bash_aliases
+      - ../../.inputrc:/root/.inputrc
+      - ../../logs:/root/airflow/logs
+    ports:
+      - "${WEBSERVER_HOST_PORT}:8080"

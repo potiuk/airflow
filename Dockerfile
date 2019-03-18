@@ -225,7 +225,7 @@ ENV PATH "${PATH}:/tmp/hive/bin"
 #    APT_DEPS_IMAGE - image with APT dependencies. It might either be base deps image with airflow
 #                     dependencies or CI deps image that contains also CI-required dependencies
 ############################################################################################################
-FROM ${APT_DEPS_IMAGE} as main
+FROM ${APT_DEPS_IMAGE} as slim
 
 SHELL ["/bin/bash", "-o", "pipefail", "-e", "-u", "-x", "-c"]
 
@@ -278,6 +278,34 @@ RUN echo "Pip version: ${PIP_VERSION}"
 
 RUN pip install --upgrade pip==${PIP_VERSION}
 
+ARG AIRFLOW_REPO=apache/airflow
+ENV AIRFLOW_REPO=${AIRFLOW_REPO}
+
+ARG AIRFLOW_BRANCH=master
+ENV AIRFLOW_BRANCH=${AIRFLOW_BRANCH}
+
+ENV AIRFLOW_GITHUB_DOWNLOAD=https://raw.githubusercontent.com/${AIRFLOW_REPO}/${AIRFLOW_BRANCH}
+# Get basic dependencies from the master version of Airflow in order to avoid cache invalidation
+# When setup.py changes
+RUN mkdir -pv ${AIRFLOW_SOURCES}/airflow/bin \
+ && curl -L ${AIRFLOW_GITHUB_DOWNLOAD}/setup.py >${AIRFLOW_SOURCES}/setup.py \
+ && curl -L ${AIRFLOW_GITHUB_DOWNLOAD}/setup.cfg >${AIRFLOW_SOURCES}/setup.cfg \
+ && curl -L ${AIRFLOW_GITHUB_DOWNLOAD}/airflow/version.py >${AIRFLOW_SOURCES}/airflow/version.py \
+ && curl -L ${AIRFLOW_GITHUB_DOWNLOAD}/airflow/__init__.py >${AIRFLOW_SOURCES}/airflow/__init__.py \
+ && curl -L ${AIRFLOW_GITHUB_DOWNLOAD}/airflow/bin/airflow >${AIRFLOW_SOURCES}/airflow/bin/airflow
+
+# Airflow Extras installed
+ARG AIRFLOW_EXTRAS="all"
+ENV AIRFLOW_EXTRAS=${AIRFLOW_EXTRAS}
+RUN echo "Installing with extras: ${AIRFLOW_EXTRAS}."
+
+# First install only dependencies from master of Airflow github repo. This way we have pre-installed
+# Dependencies even if setup.py changes. No airflow code is installed yet as it si not yet added.
+# This way regular changes in sources of Airflow will not trigger reinstallation of all dependencies
+# And changes in setup.py of Airflow will not trigger full reinstallation of all dependencies - only
+# the changed ones and this Docker layer will be reused between builds.
+RUN pip install --no-use-pep517 -e ".[${AIRFLOW_EXTRAS}]"
+
 # We are copying everything with airflow:airflow user:group even if we use root to run the scripts
 # This is fine as root user will be able to use those dirs anyway.
 
@@ -292,28 +320,32 @@ COPY --chown=airflow:airflow airflow/version.py ${AIRFLOW_SOURCES}/airflow/versi
 COPY --chown=airflow:airflow airflow/__init__.py ${AIRFLOW_SOURCES}/airflow/__init__.py
 COPY --chown=airflow:airflow airflow/bin/airflow ${AIRFLOW_SOURCES}/airflow/bin/airflow
 
-# Airflow Extras installed
-ARG AIRFLOW_EXTRAS="all"
-ENV AIRFLOW_EXTRAS=${AIRFLOW_EXTRAS}
-RUN echo "Installing with extras: ${AIRFLOW_EXTRAS}."
-
-# First install only dependencies but no Apache Airflow itself
-# This way regular changes in sources of Airflow will not trigger reinstallation of all dependencies
-# And this Docker layer will be reused between builds.
-RUN pip install --no-use-pep517 -e ".[${AIRFLOW_EXTRAS}]"
+# First upgrade everything to latest version and then run pip install -e .[extras] to downgrade the
+# dependencies which should not be the latest ones according to setup.py
+RUN pip list --outdated --format=freeze  | grep -v '^\-e' | cut -d = -f 1  | xargs pip install -U && \
+    pip install --no-use-pep517 -e ".[${AIRFLOW_EXTRAS}]"
 
 COPY --chown=airflow:airflow airflow/www/package.json ${AIRFLOW_SOURCES}/airflow/www/package.json
 COPY --chown=airflow:airflow airflow/www/package-lock.json ${AIRFLOW_SOURCES}/airflow/www/package-lock.json
 
 WORKDIR ${AIRFLOW_SOURCES}/airflow/www
 
+ARG BUILD_NPM=true
+ENV BUILD_NPM=${BUILD_NPM}
+
 # Install necessary NPM dependencies (triggered by changes in package-lock.json)
-RUN gosu ${AIRFLOW_USER} npm ci
+RUN \
+    if [[ "${BUILD_NPM}" == "true" ]]; then \
+        gosu ${AIRFLOW_USER} npm ci; \
+    fi
 
 COPY --chown=airflow:airflow airflow/www/ ${AIRFLOW_SOURCES}/airflow/www/
 
 # Package NPM for production
-RUN gosu ${AIRFLOW_USER} npm run prod
+RUN \
+    if [[ "${BUILD_NPM}" == "true" ]]; then \
+        gosu ${AIRFLOW_USER} npm run prod; \
+    fi
 
 # Always apt-get update/upgrade here to get latest dependencies before
 # we redo pip install
