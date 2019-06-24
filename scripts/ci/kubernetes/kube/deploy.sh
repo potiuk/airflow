@@ -154,6 +154,25 @@ kubectl apply -f $DIRNAME/postgres.yaml
 kubectl apply -f $DIRNAME/volumes.yaml
 kubectl apply -f $BUILD_DIRNAME/airflow.yaml
 
+dump_logs() {
+  echo "------- pod description -------"
+  kubectl describe pod $POD
+  echo "------- webserver init container logs - init -------"
+  kubectl logs $POD init
+  if [ "${GIT_SYNC}" = 1 ]; then
+      echo "------- webserver init container logs - git-sync-clone -------"
+      kubectl logs $POD git-sync-clone
+  fi
+  echo "------- webserver logs -------"
+  kubectl logs $POD webserver
+  echo "------- scheduler logs -------"
+  kubectl logs $POD scheduler
+  echo "--------------"
+}
+POD=$(kubectl get pods -o go-template --template '{{range .items}}{{.metadata.name}}{{"\n"}}{{end}}' | grep airflow | head -1)
+
+
+set +x
 # wait for up to 10 minutes for everything to be deployed
 PODS_ARE_READY=0
 for i in {1..150}
@@ -174,6 +193,7 @@ if [[ "$PODS_ARE_READY" == 1 ]]; then
   echo "PODS are ready."
 else
   echo "PODS are not ready after waiting for a long time. Exiting..."
+  dump_logs
   exit 1
 fi
 
@@ -200,21 +220,8 @@ if [[ "$AIRFLOW_WEBSERVER_IS_READY" == 1 ]]; then
   echo "Airflow webserver is ready."
 else
   echo "Airflow webserver is not ready after waiting for a long time. Exiting..."
+  dump_logs
   exit 1
 fi
 
-POD=$(kubectl get pods -o go-template --template '{{range .items}}{{.metadata.name}}{{"\n"}}{{end}}' | grep airflow | head -1)
-
-echo "------- pod description -------"
-kubectl describe pod $POD
-echo "------- webserver init container logs - init -------"
-kubectl logs $POD init
-if [ "${GIT_SYNC}" = 1 ]; then
-    echo "------- webserver init container logs - git-sync-clone -------"
-    kubectl logs $POD git-sync-clone
-fi
-echo "------- webserver logs -------"
-kubectl logs $POD webserver
-echo "------- scheduler logs -------"
-kubectl logs $POD scheduler
-echo "--------------"
+dump_logs
