@@ -33,11 +33,13 @@ fi
 # any argument received is overriding the default nose execution arguments:
 NOSE_ARGS=( "$@" )
 
-echo "Initializing the DB"
-yes | airflow initdb || true
-airflow resetdb -y
+if [[ -z "${KUBERNETES_VERSION}" ]]; then
+    echo "Initializing the DB"
+    yes | airflow initdb || true
+    airflow resetdb -y
 
-kinit -kt ${KRB5_KTNAME} airflow
+    kinit -kt ${KRB5_KTNAME} airflow
+fi
 
 echo
 echo "Starting the tests with those nose arguments: ${NOSE_ARGS[*]}"

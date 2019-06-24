@@ -47,11 +47,25 @@ else
   ${MY_DIR}/kubernetes/minikube/stop_minikube.sh
   ${MY_DIR}/kubernetes/setup_kubernetes.sh &&
   ${MY_DIR}/kubernetes/kube/deploy.sh -d persistent_mode &&
-  export MINIKUBE_IP=$(minikube ip)
+  MINIKUBE_IP=$(minikube ip)
+  export MINIKUBE_IP
   docker-compose --log-level ERROR \
       -f ${MY_DIR}/docker-compose.yml \
       -f ${MY_DIR}/docker-compose-${BACKEND}.yml \
       -f ${MY_DIR}/docker-compose-kubernetes.yml \
-         run airflow-testing /opt/airflow/scripts/ci/in_container/entrypoint_ci.sh;
+         run --no-deps airflow-testing /opt/airflow/scripts/ci/in_container/entrypoint_ci.sh;
   ${MY_DIR}/kubernetes/minikube/stop_minikube.sh
+
+  ${MY_DIR}/kubernetes/minikube/stop_minikube.sh
+  ${MY_DIR}/kubernetes/setup_kubernetes.sh &&
+  ${MY_DIR}/kubernetes/kube/deploy.sh -d git_mode &&
+  MINIKUBE_IP=$(minikube ip)
+  export MINIKUBE_IP
+  docker-compose --log-level ERROR \
+      -f ${MY_DIR}/docker-compose.yml \
+      -f ${MY_DIR}/docker-compose-${BACKEND}.yml \
+      -f ${MY_DIR}/docker-compose-kubernetes.yml \
+         run --no-deps airflow-testing /opt/airflow/scripts/ci/in_container/entrypoint_ci.sh;
+  ${MY_DIR}/kubernetes/minikube/stop_minikube.sh
+
 fi

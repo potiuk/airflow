@@ -224,13 +224,15 @@ if [[ -z ${KUBERNETES_VERSION} ]]; then
     ${MY_DIR}/run_ci_tests.sh "${ARGS[*]}"
     codecov -e py${PYTHON_VERSION}-backend_${BACKEND}-env_${ENV}
 else
+    export KUBERNETES_VERSION
+    export MINIKUBE_IP
     # This script runs inside a container, the path of the kubernetes certificate
     # is /home/travis/.minikube/client.crt but the user in the container is `root`
     # TODO: Check this. This should be made travis-independent :D
     if [[ ! -d /home/travis ]]; then
         sudo mkdir -p /home/travis
     fi
-    sudo ln -s /home/root/.minikube /home/travis/.minikube
+    sudo ln -s /root/.minikube /home/travis/.minikube
     echo
     echo "Running CI tests with ${ARGS[*]}"
     echo
