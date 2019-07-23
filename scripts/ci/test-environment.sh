@@ -1,3 +1,4 @@
+#!/bin/bash -e
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -13,10 +14,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
 
-version: "2.2"
-services:
-  airflow-testing:
-    environment:
-      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=sqlite:////root/airflow/airflow.db
-      - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
+docker-compose -f scripts/ci/docker-compose.yml run --rm airflow-testing "${@-bash}"

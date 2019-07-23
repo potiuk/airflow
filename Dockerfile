@@ -17,18 +17,20 @@
 # WARNING: THIS DOCKERFILE IS NOT INTENDED FOR PRODUCTION USE OR DEPLOYMENT.
 #
 # Base image for the whole Docker file
-ARG APT_DEPS_IMAGE="airflow-apt-deps-ci-slim"
-ARG PYTHON_BASE_IMAGE="python:3.6-slim-stretch"
+ARG APT_DEPS_IMAGE="airflow-apt-deps"
+ARG PYTHON_BASE_IMAGE="python:3.6-slim"
 ############################################################################################################
-# This is the slim image with APT dependencies needed by Airflow. It is based on a python slim image
+# This is the base image with APT dependencies needed by Airflow. It is based on a python slim image
 # Parameters:
-#    PYTHON_BASE_IMAGE - base python image (python:x.y-slim-stretch)
+#    PYTHON_BASE_IMAGE - base python image (python:x.y-slim)
 ############################################################################################################
-FROM ${PYTHON_BASE_IMAGE} as airflow-apt-deps-ci-slim
+FROM ${PYTHON_BASE_IMAGE} as airflow-apt-deps
 
 SHELL ["/bin/bash", "-o", "pipefail", "-e", "-u", "-x", "-c"]
 
-ARG PYTHON_BASE_IMAGE="python:3.6-slim-stretch"
+# Need to repeat the empty argument here otherwise it will not be set for this stage
+# But the default value carries from the one set before FROM
+ARG PYTHON_BASE_IMAGE
 ENV PYTHON_BASE_IMAGE=${PYTHON_BASE_IMAGE}
 
 ARG AIRFLOW_VERSION="2.0.0.dev0"
@@ -119,20 +121,20 @@ RUN adduser airflow \
 # Parameters:
 #     airflow-apt-deps - this is the base image for CI deps image.
 ############################################################################################################
-FROM airflow-apt-deps-ci-slim as airflow-apt-deps-ci
+FROM airflow-apt-deps as airflow-ci-apt-deps
 
 SHELL ["/bin/bash", "-o", "pipefail", "-e", "-u", "-x", "-c"]
 
 ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/
 
-ARG APT_DEPS_IMAGE="airflow-apt-deps-ci-slim"
+ARG APT_DEPS_IMAGE
 ENV APT_DEPS_IMAGE=${APT_DEPS_IMAGE}
 
 RUN echo "${APT_DEPS_IMAGE}"
 
 # Note the ifs below might be removed if Buildkit will become usable. It should skip building this
 # image automatically if it is not used. For now we still go through all layers below but they are empty
-RUN if [[ "${APT_DEPS_IMAGE}" == "airflow-apt-deps-ci" ]]; then \
+RUN if [[ "${APT_DEPS_IMAGE}" == "airflow-ci-apt-deps" ]]; then \
         # Note missing man directories on debian-stretch
         # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=863199
         mkdir -pv /usr/share/man/man1 \
@@ -169,7 +171,7 @@ ENV HADOOP_URL=https://archive.cloudera.com/${HADOOP_DISTRO}${HADOOP_MAJOR}/${HA
 ENV HADOOP_HOME=/tmp/hadoop-cdh HIVE_HOME=/tmp/hive
 
 RUN \
-if [[ "${APT_DEPS_IMAGE}" == "airflow-apt-deps-ci" ]]; then \
+if [[ "${APT_DEPS_IMAGE}" == "airflow-ci-apt-deps" ]]; then \
     mkdir -pv ${HADOOP_HOME} \
     && mkdir -pv ${HIVE_HOME} \
     && mkdir /tmp/minicluster \
@@ -181,7 +183,7 @@ fi
 # Install Hadoop
 # --absolute-names is a work around to avoid this issue https://github.com/docker/hub-feedback/issues/727
 RUN \
-if [[ "${APT_DEPS_IMAGE}" == "airflow-apt-deps-ci" ]]; then \
+if [[ "${APT_DEPS_IMAGE}" == "airflow-ci-apt-deps" ]]; then \
     HADOOP_URL=${HADOOP_URL}hadoop-${HADOOP_VERSION}-${HADOOP_DISTRO}${HADOOP_DISTRO_VERSION}.tar.gz \
     && HADOOP_TMP_FILE=/tmp/hadoop.tar.gz \
     && curl -sL ${HADOOP_URL} > ${HADOOP_TMP_FILE} \
@@ -192,7 +194,7 @@ fi
 
 # Install Hive
 RUN \
-if [[ "${APT_DEPS_IMAGE}" == "airflow-apt-deps-ci" ]]; then \
+if [[ "${APT_DEPS_IMAGE}" == "airflow-ci-apt-deps" ]]; then \
     HIVE_URL=${HADOOP_URL}hive-${HIVE_VERSION}-${HADOOP_DISTRO}${HADOOP_DISTRO_VERSION}.tar.gz \
     && HIVE_TMP_FILE=/tmp/hive.tar.gz \
     && curl -sL ${HIVE_URL} > ${HIVE_TMP_FILE} \
@@ -205,7 +207,7 @@ ENV MINICLUSTER_URL=https://github.com/bolkedebruin/minicluster/releases/downloa
 ENV MINICLUSTER_VER=1.1
 # Install MiniCluster TODO: install it differently. Installing to /tmp is probably a bad idea
 RUN \
-if [[ "${APT_DEPS_IMAGE}" == "airflow-apt-deps-ci" ]]; then \
+if [[ "${APT_DEPS_IMAGE}" == "airflow-ci-apt-deps" ]]; then \
     MINICLUSTER_URL=${MINICLUSTER_URL}${MINICLUSTER_VER}/minicluster-${MINICLUSTER_VER}-SNAPSHOT-bin.zip \
     && MINICLUSTER_TMP_FILE=/tmp/minicluster.zip \
     && curl -sL ${MINICLUSTER_URL} > ${MINICLUSTER_TMP_FILE} \
@@ -215,19 +217,6 @@ if [[ "${APT_DEPS_IMAGE}" == "airflow-apt-deps-ci" ]]; then \
 fi
 
 ENV PATH "${PATH}:/tmp/hive/bin"
-
-ARG RAT_VERSION="0.12"
-
-ENV RAT_VERSION="${RAT_VERSION}" \
-    RAT_JAR="/tmp/apache-rat-${RAT_VERSION}.jar" \
-    RAT_URL="http://repo1.maven.org/maven2/org/apache/rat/apache-rat/${RAT_VERSION}/apache-rat-${RAT_VERSION}.jar"
-
-RUN \
-if [[ "${APT_DEPS_IMAGE}" == "airflow-apt-deps-ci" ]]; then \
-    echo "Downloading RAT from ${RAT_URL} to ${RAT_JAR}" \
-    && curl -sL ${RAT_URL} > ${RAT_JAR} \
-    ;\
-fi
 
 ############################################################################################################
 # This is the target image - it installs PIP and NPM dependencies including efficient caching
@@ -243,6 +232,9 @@ SHELL ["/bin/bash", "-o", "pipefail", "-e", "-u", "-x", "-c"]
 WORKDIR /opt/airflow
 
 RUN echo "Airflow version: ${AIRFLOW_VERSION}"
+
+ARG APT_DEPS_IMAGE
+ENV APT_DEPS_IMAGE=${APT_DEPS_IMAGE}
 
 ARG AIRFLOW_USER=airflow
 ENV AIRFLOW_USER=${AIRFLOW_USER}
@@ -286,46 +278,13 @@ RUN echo "Pip version: ${PIP_VERSION}"
 
 RUN pip install --upgrade pip==${PIP_VERSION}
 
-ARG AIRFLOW_REPO=apache/airflow
-ENV AIRFLOW_REPO=${AIRFLOW_REPO}
-
-ARG AIRFLOW_BRANCH=master
-ENV AIRFLOW_BRANCH=${AIRFLOW_BRANCH}
-
-ENV AIRFLOW_GITHUB_DOWNLOAD=https://raw.githubusercontent.com/${AIRFLOW_REPO}/${AIRFLOW_BRANCH}
-
-# Airflow Extras installed
-ARG AIRFLOW_EXTRAS="all"
-ENV AIRFLOW_EXTRAS=${AIRFLOW_EXTRAS}
-
-RUN echo "Installing with extras: ${AIRFLOW_EXTRAS}."
-
-ARG AIRFLOW_CONTAINER_CI_OPTIMISED_BUILD="false"
-ENV AIRFLOW_CONTAINER_CI_OPTIMISED_BUILD=${AIRFLOW_CONTAINER_CI_OPTIMISED_BUILD}
-
-# By changing the CI build epoch we can force reinstalling Arflow from the current master -
-# in case of CI optimized builds (next step). Our build scripts will change the EPOCH every month normally
-# But it can also be overwritten manually by setting the AIRFLOW_CI_BUILD_EPOCH environment variable.
-ARG AIRFLOW_CI_BUILD_EPOCH=""
-ENV AIRFLOW_CI_BUILD_EPOCH=${AIRFLOW_CI_BUILD_EPOCH}
-
-# In case of CI-optimised builds we want to pre-install master version of airflow dependencies so that
-# We do not have to always reinstall it from the scratch.
-# This can be reinstalled from latest master by increasing PIP_DEPENDENCIES_EPOCH_NUMBER.
-# And is automatically reinstalled from the scratch every month
-RUN \
-    if [[ "${AIRFLOW_CONTAINER_CI_OPTIMISED_BUILD}" == "true" ]]; then \
-        pip install --no-use-pep517 \
-        "https://github.com/apache/airflow/archive/master.tar.gz#egg=apache-airflow[${AIRFLOW_EXTRAS}]" \
-        && pip uninstall --yes apache-airflow; \
-    fi
-
-# Note! We are copying everything with airflow:airflow user:group even if we use root to run the scripts
+# We are copying everything with airflow:airflow user:group even if we use root to run the scripts
 # This is fine as root user will be able to use those dirs anyway.
 
 # Airflow sources change frequently but dependency configuration won't change that often
 # We copy setup.py and other files needed to perform setup of dependencies
-# So in case setup.py changes we can install latest dependencies required.
+# This way cache here will only be invalidated if any of the
+# version/setup configuration change but not when airflow sources change
 COPY --chown=airflow:airflow setup.py ${AIRFLOW_SOURCES}/setup.py
 COPY --chown=airflow:airflow setup.cfg ${AIRFLOW_SOURCES}/setup.cfg
 
@@ -333,9 +292,14 @@ COPY --chown=airflow:airflow airflow/version.py ${AIRFLOW_SOURCES}/airflow/versi
 COPY --chown=airflow:airflow airflow/__init__.py ${AIRFLOW_SOURCES}/airflow/__init__.py
 COPY --chown=airflow:airflow airflow/bin/airflow ${AIRFLOW_SOURCES}/airflow/bin/airflow
 
-# The goal of this line is to install the dependencies from the most current setup.py from sources
-# This will be usually incremental small set of packages in CI optimized build, so it will be very fast
-# In non-CI optimized build this will install all dependencies before installing sources.
+# Airflow Extras installed
+ARG AIRFLOW_EXTRAS="all"
+ENV AIRFLOW_EXTRAS=${AIRFLOW_EXTRAS}
+RUN echo "Installing with extras: ${AIRFLOW_EXTRAS}."
+
+# First install only dependencies but no Apache Airflow itself
+# This way regular changes in sources of Airflow will not trigger reinstallation of all dependencies
+# And this Docker layer will be reused between builds.
 RUN pip install --no-use-pep517 -e ".[${AIRFLOW_EXTRAS}]"
 
 COPY --chown=airflow:airflow airflow/www/package.json ${AIRFLOW_SOURCES}/airflow/www/package.json
@@ -343,22 +307,13 @@ COPY --chown=airflow:airflow airflow/www/package-lock.json ${AIRFLOW_SOURCES}/ai
 
 WORKDIR ${AIRFLOW_SOURCES}/airflow/www
 
-ARG BUILD_NPM=true
-ENV BUILD_NPM=${BUILD_NPM}
-
 # Install necessary NPM dependencies (triggered by changes in package-lock.json)
-RUN \
-    if [[ "${BUILD_NPM}" == "true" ]]; then \
-        gosu ${AIRFLOW_USER} npm ci; \
-    fi
+RUN gosu ${AIRFLOW_USER} npm ci
 
 COPY --chown=airflow:airflow airflow/www/ ${AIRFLOW_SOURCES}/airflow/www/
 
 # Package NPM for production
-RUN \
-    if [[ "${BUILD_NPM}" == "true" ]]; then \
-        gosu ${AIRFLOW_USER} npm run prod; \
-    fi
+RUN gosu ${AIRFLOW_USER} npm run prod
 
 # Always apt-get update/upgrade here to get latest dependencies before
 # we redo pip install
@@ -372,9 +327,6 @@ RUN apt-get update \
 COPY --chown=airflow:airflow . ${AIRFLOW_SOURCES}/
 
 WORKDIR ${AIRFLOW_SOURCES}
-
-# Finally install the requirements from the latest sources
-RUN pip install --no-use-pep517 -e ".[${AIRFLOW_EXTRAS}]"
 
 # Always add-get update/upgrade here to get latest dependencies before
 # we redo pip install

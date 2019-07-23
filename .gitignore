@@ -158,7 +158,3 @@ airflow-*.pid
 .mypy_cache/
 .dmypy.json
 dmypy.json
-
-# Needed for CI Dockerfile build system
-.build
-/tmp
