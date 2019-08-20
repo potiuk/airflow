@@ -29,7 +29,9 @@ setup.py \
 setup.cfg \
 Dockerfile \
 .dockerignore \
-airflow/version.py
+airflow/version.py \
+airflow/www/package.json \
+airflow/www/package-lock.json
 "
 
 mkdir -p "${AIRFLOW_SOURCES}/.mypy_cache"
@@ -659,4 +661,40 @@ function run_docker_lint() {
         echo "Docker pylint completed with no errors"
         echo
     fi
+}
+
+function run_eslint() {
+    FILES=("$@")
+    if [[ "${#FILES[@]}" == "0" ]]; then
+        docker run "${AIRFLOW_CONTAINER_EXTRA_DOCKER_FLAGS[@]}" \
+            --entrypoint /opt/airflow/scripts/ci/in_container/run_eslint.sh \
+            --env PYTHONDONTWRITEBYTECODE \
+            --env AIRFLOW_CI_VERBOSE="${VERBOSE}" \
+            --env AIRFLOW_CI_SILENT \
+            --env HOST_USER_ID="$(id -ur)" \
+            --env HOST_GROUP_ID="$(id -gr)" \
+            "${AIRFLOW_SLIM_CI_IMAGE}"| tee -a "${OUTPUT_LOG}"
+    else
+        docker run "${AIRFLOW_CONTAINER_EXTRA_DOCKER_FLAGS[@]}" \
+            --entrypoint /opt/airflow/scripts/ci/in_container/run_eslint.sh \
+            --env PYTHONDONTWRITEBYTECODE \
+            --env AIRFLOW_CI_VERBOSE="${VERBOSE}" \
+            --env AIRFLOW_CI_SILENT \
+            --env HOST_USER_ID="$(id -ur)" \
+            --env HOST_GROUP_ID="$(id -gr)" \
+            "${AIRFLOW_SLIM_CI_IMAGE}" \
+            "${FILES[@]}" | tee -a "${OUTPUT_LOG}"
+    fi
+}
+
+function run_npmaudit() {
+    docker run "${AIRFLOW_CONTAINER_EXTRA_DOCKER_FLAGS[@]}" -t \
+            --entrypoint /opt/airflow/scripts/ci/in_container/run_npmaudit.sh \
+            --env PYTHONDONTWRITEBYTECODE \
+            --env AIRFLOW_CI_VERBOSE="${VERBOSE}" \
+            --env AIRFLOW_CI_SILENT \
+            --env HOST_USER_ID="$(id -ur)" \
+            --env HOST_GROUP_ID="$(id -gr)" \
+            "${AIRFLOW_SLIM_CI_IMAGE}"
+
 }

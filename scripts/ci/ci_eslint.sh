@@ -34,28 +34,6 @@ script_start
 
 rebuild_image_if_needed_for_static_checks
 
-SKIP="pylint"
-
-echo "###########################################################"
-echo "    This job runs all static checks"
-echo "    It skips pylint until we fix all pylint files"
-
-
-if [[ "${TRAVIS_EVENT_TYPE:=}" != "cron" ]]; then
-    echo "    It also skips npmaudit as this is regular job"
-    SKIP="${SKIP},npmaudit"
-else
-    echo "    This is a CRON job, so it also runs npmaudit"
-fi
-
-export SKIP
-
-echo
-echo "    SKIP=${SKIP}"
-echo
-echo "###########################################################"
-echo
-
-pre-commit run --all-files --show-diff-on-failure
+run_eslint "$@"
 
 script_end

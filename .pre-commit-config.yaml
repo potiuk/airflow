@@ -50,12 +50,6 @@ repos:
           - --license-filepath
           - license-templates/LICENSE.rst
         files: \.rst$
-  - repo: meta
-    hooks:
-      - id: check-hooks-apply
-  - repo: https://github.com/Lucas-C/pre-commit-hooks
-    rev: v1.1.6
-    hooks:
       - id: insert-license
         name: Add licence for all JS files
         files: \.js$
@@ -124,4 +118,16 @@ repos:
         language: system
         entry: ./scripts/ci/ci_flake8.sh
         files: \.py$
+        require_serial: true
+      - id: eslint
+        name: Run eslint
+        entry: ./scripts/ci/ci_eslint.sh
+        language: system
+        types: [javascript]
+        require_serial: true
+      - id: npmaudit
+        name: Run npm audit
+        entry: ./scripts/ci/ci_npm_audit.sh
+        language: system
+        types: [javascript]
         require_serial: true

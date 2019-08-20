@@ -707,11 +707,27 @@ flake8                           Run flake8
 forbid-tabs                      Fails if tabs are used in the project
 insert-license                   Add licences for shell file types
 lint-dockerfile                  Lint dockerfile
+eslint                           Check all JS files with eslint
+flake8                           Run flake8
+forbid-tabs                      Fails if tabs are used in the project
+lint-dockerfile                  Lint dockerfile
 mixed-line-ending                Detects if mixed line ending is used (\r vs. \r\n)
 mypy                             Run mypy
 pylint                           Run pylint
 shellcheck                       Check shell files with shellcheck
+mypy                             Run mypy
+npmaudit                         Check all JS dependencies for known vulnerabilities
+pylint                           Run pylint
 ```
+
+The pre-commit hooks are run now when:
+
+* If you have the pre-commit locally installed, when you commit files related to the check
+* If you have the pre-commit locally installed with target pre-push, when you push files related to the check
+* All pre-commit except pylint and npmaudit are run always with CI build on all files
+* Pylint check is run separately to account for [in-progress pylint introduction](#pylint-checks)
+* The npmaudit check is run every time a CRON build is run in CI (daily) to check for new vulnerabilities
+
 ## Using pre-commit hooks
 
 After installing pre-commit hooks are run automatically when you commit the code, but you can
@@ -928,13 +944,5 @@ and push the newly generated `package-lock.json` file so we get the reproducible
 We try to enforce a more consistent style and try to follow the JS community guidelines.
 Once you add or modify any javascript code in the project, please make sure it follows the guidelines
 defined in [Airbnb JavaScript Style Guide](https://github.com/airbnb/javascript).
-Apache Airflow uses [ESLint](https://eslint.org/) as a tool for identifying and reporting on patterns
-in JavaScript, which can be used by running any of the following commands.
-
-```bash
-# Check JS code in .js and .html files, and report any errors/warnings
-npm run lint
-
-# Check JS code in .js and .html files, report any errors/warnings and fix them if possible
-npm run lint:fix
-```
+Apache Airflow uses [ESLint](https://eslint.org/) as a tool for identifying and reporting on patterns.
+Use [Pre-commit hooks](#pre-commit-hooks) (eslint, npmaudit) to verify the JS files.
