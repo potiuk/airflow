@@ -162,7 +162,7 @@ class GoogleCloudBaseHook(BaseHook):
         return self._get_field('project')
 
     @property
-    def num_retries(self) -> int:
+    def num_retries(self):
         """
         Returns num_retries from Connection.
 
