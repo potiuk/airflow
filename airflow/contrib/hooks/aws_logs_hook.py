@@ -35,7 +35,7 @@ class AwsLogsHook(AwsHook):
 
     def __init__(self, region_name=None, *args, **kwargs):
         self.region_name = region_name
-        super().__init__(*args, **kwargs)
+        super(AwsLogsHook).__init__(*args, **kwargs)
 
     def get_conn(self):
         """
