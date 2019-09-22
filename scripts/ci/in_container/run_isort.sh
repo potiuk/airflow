@@ -16,39 +16,41 @@
 # specific language governing permissions and limitations
 # under the License.
 
-set -euo pipefail
+# Script to run flake8 on all code. Can be started from any working directory
+set -uo pipefail
 
-MY_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+MY_DIR=$(cd "$(dirname "$0")" || exit 1; pwd)
 
-export AIRFLOW_CI_SILENT=${AIRFLOW_CI_SILENT:="true"}
+# shellcheck source=scripts/ci/in_container/_in_container_utils.sh
+. "${MY_DIR}/_in_container_utils.sh"
 
-# shellcheck source=scripts/ci/utils/_init.sh
-. "${MY_DIR}/utils/_init.sh"
-# shellcheck source=scripts/ci/utils/_build.sh
-. "${MY_DIR}/utils/_build.sh"
-# shellcheck source=scripts/ci/utils/_run.sh
-. "${MY_DIR}/utils/_run.sh"
+in_container_basic_sanity_check
 
-script_start
+in_container_script_start
 
-initialize_environment
-
-prepare_build
-
-prepare_run
-
-rebuild_ci_slim_image_if_needed
-
-if [[ "${#@}" != "0" ]]; then
-    filter_out_files_from_pylint_todo_list "$@"
-
-    if [[ "${#FILTERED_FILES[@]}" == "0" ]]; then
-        echo "Filtered out all files. Skipping pylint."
-    else
-        run_pylint_tests "${FILTERED_FILES[@]}"
-    fi
+if [[ ${#@} == "0" ]]; then
+    print_in_container_info
+    print_in_container_info "Running isort with no parameters"
+    print_in_container_info
 else
-    run_pylint_tests
+    print_in_container_info
+    print_in_container_info "Running isort with parameters: $*"
+    print_in_container_info
 fi
 
-script_end
+isort "$@"
+
+RES="$?"
+
+in_container_script_end
+
+if [[ "${RES}" != 0 ]]; then
+    echo >&2
+    echo >&2 "There were some isort errors. Exiting"
+    echo >&2
+    exit 1
+else
+    echo
+    echo "Isort succeeded"
+    echo
+fi

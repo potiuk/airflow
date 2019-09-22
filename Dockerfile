@@ -16,19 +16,19 @@
 # WARNING: THIS DOCKERFILE IS NOT INTENDED FOR PRODUCTION USE OR DEPLOYMENT.
 #
 # Base image for the whole Docker file
-ARG APT_DEPS_IMAGE="airflow-apt-deps-ci-slim"
-ARG PYTHON_BASE_IMAGE="python:3.6-slim-stretch"
+ARG APT_DEPS_IMAGE="airflow-apt-deps"
+ARG PYTHON_BASE_IMAGE="python:3.6-slim-buster"
 ############################################################################################################
 # This is the slim image with APT dependencies needed by Airflow. It is based on a python slim image
 # Parameters:
-#    PYTHON_BASE_IMAGE - base python image (python:x.y-slim-stretch)
+#    PYTHON_BASE_IMAGE - base python image (python:x.y-slim-buster)
 ############################################################################################################
-FROM ${PYTHON_BASE_IMAGE} as airflow-apt-deps-ci-slim
+FROM ${PYTHON_BASE_IMAGE} as airflow-apt-deps
 
 
 SHELL ["/bin/bash", "-o", "pipefail", "-e", "-u", "-x", "-c"]
 
-ARG PYTHON_BASE_IMAGE="python:3.6-slim-stretch"
+ARG PYTHON_BASE_IMAGE="python:3.6-slim-buster"
 ENV PYTHON_BASE_IMAGE=${PYTHON_BASE_IMAGE}
 
 ARG AIRFLOW_VERSION="2.0.0.dev0"
@@ -82,33 +82,10 @@ RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - \
            rsync \
            sasl2-bin \
            sudo \
+           libmariadb-dev-compat \
     && apt-get autoremove -yqq --purge \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
-
-# Install MySQL client from Oracle repositories (Debian installs mariadb)
-RUN KEY="A4A9406876FCBD3C456770C88C718D3B5072E1F5" \
-    && GNUPGHOME="$(mktemp -d)" \
-    && export GNUPGHOME \
-    && for KEYSERVER in $(shuf -e \
-            ha.pool.sks-keyservers.net \
-            hkp://p80.pool.sks-keyservers.net:80 \
-            keyserver.ubuntu.com \
-            hkp://keyserver.ubuntu.com:80 \
-            pgp.mit.edu) ; do \
-          gpg --keyserver "${KEYSERVER}" --recv-keys "${KEY}" && break || true ; \
-       done \
-    && gpg --export "${KEY}" | apt-key add - \
-    && gpgconf --kill all \
-    rm -rf "${GNUPGHOME}"; \
-    apt-key list > /dev/null \
-    && echo "deb http://repo.mysql.com/apt/debian/ stretch mysql-5.6" | tee -a /etc/apt/sources.list.d/mysql.list \
-    && apt-get update \
-    && apt-get install --no-install-recommends -y \
-        libmysqlclient-dev \
-        mysql-client \
-    && apt-get autoremove -yqq --purge \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN adduser airflow \
     && echo "airflow ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/airflow \
@@ -119,13 +96,13 @@ RUN adduser airflow \
 # Parameters:
 #     airflow-apt-deps - this is the base image for CI deps image.
 ############################################################################################################
-FROM airflow-apt-deps-ci-slim as airflow-apt-deps-ci
+FROM airflow-apt-deps as airflow-apt-deps-ci
 
 SHELL ["/bin/bash", "-o", "pipefail", "-e", "-u", "-x", "-c"]
 
-ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/
+ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
 
-ARG APT_DEPS_IMAGE="airflow-apt-deps-ci-slim"
+ARG APT_DEPS_IMAGE="airflow-apt-deps"
 ENV APT_DEPS_IMAGE=${APT_DEPS_IMAGE}
 
 RUN echo "${APT_DEPS_IMAGE}"
@@ -133,11 +110,7 @@ RUN echo "${APT_DEPS_IMAGE}"
 # Note the ifs below might be removed if Buildkit will become usable. It should skip building this
 # image automatically if it is not used. For now we still go through all layers below but they are empty
 RUN if [[ "${APT_DEPS_IMAGE}" == "airflow-apt-deps-ci" ]]; then \
-        # Note missing man directories on debian-stretch
-        # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=863199
-        mkdir -pv /usr/share/man/man1 \
-        && mkdir -pv /usr/share/man/man7 \
-        && apt-get update \
+        apt-get update \
         && apt-get install --no-install-recommends -y \
           gnupg \
           krb5-user \
@@ -145,7 +118,7 @@ RUN if [[ "${APT_DEPS_IMAGE}" == "airflow-apt-deps-ci" ]]; then \
           less \
           lsb-release \
           net-tools \
-          openjdk-8-jdk \
+          openjdk-11-jdk \
           openssh-client \
           openssh-server \
           postgresql-client \
@@ -204,7 +177,7 @@ ARG PIP_DEPENDENCIES_EPOCH_NUMBER="1"
 ENV PIP_DEPENDENCIES_EPOCH_NUMBER=${PIP_DEPENDENCIES_EPOCH_NUMBER}
 
 # Optimizing installation of Cassandra driver
-# Speeds up building the image - cassandra driver without CYTHON saves around 10 minutes
+# Speeds up building the image - cassandra  driver without CYTHON saves around 10 minutes
 ARG CASS_DRIVER_NO_CYTHON="1"
 # Build cassandra driver on multiple CPUs
 ARG CASS_DRIVER_BUILD_CONCURRENCY="8"

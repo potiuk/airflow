@@ -1,5 +1,4 @@
-#!/usr/bin/env bash
-
+#!/usr/bin/env sh
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -17,13 +16,29 @@
 # specific language governing permissions and limitations
 # under the License.
 
-FILES_FOR_REBUILD_CHECK=(
- "setup.py"
- "setup.cfg"
- "Dockerfile"
- "Dockerfile-checklicence"
- ".dockerignore"
- "airflow/version.py"
- "airflow/www/package.json"
- "airflow/www/package-lock.json" )
-export FILES_FOR_REBUILD_CHECK
+set -eu
+
+. /etc/os-release
+
+if [ "${ID}" = "debian" ]; then
+    echo
+    echo "Preparing Debian image"
+    echo
+    /root/install_packages curl gnupg2
+    curl -sL https://deb.nodesource.com/setup_10.x | bash -
+
+elif [ "${ID}" = "alpine" ]; then
+    echo
+    echo "Preparing Alpine image"
+    echo
+    echo @edge-community http://dl-cdn.alpinelinux.org/alpine/edge/community >> /etc/apk/repositories \
+      && echo @edge-testing http://dl-cdn.alpinelinux.org/alpine/edge/testing >> /etc/apk/repositories \
+      && echo @edge http://dl-cdn.alpinelinux.org/alpine/edge/main >> /etc/apk/repositories
+    apk update
+    /root/install_packages bash
+else
+    echo
+    echo "Exiting. The os ${ID} is unknown."
+    echo
+    exit 1
+fi

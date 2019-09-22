@@ -45,12 +45,20 @@ function read_from_file {
 
 export PYTHON_VERSION="${PYTHON_VERSION:=$(read_from_file PYTHON_VERSION)}"
 
-# shellcheck source=scripts/ci/_utils.sh
-. "${SCRIPTS_CI_DIR}/_utils.sh"
-
-basic_sanity_checks
+# shellcheck source=scripts/ci/utils/_init.sh
+. "${MY_DIR}/scripts/ci/utils/_init.sh"
+# shellcheck source=scripts/ci/utils/_build.sh
+. "${MY_DIR}/scripts/ci/utils/_build.sh"
+# shellcheck source=scripts/ci/utils/_run.sh
+. "${MY_DIR}/scripts/ci/utils/_run.sh"
 
 script_start
+
+initialize_environment
+
+prepare_build
+
+prepare_run
 
 # Sets width of the screen
 SEPARATOR_WIDTH="$(tput cols)"
@@ -100,9 +108,6 @@ export AIRFLOW_CONTAINER_USE_DOCKER_CACHE=${AIRFLOW_CONTAINER_USE_DOCKER_CACHE:=
 
 # By default we do not push images. This can be overridden by -u flag.
 export AIRFLOW_CONTAINER_PUSH_IMAGES=${AIRFLOW_CONTAINER_PUSH_IMAGES:="false"}
-
-# For local builds we fix file permissions only for setup-related files
-export AIRFLOW_FIX_PERMISSIONS=${AIRFLOW_FIX_PERMISSIONS:="setup"}
 
 # Skip building slim image locally - we only need full CI image
 export AIRFLOW_CONTAINER_SKIP_CI_SLIM_IMAGE="true"
@@ -539,7 +544,7 @@ do
       echo "Clean build of images without cache"
       echo
       export AIRFLOW_CONTAINER_USE_DOCKER_CACHE=false
-      export AIRFLOW_CONTAINER_USE_PULLED_IMAGES_CACHE=false
+      export AIRFLOW_CONTAINER_USE_LOCAL_DOCKER_CACHE=true
       export AIRFLOW_CONTAINER_FORCE_DOCKER_BUILD="true"
       CLEANUP_IMAGES="true"
       shift ;;
@@ -551,17 +556,6 @@ do
       export AIRFLOW_CONTAINER_FORCE_DOCKER_BUILD="true"
       shift ;;
     -u|--push-images)
-      if [[ "${AIRFLOW_FIX_PERMISSIONS}" != "all" ]]; then
-        echo >&2
-        echo >&2 "ERROR: Disable fix permissions when pushing"
-        echo >&2
-        echo >&2 "You cannot push images if you have AIRFLOW_FIX_PERMISSIONS set to other value than 'all'"
-        echo >&2 "Your docker context is most likely wrong in this case"
-        echo >&2 "You need to set AIRFLOW_FIX_PERMISSIONS to false"
-        echo >&2 "And run the build again"
-        echo >&2
-        exit 1
-      fi
       echo
       echo "Pushing images to DockerHub"
       echo
@@ -572,7 +566,7 @@ do
       echo
       echo "Cleanup the images"
       echo
-      CLEANUP_IMAGES=true
+      CLEANUP_IMAGES="true"
       shift ;;
     -D|--dockerhub-user)
       export DOCKERHUB_USER="${2}"
@@ -680,7 +674,7 @@ echo
 
 CMDNAME="$(basename -- "$0")"
 
-# Cleans up the answer that was given last time, whether to force/
+# Cleans up the answer that was given last time, whether to build/not build/quit building
 cleanup_last_force_answer
 
 export ENV="${ENV:=$(read_from_file ENV)}"
@@ -770,13 +764,6 @@ save_to_file KUBERNETES_MODE
 save_to_file PYTHON_VERSION
 save_to_file DOCKERHUB_USER
 save_to_file DOCKERHUB_REPO
-
-#################### Cleanup image if requested ########################################
-if [[ "${CLEANUP_IMAGES}" == "true" ]]; then
-    export AIRFLOW_CONTAINER_CLEANUP_IMAGES=true
-    "${MY_DIR}/scripts/ci/local_ci_cleanup.sh"
-    exit 0
-fi
 
 #################### Initializes local virtualenv ########################################
 if [[ ${INITIALIZE_LOCAL_VIRTUALENV} == "true" ]]; then
@@ -939,9 +926,18 @@ prepare_command_file "${BUILD_CACHE_DIR}/${LAST_DC_TEST_FILE}" "${DC_RUN_COMMAND
 # Prepare script for "run docker compose command"
 prepare_command_file "${BUILD_CACHE_DIR}/${LAST_DC_FILE}" '"' "false"
 
-rebuild_ci_image_if_needed
-rebuild_ci_slim_image_if_needed
-rebuild_checklicence_image_if_needed
+if [[ "${CLEANUP_IMAGES}" == "true" ]]; then
+    remove_all_images
+else
+    if [[ ${ENTER_ENVIRONMENT} == "true" ]]; then
+        rebuild_ci_image_if_needed
+    elif [[ ${RUN_STATIC_CHECKS} ==  "true" ]]; then
+        rebuild_ci_slim_image_if_needed
+        rebuild_checklicence_image_if_needed
+    elif [[ ${RUN_BUILD_DOCS} == "true" ]]; then
+        rebuild_ci_slim_image_if_needed
+    fi
+fi
 
 export AIRFLOW_CONTAINER_DOCKER_IMAGE=\
 ${DOCKERHUB_USER}/${DOCKERHUB_REPO}:${AIRFLOW_CONTAINER_BRANCH_NAME}-python${PYTHON_VERSION}-ci
@@ -1079,7 +1075,7 @@ else
             echo
             pre-commit run "${STATIC_CHECK}" "${EXTRA_STATIC_CHECK_OPTIONS[@]}" "$@"
         fi
-    elif [[  ${RUN_BUILD_DOCS} == "true" ]]; then
+    elif [[ ${RUN_BUILD_DOCS} == "true" ]]; then
         run_docs
     fi
 fi
