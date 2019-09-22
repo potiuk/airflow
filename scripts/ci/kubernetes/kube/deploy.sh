@@ -27,8 +27,10 @@ export BUILD_DIRNAME="${DIRNAME}/build"
 AIRFLOW_SOURCES=$(cd "${DIRNAME}/../../../../" || exit 1 ; pwd)
 export AIRFLOW_SOURCES
 
-# shellcheck source=common/_autodetect_variables.sh
-. "${AIRFLOW_SOURCES}/common/_autodetect_variables.sh"
+# shellcheck source=scripts/ci/utils/_autodetect_variables.sh
+. "${AIRFLOW_SOURCES}/scripts/ci/utils/_autodetect_variables.sh"
+
+autodetect_variables
 
 # Source branch will be set in DockerHub
 SOURCE_BRANCH=${SOURCE_BRANCH:=${DEFAULT_BRANCH}}

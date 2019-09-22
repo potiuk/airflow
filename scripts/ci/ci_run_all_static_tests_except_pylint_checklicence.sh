@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -17,13 +16,34 @@
 # specific language governing permissions and limitations
 # under the License.
 
-FILES_FOR_REBUILD_CHECK=(
- "setup.py"
- "setup.cfg"
- "Dockerfile"
- "Dockerfile-checklicence"
- ".dockerignore"
- "airflow/version.py"
- "airflow/www/package.json"
- "airflow/www/package-lock.json" )
-export FILES_FOR_REBUILD_CHECK
+set -euo pipefail
+
+MY_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+export AIRFLOW_CI_SILENT=${AIRFLOW_CI_SILENT:="true"}
+
+# shellcheck source=scripts/ci/utils/_init.sh
+. "${MY_DIR}/utils/_init.sh"
+# shellcheck source=scripts/ci/utils/_build.sh
+. "${MY_DIR}/utils/_build.sh"
+# shellcheck source=scripts/ci/utils/_run.sh
+. "${MY_DIR}/utils/_run.sh"
+
+script_start
+
+initialize_environment
+
+prepare_build
+
+prepare_run
+
+export FORCE_ANSWER_TO_QUESTIONS="yes"
+rebuild_ci_slim_image_if_needed
+
+LOCALLY_BUILT_IMAGES=("SLIM_CI")
+export LOCALLY_BUILT_IMAGES
+
+export FORCE_ANSWER_TO_QUESTIONS="quit"
+SKIP=pylint,check-apache-license pre-commit run --all-files --show-diff-on-failure
+
+script_end

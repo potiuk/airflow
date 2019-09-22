@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -16,26 +16,29 @@
 # specific language governing permissions and limitations
 # under the License.
 
-set -euo pipefail
+set -eu
 
-MY_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. /etc/os-release
 
-export AIRFLOW_CI_SILENT=${AIRFLOW_CI_SILENT:="true"}
+if [ "${ID}" = "debian" ]; then
+    echo
+    echo "Preparing Debian image"
+    echo
+    /root/install_packages curl gnupg2
+    curl -sL https://deb.nodesource.com/setup_10.x | bash -
 
-export PYTHON_VERSION=3.5
-
-# shellcheck source=scripts/ci/_utils.sh
-. "${MY_DIR}/_utils.sh"
-
-basic_sanity_checks
-
-script_start
-
-rebuild_ci_slim_image_if_needed
-
-IMAGES_TO_CHECK=("SLIM_CI")
-export IMAGES_TO_CHECK
-
-SKIP=pylint,check-apache-license pre-commit run --all-files --show-diff-on-failure
-
-script_end
+elif [ "${ID}" = "alpine" ]; then
+    echo
+    echo "Preparing Alpine image"
+    echo
+    echo @edge-community http://dl-cdn.alpinelinux.org/alpine/edge/community >> /etc/apk/repositories \
+      && echo @edge-testing http://dl-cdn.alpinelinux.org/alpine/edge/testing >> /etc/apk/repositories \
+      && echo @edge http://dl-cdn.alpinelinux.org/alpine/edge/main >> /etc/apk/repositories
+    apk update
+    /root/install_packages bash
+else
+    echo
+    echo "Exiting. The os ${ID} is unknown."
+    echo
+    exit 1
+fi

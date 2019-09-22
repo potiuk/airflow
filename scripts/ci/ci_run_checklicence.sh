@@ -37,18 +37,14 @@ prepare_build
 
 prepare_run
 
-rebuild_ci_slim_image_if_needed
+export FORCE_ANSWER_TO_QUESTIONS="yes"
+rebuild_checklicence_image_if_needed
 
-if [[ "${#@}" != "0" ]]; then
-    filter_out_files_from_pylint_todo_list "$@"
+LOCALLY_BUILT_IMAGES=("CHECKLICENCE")
+export LOCALLY_BUILT_IMAGES
 
-    if [[ "${#FILTERED_FILES[@]}" == "0" ]]; then
-        echo "Filtered out all files. Skipping pylint."
-    else
-        run_pylint_tests "${FILTERED_FILES[@]}"
-    fi
-else
-    run_pylint_tests
-fi
+export FORCE_ANSWER_TO_QUESTIONS="quit"
+pre-commit run build
+pre-commit run check-apache-license --all-files --show-diff-on-failure
 
 script_end

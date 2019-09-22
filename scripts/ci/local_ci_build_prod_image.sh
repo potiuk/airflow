@@ -17,17 +17,12 @@
 # under the License.
 
 set -euo pipefail
-
 MY_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-export AIRFLOW_CI_SILENT=${AIRFLOW_CI_SILENT:="true"}
 
 # shellcheck source=scripts/ci/utils/_init.sh
 . "${MY_DIR}/utils/_init.sh"
 # shellcheck source=scripts/ci/utils/_build.sh
 . "${MY_DIR}/utils/_build.sh"
-# shellcheck source=scripts/ci/utils/_run.sh
-. "${MY_DIR}/utils/_run.sh"
 
 script_start
 
@@ -35,20 +30,6 @@ initialize_environment
 
 prepare_build
 
-prepare_run
-
-rebuild_ci_slim_image_if_needed
-
-if [[ "${#@}" != "0" ]]; then
-    filter_out_files_from_pylint_todo_list "$@"
-
-    if [[ "${#FILTERED_FILES[@]}" == "0" ]]; then
-        echo "Filtered out all files. Skipping pylint."
-    else
-        run_pylint_tests "${FILTERED_FILES[@]}"
-    fi
-else
-    run_pylint_tests
-fi
+rebuild_prod_image_if_needed
 
 script_end

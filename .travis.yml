@@ -53,10 +53,10 @@ jobs:
       stage: test
     - name: "Static checks (no pylint, no licence check)"
       stage: pre-test
-      script: ./scripts/ci/ci_run_all_static_tests_except_pylint_licence.sh
+      script: ./scripts/ci/ci_run_all_static_tests_except_pylint_checklicence.sh
     - name: "Check licence compliance for Apache"
       stage: pre-test
-      script: ./scripts/ci/ci_check_license.sh
+      script: ./scripts/ci/ci_run_checklicence.sh
     - name: "Pylint checks"
       stage: pre-test
       script: ./scripts/ci/ci_run_all_static_tests_pylint.sh

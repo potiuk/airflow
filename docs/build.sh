@@ -57,7 +57,6 @@ echo "Removed content of the _build and _api folders"
 set +e
 # shellcheck disable=SC2063
 NUM_INCORRECT_USE_LITERALINCLUDE=$(grep -inR --include \*.rst 'literalinclude::.\+example_dags' . | \
-    tee /dev/tty |
     wc -l |\
     tr -d '[:space:]')
 set -e
@@ -137,7 +136,6 @@ fi
 
 
 SUCCEED_LINE=$(make html |\
-    tee /dev/tty |\
     grep 'build succeeded' |\
     head -1)
 

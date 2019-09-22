@@ -22,20 +22,29 @@ MY_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 export AIRFLOW_CI_SILENT=${AIRFLOW_CI_SILENT:="true"}
 
-export PYTHON_VERSION=3.5
-
-# shellcheck source=scripts/ci/_utils.sh
-. "${MY_DIR}/_utils.sh"
-
-basic_sanity_checks
+# shellcheck source=scripts/ci/utils/_init.sh
+. "${MY_DIR}/utils/_init.sh"
+# shellcheck source=scripts/ci/utils/_build.sh
+. "${MY_DIR}/utils/_build.sh"
+# shellcheck source=scripts/ci/utils/_run.sh
+. "${MY_DIR}/utils/_run.sh"
 
 script_start
 
+initialize_environment
+
+prepare_build
+
+prepare_run
+
+export FORCE_ANSWER_TO_QUESTIONS="yes"
 rebuild_ci_slim_image_if_needed
 
-IMAGES_TO_CHECK=("SLIM_CI")
-export IMAGES_TO_CHECK
+LOCALLY_BUILT_IMAGES=("SLIM_CI")
+export LOCALLY_BUILT_IMAGES
 
+export FORCE_ANSWER_TO_QUESTIONS="quit"
+pre-commit run build
 pre-commit run pylint --all-files --show-diff-on-failure
 
 script_end
