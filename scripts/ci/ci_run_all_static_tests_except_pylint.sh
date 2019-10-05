@@ -40,9 +40,10 @@ prepare_run
 rebuild_ci_slim_image_if_needed
 rebuild_checklicence_image_if_needed
 
-IMAGES_TO_CHECK=("SLIM_CI" "CHECKLICENCE")
-export IMAGES_TO_CHECK
+LOCALLY_BUILT_IMAGES=("SLIM_CI" "CHECKLICENCE")
+export LOCALLY_BUILT_IMAGES
 
+export FORCE_ANSWER_TO_QUESTIONS="quit"
 SKIP=pylint pre-commit run --all-files --show-diff-on-failure
 
 script_end

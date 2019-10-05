@@ -551,6 +551,7 @@ function push_prod_image() {
 
 function rebuild_checklicence_image_if_needed() {
     export THE_IMAGE_TYPE="CHECKLICENCE"
+    export IMAGE_DESCRIPTION="Airflow Checklicence"
     _rebuild_image_if_needed
 }
 

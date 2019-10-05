@@ -37,9 +37,12 @@ prepare_build
 
 prepare_run
 
-IMAGES_TO_CHECK=("SLIM_CI")
-export IMAGES_TO_CHECK
+rebuild_ci_slim_image_if_needed
 
+LOCALLY_BUILT_IMAGES=("SLIM_CI")
+export LOCALLY_BUILT_IMAGES
+
+export FORCE_ANSWER_TO_QUESTIONS="quit"
 pre-commit run build
 pre-commit run pylint --all-files --show-diff-on-failure
 
