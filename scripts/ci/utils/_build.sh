@@ -526,7 +526,7 @@ function rebuild_ci_image_if_needed() {
     export TARGET_IMAGE="main"
     export AIRFLOW_CONTAINER_CI_OPTIMISED_BUILD="true"
     export APT_DEPS_IMAGE="airflow-apt-deps-ci"
-    export AIRFLOW_EXTRAS="devel_ci"
+    export AIRFLOW_EXTRAS="all,devel"
     export AIRFLOW_USER="root"
     export AIRFLOW_USER_HOME="/root"
     _rebuild_image_if_needed
@@ -548,7 +548,7 @@ function rebuild_ci_slim_image_if_needed() {
     export TARGET_IMAGE="main"
     export AIRFLOW_CONTAINER_CI_OPTIMISED_BUILD="true"
     export APT_DEPS_IMAGE="airflow-apt-deps"
-    export AIRFLOW_EXTRAS="all"
+    export AIRFLOW_EXTRAS="all,devel"
     export AIRFLOW_USER="airflow"
     export AIRFLOW_USER_HOME="/home/airflow"
     _rebuild_image_if_needed
@@ -570,7 +570,7 @@ function rebuild_prod_image_if_needed() {
     export TARGET_IMAGE="main"
     export AIRFLOW_CONTAINER_CI_OPTIMISED_BUILD="false"
     export APT_DEPS_IMAGE="airflow-apt-deps"
-    export AIRFLOW_EXTRAS=${AIRFLOW_EXTRAS:="all,statsd,elasticsearch"}
+    export AIRFLOW_EXTRAS=${AIRFLOW_EXTRAS:="all"}
     export AIRFLOW_USER="airflow"
     export AIRFLOW_USER_HOME="/home/airflow"
     _rebuild_image_if_needed

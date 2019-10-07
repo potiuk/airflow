@@ -173,7 +173,7 @@ RUN mkdir -pv ${AIRFLOW_HOME} \
     && chown -R ${AIRFLOW_USER}.${AIRFLOW_USER} ${AIRFLOW_HOME}
 
 # Increase the value here to force reinstalling Apache Airflow pip dependencies
-ARG PIP_DEPENDENCIES_EPOCH_NUMBER="1"
+ARG PIP_DEPENDENCIES_EPOCH_NUMBER="3"
 ENV PIP_DEPENDENCIES_EPOCH_NUMBER=${PIP_DEPENDENCIES_EPOCH_NUMBER}
 
 # Setting to 1 speeds up building the image. Cassandra driver without CYTHON saves around 10 minutes
@@ -206,7 +206,7 @@ ENV AIRFLOW_BRANCH=${AIRFLOW_BRANCH}
 ENV AIRFLOW_GITHUB_DOWNLOAD=https://raw.githubusercontent.com/${AIRFLOW_REPO}/${AIRFLOW_BRANCH}
 
 # Airflow Extras installed
-ARG AIRFLOW_EXTRAS="all,stastd,elasticsearch"
+ARG AIRFLOW_EXTRAS="all"
 ENV AIRFLOW_EXTRAS=${AIRFLOW_EXTRAS}
 
 RUN echo "Installing with extras: ${AIRFLOW_EXTRAS}."
