@@ -357,7 +357,8 @@ all_packages = (
 )
 
 # Snakebite is not Python 3 compatible :'(
-devel = [package for package in devel if package not in ['snakebite>=2.7.8', 'snakebite[kerberos]>=2.7.8']]
+all_packages = [package for package in all_packages if package not in
+                ['snakebite>=2.7.8', 'snakebite[kerberos]>=2.7.8']]
 
 
 def do_setup():

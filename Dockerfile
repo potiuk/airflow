@@ -100,7 +100,7 @@ FROM airflow-apt-deps as airflow-apt-deps-ci
 
 SHELL ["/bin/bash", "-o", "pipefail", "-e", "-u", "-x", "-c"]
 
-ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
+ENV JAVA_HOME=/usr/lib/jvm/adoptopenjdk-8-hotspot-amd64/
 
 ARG APT_DEPS_IMAGE="airflow-apt-deps"
 ENV APT_DEPS_IMAGE=${APT_DEPS_IMAGE}
@@ -110,28 +110,32 @@ RUN echo "${APT_DEPS_IMAGE}"
 # Note the ifs below might be removed if Buildkit will become usable. It should skip building this
 # image automatically if it is not used. For now we still go through all layers below but they are empty
 RUN if [[ "${APT_DEPS_IMAGE}" == "airflow-apt-deps-ci" ]]; then \
-        apt-get update \
-        && apt-get install --no-install-recommends -y \
-          gnupg \
-          krb5-user \
-          ldap-utils \
-          less \
-          lsb-release \
-          net-tools \
-          openjdk-11-jdk \
-          openssh-client \
-          openssh-server \
-          postgresql-client \
-          python-selinux \
-          sqlite3 \
-          tmux \
-          unzip \
-          vim \
-        && apt-get autoremove -yqq --purge \
-        && apt-get clean \
-        && rm -rf /var/lib/apt/lists/* \
-        ;\
-    fi
+    apt-get update \
+    && apt-get install --no-install-recommends -y \
+         apt-transport-https ca-certificates wget dirmngr gnupg software-properties-common \
+    && curl -sL https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public | apt-key add - \
+    && apt-get update \
+    && apt-get install --no-install-recommends -y \
+      gnupg \
+      krb5-user \
+      ldap-utils \
+      less \
+      lsb-release \
+      net-tools \
+      adoptopenjdk-8-hotspot \
+      openssh-client \
+      openssh-server \
+      postgresql-client \
+      python-selinux \
+      sqlite3 \
+      tmux \
+      unzip \
+      vim \
+    && apt-get autoremove -yqq --purge \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    ;\
+fi
 
 # TODO: We should think about removing those and moving them into docker-compose dependencies.
 COPY scripts/ci/docker_build/ci_build_install_deps.sh /tmp/ci_build_install_deps.sh
