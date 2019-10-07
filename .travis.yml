@@ -65,6 +65,6 @@ jobs:
       script: ./scripts/ci/ci_docs.sh
 services:
   - docker
-before_install:
-  - ./scripts/ci/ci_before_install.sh
+install:
+  - ./scripts/ci/ci_install.sh
 script: "./scripts/ci/ci_run_airflow_testing.sh"
