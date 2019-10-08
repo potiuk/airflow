@@ -22,12 +22,8 @@ MY_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 export AIRFLOW_CI_SILENT=${AIRFLOW_CI_SILENT:="true"}
 
-# shellcheck source=scripts/ci/utils/_init.sh
-. "${MY_DIR}/utils/_init.sh"
-# shellcheck source=scripts/ci/utils/_build.sh
-. "${MY_DIR}/utils/_build.sh"
-# shellcheck source=scripts/ci/utils/_run.sh
-. "${MY_DIR}/utils/_run.sh"
+# shellcheck source=scripts/ci/utils/_include_all.sh
+. "${MY_DIR}/utils/_include_all.sh"
 
 script_start
 
