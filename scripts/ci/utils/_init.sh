@@ -99,7 +99,7 @@ function _setup_cache_directory() {
 #
 # Output: LOCALLY_BUILT_IMAGES (array)
 function _setup_locally_build_images() {
-    LOCALLY_BUILT_IMAGES=("SLIM_CI" "CI" "CHECKLICENCE")
+    LOCALLY_BUILT_IMAGES=("CI" "CHECKLICENCE")
     export LOCALLY_BUILT_IMAGES
 }
 

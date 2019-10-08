@@ -357,8 +357,7 @@ all_packages = (
 )
 
 # Snakebite is not Python 3 compatible :'(
-all_packages = [package for package in all_packages if package not in
-                ['snakebite>=2.7.8', 'snakebite[kerberos]>=2.7.8']]
+all_packages = [package for package in all_packages if not package.startswith('snakebite')]
 
 
 def do_setup():
@@ -446,7 +445,8 @@ def do_setup():
             'dask': dask,
             'databricks': databricks,
             'datadog': datadog,
-            'devel': devel_minreq,
+            'devel': devel,
+            'devel_minreq': devel_minreq,
             'devel_hadoop': devel_hadoop,
             'doc': doc,
             'docker': docker,

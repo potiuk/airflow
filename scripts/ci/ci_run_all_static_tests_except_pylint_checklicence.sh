@@ -34,7 +34,7 @@ prepare_build
 prepare_run
 
 export FORCE_ANSWER_TO_QUESTIONS="yes"
-rebuild_ci_slim_image_if_needed
+rebuild_ci_image_if_needed
 
 SKIP=build,pylint,check-apache-license pre-commit run --all-files --show-diff-on-failure
 

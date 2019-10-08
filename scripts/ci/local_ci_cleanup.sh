@@ -34,8 +34,8 @@ prepare_build
 
 cleanup_ci_image
 
-cleanup_ci_slim_image
-
 cleanup_checklicence_image
+
+cleanup_prod_image
 
 script_end

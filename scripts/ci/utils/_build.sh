@@ -18,25 +18,6 @@
 
 # Assume all the scripts are sourcing the file from the scripts/ci directory
 # and MY_DIR variable is set to this directory. It can be overridden however
-
-#
-# Save python version and use fixed version for SLIM_CI image
-function _temporary_set_python_version_for_slim_ci_image() {
-    if [[ "${THE_IMAGE_TYPE}" == "SLIM_CI" ]]; then
-        # Temporary force python version 3.5 for static checks
-        export OLD_PYTHON_VERSION=${PYTHON_VERSION=""}
-        export PYTHON_VERSION=3.5
-    fi
-}
-
-#
-# Restore python version stored in case of building SLIM_CI image
-function _restore_python_version() {
-    if [[ "${THE_IMAGE_TYPE}" == "SLIM_CI" ]]; then
-        export PYTHON_VERSION=${OLD_PYTHON_VERSION:=${PYTHON_VERSION}}
-        unset OLD_PYTHON_VERSION
-    fi
-}
 #
 # Sets file name for last forced answer. This is where last forced answer is stored. It is usually
 # removed by "cleanup_last_force_answer" method just before question is asked. The only exceptions
@@ -216,7 +197,6 @@ function _update_all_md5_files() {
 # Output:  AIRFLOW_CONTAINER_DOCKER_BUILD_NEEDED
 #
 function _check_if_docker_build_is_needed() {
-    _temporary_set_python_version_for_slim_ci_image
     print_info "Checking if build is needed for ${THE_IMAGE_TYPE} image python version: ${PYTHON_VERSION}"
     local IMAGE_BUILD_NEEDED="false"
     local FILE
@@ -250,7 +230,6 @@ function _check_if_docker_build_is_needed() {
         fi
     fi
     print_info
-    _restore_python_version
 }
 
 #
@@ -287,13 +266,13 @@ function _confirm_image_rebuild() {
         esac
     elif [[ -t 0 ]]; then
         # Check if this script is run interactively with stdin open and terminal attached
-        "${AIRFLOW_SOURCES}/confirm" "Rebuild image ${THE_IMAGE_TYPE}"
+        "${AIRFLOW_SOURCES}/confirm" "Rebuild image ${THE_IMAGE_TYPE} (might take some time)"
         RES=$?
     elif [[ ${DETECTED_TERMINAL:=$(tty)} != "not a tty" ]]; then
         # Make sure to use output of tty rather than stdin/stdout when available - this way confirm
         # will works also in case of pre-commits (git does not pass stdin/stdout to pre-commit hooks)
         # shellcheck disable=SC2094
-        "${AIRFLOW_SOURCES}/confirm" "Rebuild image ${THE_IMAGE_TYPE}" \
+        "${AIRFLOW_SOURCES}/confirm" "Rebuild image ${THE_IMAGE_TYPE} (might take some time)" \
             <"${DETECTED_TERMINAL}" >"${DETECTED_TERMINAL}"
         RES=$?
         export DETECTED_TERMINAL
@@ -302,7 +281,7 @@ function _confirm_image_rebuild() {
         # Make sure to use /dev/tty first rather than stdin/stdout when available - this way confirm
         # will works also in case of pre-commits (git does not pass stdin/stdout to pre-commit hooks)
         # shellcheck disable=SC2094
-        "${AIRFLOW_SOURCES}/confirm" "Rebuild image ${THE_IMAGE_TYPE}" \
+        "${AIRFLOW_SOURCES}/confirm" "Rebuild image ${THE_IMAGE_TYPE} (might take some time)" \
             <"${DETECTED_TERMINAL}" >"${DETECTED_TERMINAL}"
         RES=$?
     else
@@ -358,18 +337,22 @@ function _pull_image_if_needed() {
                 echo
             fi
         fi
-        local PULL_IMAGE=${AIRFLOW_CONTAINER_FORCE_PULL_IMAGES}
-        IMAGE_HASH=$(docker images -q "${AIRFLOW_IMAGE}" 2> /dev/null)
-        if [[ "${IMAGE_HASH}" == "" ]]; then
-            PULL_IMAGE="true"
-        fi
-        if [[ "${PULL_IMAGE}" == "true" ]]; then
-            echo
-            echo "Pulling the image ${AIRFLOW_IMAGE}"
-            echo
-            verbose_docker pull "${AIRFLOW_IMAGE}" || true
-            echo
-        fi
+        for IMAGE in ${AIRFLOW_WWW_IMAGE} ${AIRFLOW_BASE_IMAGE} ${AIRFLOW_IMAGE}
+        do
+            local PULL_IMAGE=${AIRFLOW_CONTAINER_FORCE_PULL_IMAGES}
+            local IMAGE_HASH
+            IMAGE_HASH=$(docker images -q "${IMAGE}" 2> /dev/null)
+            if [[ "${IMAGE_HASH}" == "" ]]; then
+                PULL_IMAGE="true"
+            fi
+            if [[ "${PULL_IMAGE}" == "true" ]]; then
+                echo
+                echo "Pulling the image ${IMAGE}"
+                echo
+                verbose_docker pull "${IMAGE}" || true
+                echo
+            fi
+        done
     fi
 }
 
@@ -388,16 +371,14 @@ function _build_image() {
     elif [[ "${AIRFLOW_CONTAINER_USE_CACHE}" == "false" ]]; then
         DOCKER_CACHE_DIRECTIVE=("--no-cache")
     else
-        DOCKER_CACHE_DIRECTIVE=("--cache-from" "${AIRFLOW_IMAGE}")
+        DOCKER_CACHE_DIRECTIVE=(
+            "--cache-from" "${AIRFLOW_BASE_IMAGE}"
+            "--cache-from" "${AIRFLOW_WWW_IMAGE}"
+            "--cache-from" "${AIRFLOW_IMAGE}"
+        )
     fi
     export DOCKER_CACHE_DIRECTIVE
     VERBOSE=${VERBOSE:="false"}
-
-    if [[ ${AIRFLOW_CONTAINER_CI_OPTIMISED_BUILD:="true"} == "true" ]]; then
-        CASS_DRIVER_NO_CYTHON="1"
-    else
-        CASS_DRIVER_NO_CYTHON=""
-    fi
 
     if [[ -n ${DETECTED_TERMINAL:=""} ]]; then
         echo -n "Building ${THE_IMAGE_TYPE}.
@@ -414,13 +395,23 @@ function _build_image() {
         verbose_docker build \
             --build-arg PYTHON_BASE_IMAGE="${PYTHON_BASE_IMAGE}" \
             --build-arg AIRFLOW_VERSION="${AIRFLOW_VERSION}" \
-            --build-arg APT_DEPS_IMAGE="${APT_DEPS_IMAGE}" \
-            --build-arg AIRFLOW_EXTRAS="${AIRFLOW_EXTRAS}" \
-            --build-arg AIRFLOW_USER="${AIRFLOW_USER}" \
             --build-arg AIRFLOW_BRANCH="${AIRFLOW_CONTAINER_BRANCH_NAME}" \
-            --build-arg AIRFLOW_CONTAINER_CI_OPTIMISED_BUILD="${AIRFLOW_CONTAINER_CI_OPTIMISED_BUILD}" \
-            --build-arg HOME="${AIRFLOW_USER_HOME}" \
-            --build-arg CASS_DRIVER_NO_CYTHON="${CASS_DRIVER_NO_CYTHON}" \
+            "${DOCKER_CACHE_DIRECTIVE[@]}" \
+            -t "${AIRFLOW_WWW_IMAGE}" \
+            --target "airflow-www" \
+            . | tee -a "${OUTPUT_LOG}"
+        verbose_docker build \
+            --build-arg PYTHON_BASE_IMAGE="${PYTHON_BASE_IMAGE}" \
+            --build-arg AIRFLOW_VERSION="${AIRFLOW_VERSION}" \
+            --build-arg AIRFLOW_BRANCH="${AIRFLOW_CONTAINER_BRANCH_NAME}" \
+            "${DOCKER_CACHE_DIRECTIVE[@]}" \
+            -t "${AIRFLOW_BASE_IMAGE}" \
+            --target "airflow-base" \
+            . | tee -a "${OUTPUT_LOG}"
+        verbose_docker build \
+            --build-arg PYTHON_BASE_IMAGE="${PYTHON_BASE_IMAGE}" \
+            --build-arg AIRFLOW_VERSION="${AIRFLOW_VERSION}" \
+            --build-arg AIRFLOW_BRANCH="${AIRFLOW_CONTAINER_BRANCH_NAME}" \
             "${DOCKER_CACHE_DIRECTIVE[@]}" \
             -t "${AIRFLOW_IMAGE}" \
             --target "${TARGET_IMAGE}" \
@@ -443,7 +434,6 @@ function remove_all_images() {
     start_step "Removing images"
     verbose_docker rmi "${PYTHON_BASE_IMAGE}" || true
     verbose_docker rmi "${CHECKLICENCE_BASE_IMAGE}" || true
-    verbose_docker rmi "${AIRFLOW_SLIM_CI_IMAGE}" || true
     verbose_docker rmi "${AIRFLOW_PROD_IMAGE}" || true
     verbose_docker rmi "${AIRFLOW_CI_IMAGE}" || true
     verbose_docker rmi "${AIRFLOW_CHECKLICENCE_IMAGE}" || true
@@ -461,7 +451,6 @@ function remove_all_images() {
 # Rebuilds an image if needed
 #
 function _rebuild_image_if_needed() {
-    _temporary_set_python_version_for_slim_ci_image
     set_image_variables
 
     if [[ -f "${BUILD_CACHE_DIR}/${DEFAULT_BRANCH}/.built_${THE_IMAGE_TYPE}_${PYTHON_VERSION}" ]]; then
@@ -499,91 +488,26 @@ function _rebuild_image_if_needed() {
         print_info "No need to rebuild - none of the important files changed: ${FILES_FOR_REBUILD_CHECK[*]}"
         print_info
     fi
-    _restore_python_version
 }
 
 
 _cleanup_image() {
-    _temporary_set_python_version_for_slim_ci_image
     set_image_variables
     verbose_docker rmi "${AIRFLOW_IMAGE}" || true | tee -a "${OUTPUT_LOG}"
-    _restore_python_version
 }
 
 _push_image() {
-    _temporary_set_python_version_for_slim_ci_image
     set_image_variables
+    if [[ -n ${AIRFLOW_WWW_IMAGE:=""} ]]; then
+        verbose_docker push "${AIRFLOW_WWW_IMAGE}" | tee -a "${OUTPUT_LOG}"
+    fi
+    if [[ -n ${AIRFLOW_BASE_IMAGE:=""} ]]; then
+        verbose_docker push "${AIRFLOW_BASE_IMAGE}" | tee -a "${OUTPUT_LOG}"
+    fi
     verbose_docker push "${AIRFLOW_IMAGE}" | tee -a "${OUTPUT_LOG}"
     if [[ -n ${DEFAULT_IMAGE:=""} ]]; then
         verbose_docker push "${DEFAULT_IMAGE}" | tee -a "${OUTPUT_LOG}"
     fi
-    _restore_python_version
-}
-
-function rebuild_ci_image_if_needed() {
-    export THE_IMAGE_TYPE="CI"
-    export IMAGE_DESCRIPTION="Airflow CI"
-    export TARGET_IMAGE="main"
-    export AIRFLOW_CONTAINER_CI_OPTIMISED_BUILD="true"
-    export APT_DEPS_IMAGE="airflow-apt-deps-ci"
-    export AIRFLOW_EXTRAS="all,devel"
-    export AIRFLOW_USER="root"
-    export AIRFLOW_USER_HOME="/root"
-    _rebuild_image_if_needed
-}
-
-function cleanup_ci_image() {
-    export THE_IMAGE_TYPE="CI"
-    _cleanup_image
-}
-
-function push_ci_image() {
-    export THE_IMAGE_TYPE="CI"
-    _push_image
-}
-
-function rebuild_ci_slim_image_if_needed() {
-    export THE_IMAGE_TYPE="SLIM_CI"
-    export IMAGE_DESCRIPTION="Airflow slim CI"
-    export TARGET_IMAGE="main"
-    export AIRFLOW_CONTAINER_CI_OPTIMISED_BUILD="true"
-    export APT_DEPS_IMAGE="airflow-apt-deps"
-    export AIRFLOW_EXTRAS="all,devel"
-    export AIRFLOW_USER="airflow"
-    export AIRFLOW_USER_HOME="/home/airflow"
-    _rebuild_image_if_needed
-}
-
-function cleanup_ci_slim_image() {
-    export THE_IMAGE_TYPE="SLIM_CI"
-    _cleanup_image
-}
-
-function push_ci_slim_image() {
-    export THE_IMAGE_TYPE="SLIM_CI"
-    _push_image
-}
-
-function rebuild_prod_image_if_needed() {
-    export THE_IMAGE_TYPE="PROD"
-    export IMAGE_DESCRIPTION="Airflow PROD"
-    export TARGET_IMAGE="main"
-    export AIRFLOW_CONTAINER_CI_OPTIMISED_BUILD="false"
-    export APT_DEPS_IMAGE="airflow-apt-deps"
-    export AIRFLOW_EXTRAS=${AIRFLOW_EXTRAS:="all"}
-    export AIRFLOW_USER="airflow"
-    export AIRFLOW_USER_HOME="/home/airflow"
-    _rebuild_image_if_needed
-}
-
-function cleanup_prod_image() {
-    export THE_IMAGE_TYPE="PROD"
-    _cleanup_image
-}
-
-function push_prod_image() {
-    export THE_IMAGE_TYPE="PROD"
-    _push_image
 }
 
 function rebuild_checklicence_image_if_needed() {
@@ -598,10 +522,43 @@ function cleanup_checklicence_image() {
 }
 
 function push_checklicence_image() {
-    export THE_IMAGE_TYPE="PROD"
+    export THE_IMAGE_TYPE="CHECKLICENCE"
     _push_image
 }
 
+function rebuild_ci_image_if_needed() {
+    export THE_IMAGE_TYPE="CI"
+    export IMAGE_DESCRIPTION="Airflow CI"
+    export TARGET_IMAGE="airflow-ci"
+    _rebuild_image_if_needed
+}
+
+function cleanup_ci_image() {
+    export THE_IMAGE_TYPE="CI"
+    _cleanup_image
+}
+
+function push_ci_image() {
+    export THE_IMAGE_TYPE="CI"
+    _push_image
+}
+
+function rebuild_prod_image_if_needed() {
+    export THE_IMAGE_TYPE="PROD"
+    export IMAGE_DESCRIPTION="Airflow PROD"
+    export TARGET_IMAGE="airflow-prod"
+    _rebuild_image_if_needed
+}
+
+function cleanup_prod_image() {
+    export THE_IMAGE_TYPE="PROD"
+    _cleanup_image
+}
+
+function push_prod_image() {
+    export THE_IMAGE_TYPE="PROD"
+    _push_image
+}
 
 function _go_to_airflow_sources {
     print_info
@@ -648,7 +605,7 @@ function rebuild_all_images_if_needed_and_confirmed() {
 
         if [[ ${SKIP_REBUILD} != "true" ]]; then
             rebuild_ci_image_if_needed
-            rebuild_ci_slim_image_if_needed
+            rebuild_ci_image_if_needed
             rebuild_checklicence_image_if_needed
         fi
     fi
@@ -675,11 +632,11 @@ function build_image_on_ci() {
     elif [[ ${TRAVIS_JOB_NAME} == "Check lic"* ]]; then
         rebuild_checklicence_image_if_needed
     elif [[ ${TRAVIS_JOB_NAME} == "Static"* ]]; then
-        rebuild_ci_slim_image_if_needed
+        rebuild_ci_image_if_needed
     elif [[ ${TRAVIS_JOB_NAME} == "Pylint"* ]]; then
-        rebuild_ci_slim_image_if_needed
+        rebuild_ci_image_if_needed
     elif [[ ${TRAVIS_JOB_NAME} == "Build documentation"* ]]; then
-        rebuild_ci_slim_image_if_needed
+        rebuild_ci_image_if_needed
     else
         echo
         echo "Error! Unexpected Travis job name: ${TRAVIS_JOB_NAME}"
@@ -737,8 +694,8 @@ function _fix_group_ownership() {
 
 function set_image_variables() {
     export PYTHON_BASE_IMAGE="python:${PYTHON_VERSION}-slim-buster"
-    export AIRFLOW_SLIM_CI_IMAGE="${DOCKERHUB_USER}/${DOCKERHUB_REPO}:${TAG_PREFIX}-python${PYTHON_VERSION}-ci-slim"
-    export AIRFLOW_SLIM_CI_IMAGE_DEFAULT="${DOCKERHUB_USER}/${DOCKERHUB_REPO}:${TAG_PREFIX}-ci-slim"
+
+    export AIRFLOW_BASE_IMAGE="${DOCKERHUB_USER}/${DOCKERHUB_REPO}:${TAG_PREFIX}-python${PYTHON_VERSION}-base"
 
     export AIRFLOW_CI_IMAGE="${DOCKERHUB_USER}/${DOCKERHUB_REPO}:${TAG_PREFIX}-python${PYTHON_VERSION}-ci"
     export AIRFLOW_CI_IMAGE_DEFAULT="${DOCKERHUB_USER}/${DOCKERHUB_REPO}:${TAG_PREFIX}-ci"
@@ -749,17 +706,20 @@ function set_image_variables() {
     export AIRFLOW_CHECKLICENCE_IMAGE="${DOCKERHUB_USER}/${DOCKERHUB_REPO}:checklicence"
 
     if [[ ${THE_IMAGE_TYPE} == "CI" ]]; then
-        AIRFLOW_IMAGE="${AIRFLOW_CI_IMAGE}"
-        AIRFLOW_IMAGE_DEFAULT="${AIRFLOW_CI_IMAGE_DEFAULT}"
-    elif [[ ${THE_IMAGE_TYPE} == "SLIM_CI" ]]; then
-        AIRFLOW_IMAGE="${AIRFLOW_SLIM_CI_IMAGE}"
-        AIRFLOW_IMAGE_DEFAULT="${AIRFLOW_SLIM_CI_IMAGE_DEFAULT}"
+        export AIRFLOW_BASE_IMAGE="${AIRFLOW_BASE_IMAGE}"
+        export AIRFLOW_IMAGE="${AIRFLOW_CI_IMAGE}"
+        export AIRFLOW_IMAGE_DEFAULT="${AIRFLOW_CI_IMAGE_DEFAULT}"
+        export AIRFLOW_WWW_IMAGE="${DOCKERHUB_USER}/${DOCKERHUB_REPO}:${TAG_PREFIX}-www"
     elif [[ ${THE_IMAGE_TYPE} == "PROD" ]]; then
-        AIRFLOW_IMAGE="${AIRFLOW_PROD_IMAGE}"
-        AIRFLOW_IMAGE_DEFAULT="${AIRFLOW_PROD_IMAGE_DEFAULT}"
+        export AIRFLOW_BASE_IMAGE="${AIRFLOW_BASE_IMAGE}"
+        export AIRFLOW_IMAGE="${AIRFLOW_PROD_IMAGE}"
+        export AIRFLOW_IMAGE_DEFAULT="${AIRFLOW_PROD_IMAGE_DEFAULT}"
+        export AIRFLOW_WWW_IMAGE="${DOCKERHUB_USER}/${DOCKERHUB_REPO}:${TAG_PREFIX}-www"
     elif [[ ${THE_IMAGE_TYPE} == "CHECKLICENCE" ]]; then
-        AIRFLOW_IMAGE="${AIRFLOW_CHECKLICENCE_IMAGE}"
-        AIRFLOW_IMAGE_DEFAULT=""
+        export AIRFLOW_BASE_IMAGE=""
+        export AIRFLOW_IMAGE="${AIRFLOW_CHECKLICENCE_IMAGE}"
+        export AIRFLOW_IMAGE_DEFAULT=""
+        export AIRFLOW_WWW_IMAGE=""
     fi
 }
 

@@ -35,7 +35,7 @@ function _run_ci_script_with_docker() {
             --env HOST_USER_ID="$(id -ur)" \
             --env HOST_GROUP_ID="$(id -gr)" \
             --rm \
-            "${AIRFLOW_SLIM_CI_IMAGE}" \
+            "${AIRFLOW_CI_IMAGE}" \
             "--" "${SCRIPT}" \
             | tee -a "${OUTPUT_LOG}"
     else
@@ -47,7 +47,7 @@ function _run_ci_script_with_docker() {
             --env HOST_USER_ID="$(id -ur)" \
             --env HOST_GROUP_ID="$(id -gr)" \
             --rm \
-            "${AIRFLOW_SLIM_CI_IMAGE}" \
+            "${AIRFLOW_CI_IMAGE}" \
             "--" "${SCRIPT}" "${FILES[@]}" \
             | tee -a "${OUTPUT_LOG}"
     fi
@@ -153,7 +153,7 @@ function refresh_pylint_todo() {
         --env HOST_USER_ID="$(id -ur)" \
         --env HOST_GROUP_ID="$(id -gr)" \
         --rm \
-        "${AIRFLOW_SLIM_CI_IMAGE}" | tee -a "${OUTPUT_LOG}"
+        "${AIRFLOW_CI_IMAGE}" | tee -a "${OUTPUT_LOG}"
 }
 
 

@@ -109,12 +109,6 @@ export AIRFLOW_CONTAINER_USE_DOCKER_CACHE=${AIRFLOW_CONTAINER_USE_DOCKER_CACHE:=
 # By default we do not push images. This can be overridden by -u flag.
 export AIRFLOW_CONTAINER_PUSH_IMAGES=${AIRFLOW_CONTAINER_PUSH_IMAGES:="false"}
 
-# Skip building slim image locally - we only need full CI image
-export AIRFLOW_CONTAINER_SKIP_CI_SLIM_IMAGE="true"
-
-# Skip building full CI image locally - we only need slim image
-export AIRFLOW_CONTAINER_SKIP_CI_IMAGE="false"
-
 # Branch name of the base image used (usually master or v1-10-test or v1-10-stable)
 export AIRFLOW_CONTAINER_BRANCH_NAME=${AIRFLOW_CONTAINER_BRANCH_NAME:=${DEFAULT_BRANCH}}
 
@@ -932,10 +926,10 @@ else
     if [[ ${ENTER_ENVIRONMENT} == "true" ]]; then
         rebuild_ci_image_if_needed
     elif [[ ${RUN_STATIC_CHECKS} ==  "true" ]]; then
-        rebuild_ci_slim_image_if_needed
+        rebuild_ci_image_if_needed
         rebuild_checklicence_image_if_needed
     elif [[ ${RUN_BUILD_DOCS} == "true" ]]; then
-        rebuild_ci_slim_image_if_needed
+        rebuild_ci_image_if_needed
     fi
 fi
 

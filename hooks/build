@@ -43,11 +43,10 @@ initialize_environment
 
 prepare_build
 
-rebuild_ci_image_if_needed
-rebuild_ci_slim_image_if_needed
 rebuild_checklicence_image_if_needed
+rebuild_ci_image_if_needed
 rebuild_prod_image_if_needed
 
+push_checklicence_image
 push_ci_image
-push_ci_slim_image
 push_prod_image
