@@ -36,10 +36,6 @@ prepare_run
 export FORCE_ANSWER_TO_QUESTIONS="yes"
 rebuild_ci_slim_image_if_needed
 
-LOCALLY_BUILT_IMAGES=("SLIM_CI")
-export LOCALLY_BUILT_IMAGES
-
-export FORCE_ANSWER_TO_QUESTIONS="quit"
-SKIP=pylint,check-apache-license pre-commit run --all-files --show-diff-on-failure
+SKIP=build,pylint,check-apache-license pre-commit run --all-files --show-diff-on-failure
 
 script_end
