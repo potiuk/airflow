@@ -113,7 +113,9 @@ RUN if [[ "${APT_DEPS_IMAGE}" == "airflow-apt-deps-ci" ]]; then \
     apt-get update \
     && apt-get install --no-install-recommends -y \
          apt-transport-https ca-certificates wget dirmngr gnupg software-properties-common \
-    && curl -sL https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public | apt-key add - \
+    && APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1 \
+         curl -sL https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public | apt-key add - \
+    && add-apt-repository --yes https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/ \
     && apt-get update \
     && apt-get install --no-install-recommends -y \
       gnupg \
