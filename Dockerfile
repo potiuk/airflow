@@ -299,7 +299,7 @@ RUN "${AIRFLOW_SOURCES}/scripts/ci/docker_build/ci_build_extract_tests.sh"
 
 EXPOSE 8080
 
-ENTRYPOINT ["/usr/local/bin/dumb-init", "--", "/entrypoint.sh"]
+ENTRYPOINT ["/root/.local/bin/dumb-init", "--", "/entrypoint.sh"]
 
 CMD ["--help"]
 
@@ -378,6 +378,6 @@ WORKDIR ${AIRFLOW_HOME}
 
 EXPOSE 8080
 
-ENTRYPOINT ["/usr/local/bin/dumb-init", "--", "/entrypoint.sh"]
+ENTRYPOINT ["/home/airflow/.local/bin/dumb-init", "--", "/entrypoint.sh"]
 
 CMD ["--help"]
