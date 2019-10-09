@@ -106,9 +106,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-e", "-u", "-x", "-c"]
 ARG AIRFLOW_SOURCES=/opt/airflow
 ENV AIRFLOW_SOURCES=${AIRFLOW_SOURCES}
 
-# Install NPM dependencies here. The NPM dependencies don't change that often and we already have pip
-# installed dependencies in case of CI optimised build, so it is ok to install NPM deps here
-# Rather than after setup.py is added.
+# Install NPM dependencies here
 COPY airflow/www/package-lock.json ${AIRFLOW_SOURCES}/airflow/www/package-lock.json
 COPY airflow/www/package.json ${AIRFLOW_SOURCES}/airflow/www/package.json
 
