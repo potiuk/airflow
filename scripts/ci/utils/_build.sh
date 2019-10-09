@@ -474,6 +474,7 @@ function _rebuild_image_if_needed() {
             _confirm_image_rebuild
         fi
         if [[ ${SKIP_REBUILD} != "true" ]]; then
+            _fix_group_permissions
             print_info
             print_info "Rebuilding started: ${THE_IMAGE_TYPE} image."
             print_info
@@ -644,6 +645,10 @@ function _print_build_info() {
     print_info
 }
 
+# Clears the status of fixing permissions so that this is done only once per script execution
+function _clear_fix_group_permissions() {
+    unset PERMISSIONS_FIXED
+}
 #
 # Fixing permissions for all important files that are going to be added to Docker context
 # This is necessary, because there are different default umask settings on different *NIX
@@ -658,13 +663,23 @@ function _print_build_info() {
 # We fix it by removing write permissions for other/group for important files that are checked during
 # building docker images
 #
-function _fix_group_ownership() {
+function _fix_group_permissions() {
+    if [[ ${PERMISSIONS_FIXED:=} == "true" ]]; then
+        echo
+        echo "Permissions already fixed"
+        echo
+        return
+    fi
     echo
+    echo "Fixing group permissions"
     STAT_BIN=stat
     if [[ "${OSTYPE}" == "darwin"* ]]; then
         STAT_BIN=gstat
     fi
-    for FILE in "${FILES_FOR_REBUILD_CHECK[@]}"; do
+    # Get all files in the context - by building a small alpine based image
+    # then COPY all files (.) from the context and listing the files via find method
+    ALL_FILES_TO_FIX="$(cd "${AIRFLOW_SOURCES}"; git ls-files)"
+    for FILE in ${ALL_FILES_TO_FIX}; do
         ACCESS_RIGHTS=$("${STAT_BIN}" -c "%A" "${AIRFLOW_SOURCES}/${FILE}" || echo "--------")
         # check if the file is group/other writeable
         if [[ "${ACCESS_RIGHTS:5:1}" != "-" || "${ACCESS_RIGHTS:8:1}" != "-" ]]; then
@@ -677,8 +692,9 @@ function _fix_group_ownership() {
             fi
         fi
     done
-    echo "Group/other write access removed for ${#FILES_FOR_REBUILD_CHECK[@]} files"
+    echo "Fixed group permissions for ${#FILES_FOR_REBUILD_CHECK[@]} files"
     echo
+    export PERMISSIONS_FIXED="true"
 }
 
 function set_image_variables() {
@@ -721,5 +737,5 @@ function prepare_build() {
     cleanup_last_force_answer
     _go_to_airflow_sources
     _set_extra_container_docker_flags
-    _fix_group_ownership
+    _clear_fix_group_permissions
 }

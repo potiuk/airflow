@@ -74,6 +74,11 @@ CMDNAME="$(basename -- "$0")"
 # Whether to actually run docker compose with the command set given
 ENTER_ENVIRONMENT="true"
 
+# Whether to build images
+BUILD_IMAGES="false"
+
+# Whether to build production images
+BUILD_PROD_IMAGES="false"
 
 # Whether to cleanup local image
 CLEANUP_IMAGES="false"
@@ -271,7 +276,8 @@ The swiss-knife-army tool for Airflow testings. It allows to perform various tes
   * Build documentation with -O, --build-docs command
   * Setup local virtualenv with -e, --setup-virtualenv command
   * Setup autocomplete for itself with -a, --setup-autocomplete command
-  * Build docker image with -b, --build-only command
+  * Build CI/CHECKLICENCE docker images with -b, --build-only command
+  * Build PROD image with -z, --build-prod-image-only
   * Run test target specified with -t, --test-target connad
   * Execute arbitrary command in the test environmenrt with -x, --execute-command command
   * Execute arbitrary docker-compose command with -d, --docker-compose command
@@ -328,7 +334,10 @@ The swiss-knife-army tool for Airflow testings. It allows to perform various tes
         shell and when typing breeze command <TAB> will provide autocomplete for parameters and values.
 
 -b, --build-only
-        Only build docker images but do not enter the airflow-testing docker container.
+        Only build CI/CHECKLICENCE docker images but do not enter the airflow-testing docker container.
+
+-z, --build-prod-image-only
+        Only build PROD docker image but do not enter the airflow-testing docker container.
 
 -t, --test-target <TARGET>
         Run the specified unit test target. There might be multiple
@@ -491,7 +500,15 @@ do
     -b|--build-only)
       ENTER_ENVIRONMENT="false"
       export AIRFLOW_CONTAINER_FORCE_DOCKER_BUILD="true"
-      echo "Only build. Do not enter airflow-testing container"
+      export BUILD_IMAGES="true"
+      echo "Only build CI/CHECKLICENCE images. Do not enter airflow-testing container"
+      echo
+      shift ;;
+    -z|--build-prod-image-only)
+      ENTER_ENVIRONMENT="false"
+      export AIRFLOW_CONTAINER_FORCE_DOCKER_BUILD="true"
+      export BUILD_PROD_IMAGES="true"
+      echo "Only build PROD image. Do not enter airflow-testing container"
       echo
       shift ;;
     -v|--verbose)
@@ -930,6 +947,11 @@ else
         rebuild_checklicence_image_if_needed
     elif [[ ${RUN_BUILD_DOCS} == "true" ]]; then
         rebuild_ci_image_if_needed
+    elif [[ ${BUILD_IMAGES} == "true" ]]; then
+        rebuild_ci_image_if_needed
+        rebuild_checklicence_image_if_needed
+    elif [[ ${BUILD_PRODUCTION_IMAGE} == "true" ]]; then
+        rebuild_prod_image_if_needed
     fi
 fi
 
