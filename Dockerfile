@@ -354,7 +354,7 @@ COPY . ${AIRFLOW_SOURCES}/
 
 # Reinstall airflow again - this time with sources and remove the sources after installation
 RUN pip install --user --no-use-pep517 ".[${AIRFLOW_EXTRAS}]" \
-    && rm -rf "${AIRFLOW_SOURCES}"
+    && gosu root rm -rf "${AIRFLOW_SOURCES}"
 
 # Additional python deps to install
 ARG ADDITIONAL_PYTHON_DEPS=""
