@@ -355,8 +355,8 @@ RUN pip install --user --no-use-pep517 ".[${AIRFLOW_EXTRAS}]" \
 COPY . ${AIRFLOW_SOURCES}/
 
 # Reinstall airflow again - this time with sources and remove the sources after installation
-# It is not perfect because the sources are added as layer but it is still better
-RUN pip install --user --no-use-pep517 ".[${AIRFLOW_EXTRAS}]"
+RUN pip install --user --no-use-pep517 ".[${AIRFLOW_EXTRAS}]" \
+    && rm -rf "${AIRFLOW_SOURCES}"
 
 # Additional python deps to install
 ARG ADDITIONAL_PYTHON_DEPS=""
@@ -364,8 +364,6 @@ ARG ADDITIONAL_PYTHON_DEPS=""
 RUN if [[ -n "${ADDITIONAL_PYTHON_DEPS}" ]]; then \
         pip install --user ${ADDITIONAL_PYTHON_DEPS}; \
     fi
-
-WORKDIR ${AIRFLOW_SOURCES}
 
 COPY --chown=airflow:airflow ./scripts/docker/entrypoint.sh /entrypoint.sh
 
@@ -378,7 +376,7 @@ RUN mkdir -pv "${AIRFLOW_HOME}" \
 
 ENV PATH="/home/airflow/.local/bin:/home/airflow:${PATH}"
 
-WORKDIR ${AIRFLOW_SOURCES}
+WORKDIR ${AIRFLOW_HOME}
 
 EXPOSE 8080
 
