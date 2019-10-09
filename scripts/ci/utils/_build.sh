@@ -627,21 +627,10 @@ function build_image_on_ci() {
     verbose_docker system prune --all --force | tee -a "${OUTPUT_LOG}"
     rm -rf "${BUILD_CACHE_DIR}"
 
-    if [[ ${TRAVIS_JOB_NAME:=""} == "Tests"* ]]; then
-        rebuild_ci_image_if_needed
-    elif [[ ${TRAVIS_JOB_NAME} == "Check lic"* ]]; then
+    if  [[ ${TRAVIS_JOB_NAME} == "Check lic"* ]]; then
         rebuild_checklicence_image_if_needed
-    elif [[ ${TRAVIS_JOB_NAME} == "Static"* ]]; then
-        rebuild_ci_image_if_needed
-    elif [[ ${TRAVIS_JOB_NAME} == "Pylint"* ]]; then
-        rebuild_ci_image_if_needed
-    elif [[ ${TRAVIS_JOB_NAME} == "Build documentation"* ]]; then
-        rebuild_ci_image_if_needed
     else
-        echo
-        echo "Error! Unexpected Travis job name: ${TRAVIS_JOB_NAME}"
-        echo
-        exit 1
+        rebuild_ci_image_if_needed
     fi
 
     # Disable force pulling forced above

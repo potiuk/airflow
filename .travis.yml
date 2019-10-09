@@ -63,6 +63,9 @@ jobs:
     - name: "Build documentation"
       stage: pre-test
       script: ./scripts/ci/ci_docs.sh
+    - name: "Build PROD image"
+      stage: pre-test
+      script: ./scripts/ci/local_ci_build_prod_image.sh
 services:
   - docker
 install:
