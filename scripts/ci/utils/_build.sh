@@ -686,7 +686,9 @@ function _fix_group_permissions() {
             if [[ "${VERBOSE_FIX_FILE:="false"}" == "true" ]]; then
                 "${STAT_BIN}" --printf "%a %A %F \t%s \t->    " "${AIRFLOW_SOURCES}/${FILE}"
             fi
-            chmod og-w "${AIRFLOW_SOURCES}/${FILE}"
+            if [[ -f "${AIRFLOW_SOURCES}/${FILE}" || -d "${AIRFLOW_SOURCES}/${FILE}" ]]; then
+                chmod og-w "${AIRFLOW_SOURCES}/${FILE}"
+            fi
             if [[ "${VERBOSE_FIX_FILE:="false"}" == "true" ]]; then
                 "${STAT_BIN}" --printf "%a %A %F \t%s \t%n\n" "${AIRFLOW_SOURCES}/${FILE}"
             fi

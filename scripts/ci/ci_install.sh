@@ -20,7 +20,7 @@ set -euo pipefail
 
 MY_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-export VERBOSE="true"
+export VERBOSE=${VERBOSE:="false"}
 
 # shellcheck source=scripts/ci/utils/_include_all.sh
 . "${MY_DIR}/utils/_include_all.sh"
