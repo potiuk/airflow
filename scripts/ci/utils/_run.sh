@@ -28,7 +28,7 @@ function _run_ci_script_with_docker() {
 
     if [[ "${#FILES[@]}" == "0" ]]; then
         verbose_docker run "${AIRFLOW_CONTAINER_EXTRA_DOCKER_FLAGS[@]}" \
-            --entrypoint "/usr/local/bin/dumb-init"  \
+            --entrypoint "/root/.local/bin/dumb-init"  \
             --env PYTHONDONTWRITEBYTECODE \
             --env AIRFLOW_CI_VERBOSE="${VERBOSE}" \
             --env AIRFLOW_CI_SILENT \
@@ -40,7 +40,7 @@ function _run_ci_script_with_docker() {
             | tee -a "${OUTPUT_LOG}"
     else
         verbose_docker run "${AIRFLOW_CONTAINER_EXTRA_DOCKER_FLAGS[@]}" \
-            --entrypoint "/usr/local/bin/dumb-init"  \
+            --entrypoint "/root/.local/bin/dumb-init"  \
             --env PYTHONDONTWRITEBYTECODE \
             --env AIRFLOW_CI_VERBOSE="${VERBOSE}" \
             --env AIRFLOW_CI_SILENT \
