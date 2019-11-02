@@ -16,34 +16,23 @@
 # specific language governing permissions and limitations
 # under the License.
 
-#
-# Fixes ownership for files created inside container (files owned by root will be owned by host user)
-#
+# Bash sanity settings (error on exit, complain for undefined vars, error when pipe fails)
+set -euxo pipefail
 
-set -euo pipefail
-MY_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+MY_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" || exit 1; pwd )"
 
-# shellcheck source=scripts/ci/_utils.sh
-. "${MY_DIR}/_utils.sh"
+AIRFLOW_SOURCES=$(cd "${MY_DIR}/../../.." || exit 1; pwd)
+export AIRFLOW_SOURCES
 
-basic_sanity_checks
+nosetests --collect-only --with-xunit --xunit-file="${HOME}/all_tests.xml"
 
-script_start
+python "${AIRFLOW_SOURCES}/tests/test_utils/get_all_tests.py" \
+                "${HOME}/all_tests.xml" >"${HOME}/all_tests.txt"; \
 
-export PYTHON_VERSION=${PYTHON_VERSION:="3.6"}
+echo ". ${HOME}/.bash_completion" >> "${HOME}/.bashrc"
 
-export AIRFLOW_CI_IMAGE=\
-${DOCKERHUB_USER}/${DOCKERHUB_REPO}:${AIRFLOW_CONTAINER_BRANCH_NAME}-python${PYTHON_VERSION}-ci
+chmod +x "${HOME}/run-tests-complete"
 
-HOST_USER_ID="$(id -ur)"
-export HOST_USER_ID
+chmod +x "${HOME}/run-tests"
 
-HOST_GROUP_ID="$(id -gr)"
-export HOST_GROUP_ID
-
-docker-compose \
-    -f "${MY_DIR}/docker-compose.yml" \
-    -f "${MY_DIR}/docker-compose-local.yml" \
-    run --no-deps airflow-testing /opt/airflow/scripts/ci/in_container/run_fix_ownership.sh
-
-script_end
+chown airflow.airflow "${HOME}/.bashrc" "${HOME}/run-tests-complete" "${HOME}/run-tests"

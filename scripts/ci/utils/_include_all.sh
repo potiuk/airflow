@@ -16,15 +16,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# We do not push in the push step because we are building multiple images in the build step
-# and it is difficult to pass list of the built images from the build to push phase
-set -euo pipefail
+# Assume AIRFLOW_SOURCES are set to point to sources of Airflow
 
-MY_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-echo "My dir: ${MY_DIR}"
-
-
-echo
-echo "Skip pushing the image. All images were built and pushed in the build hook already!"
-echo
+# shellcheck source=scripts/ci/utils/_init.sh
+. "${AIRFLOW_SOURCES}/scripts/ci/utils/_init.sh"
+# shellcheck source=scripts/ci/utils/_build.sh
+. "${AIRFLOW_SOURCES}/scripts/ci/utils/_build.sh"
+# shellcheck source=scripts/ci/utils/_run.sh
+. "${AIRFLOW_SOURCES}/scripts/ci/utils/_run.sh"

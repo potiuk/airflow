@@ -79,9 +79,8 @@ images maintained on the Docker Hub in the ``apache/airflow`` repository.
 
 There are three images that we are currently managing:
 
-* **Full CI image*** that is used for testing od both Unit tests and static check tests.
-  It contains a lot test-related packages (size of ~1GB).
-  Its tag follows the pattern of ``<BRANCH>-python<PYTHON_VERSION>-ci``
+* **Full CI image*** that is used for testing. It contains a lot more test-related installed software
+  (size of ~1GB). Its tag follows the pattern of ``<BRANCH>-python<PYTHON_VERSION>-ci``
   (for example, ``apache/airflow:master-python3.6-ci``). The image is built using the
   `<Dockerfile>`_ Dockerfile.
 
@@ -718,7 +717,7 @@ Optionally use one of the variables (defaults are bold):
 * PYTHON_VERSION is one of **3.5**/3.6/3.7
 * BACKEND is one of **sqlite**/postgres//mysql
 
-For Kubernetes tests you should set ``RUN_KUBERNETES_TESTS`` variable to true.
+For Kubernetes tests you should set ``START_KUBERNETES_CLUSTER`` variable to true.
 This will start Kubernetes cluster inside the container using kind (Kubernetes-IN-Docker).
 You might also optionally specify one of the variables (defaults are bold):
 
@@ -742,7 +741,7 @@ To run Kubernetes tests, enter:
 
 .. code-block::
 
-  RUN_KUBERNETES_TESTS=true KUBERNETES_MODE=persistent_mode KUBERNETES_VERSION=v1.15.3 BACKEND=postgres \
+  START_KUBERNETES_CLUSTER=true KUBERNETES_MODE=persistent_mode KUBERNETES_VERSION=v1.15.3 BACKEND=postgres \
     ./scripts/ci/local_ci_run_airflow_testing.sh
 
 
@@ -838,7 +837,6 @@ This is the current syntax for  `./breeze <./breeze>`_:
 .. code-block:: text
 
 
-
   Usage: breeze [FLAGS] \
     [-k]|[-S <STATIC_CHECK>]|[-F <STATIC_CHECK>]|[-O]|[-e]|[-a]|[-b]|[-t <TARGET>]|[-x <COMMAND>]|[-d <COMMAND>] \
     -- <EXTRA_ARGS>
@@ -852,9 +850,9 @@ This is the current syntax for  `./breeze <./breeze>`_:
     * Build documentation with -O, --build-docs command
     * Setup local virtualenv with -e, --setup-virtualenv command
     * Setup autocomplete for itself with -a, --setup-autocomplete command
-    * Build docker image with -b, --build-only command
+    * Build CI docker images with -b, --build-only command
     * Run test target specified with -t, --test-target connad
-    * Execute arbitrary command in the test environmenrt with -x, --execute-command command
+    * Execute arbitrary command in the test environment with -x, --execute-command command
     * Execute arbitrary docker-compose command with -d, --docker-compose command
 
   ** Commands
@@ -872,8 +870,13 @@ This is the current syntax for  `./breeze <./breeze>`_:
 
   -S, --static-check <STATIC_CHECK>
           Run selected static checks for currently changed files. You should specify static check that
-          you would like to run or 'all' to run all checks. One of
-          [ all all-but-pylint check-hooks-apply check-merge-conflict check-executables-have-shebangs check-xml detect-private-key doctoc end-of-file-fixer flake8 forbid-tabs insert-license check-apache-license lint-dockerfile mixed-line-ending mypy pylint shellcheck].
+          you would like to run or 'all' to run all checks. One of:
+
+  all all-but-pylint build check-apache-license check-executables-have-shebangs check-hooks-apply
+  check-merge-conflict check-xml detect-private-key doctoc end-of-file-fixer flake8 forbid-tabs
+  insert-license isort lint-dockerfile mixed-line-ending mypy pylint python-no-log-warn rst-backticks
+  shellcheck yamllint
+
           You can pass extra arguments including options to to the pre-commit framework as
           <EXTRA_ARGS> passed after --. For example:
 
@@ -886,8 +889,13 @@ This is the current syntax for  `./breeze <./breeze>`_:
 
   -F, --static-check-all-files <STATIC_CHECK>
           Run selected static checks for all applicable files. You should specify static check that
-          you would like to run or 'all' to run all checks. One of
-          [ all all-but-pylint check-hooks-apply check-merge-conflict check-executables-have-shebangs check-xml detect-private-key doctoc end-of-file-fixer flake8 forbid-tabs insert-license check-apache-license lint-dockerfile mixed-line-ending mypy pylint shellcheck].
+          you would like to run or 'all' to run all checks. One of:
+
+  all all-but-pylint build check-apache-license check-executables-have-shebangs check-hooks-apply
+  check-merge-conflict check-xml detect-private-key doctoc end-of-file-fixer flake8 forbid-tabs
+  insert-license isort lint-dockerfile mixed-line-ending mypy pylint python-no-log-warn rst-backticks
+  shellcheck yamllint
+
           You can pass extra arguments including options to the pre-commit framework as
           <EXTRA_ARGS> passed after --. For example:
 
@@ -909,7 +917,7 @@ This is the current syntax for  `./breeze <./breeze>`_:
           shell and when typing breeze command <TAB> will provide autocomplete for parameters and values.
 
   -b, --build-only
-          Only build docker images but do not enter the airflow-testing docker container.
+          Only build CI docker images but do not enter the airflow-testing docker container.
 
   -t, --test-target <TARGET>
           Run the specified unit test target. There might be multiple
@@ -979,6 +987,9 @@ This is the current syntax for  `./breeze <./breeze>`_:
   -n, --assume-no
           Assume 'no' answer to all questions.
 
+  -q, --assume-quit
+          Assume 'quit' answer to all questions.
+
   -C, --toggle-suppress-cheatsheet
           Toggles on/off cheatsheet displayed before starting bash shell
 
@@ -998,10 +1009,6 @@ This is the current syntax for  `./breeze <./breeze>`_:
           automatically for the first time or when changes are detected in
           package-related files, but you can force it using this flag.
 
-  -R, --force-build-images-clean
-          Force build images without cache. This will remove the pulled or build images
-          and start building images from scratch. This might take a long time.
-
   -p, --force-pull-images
           Forces pulling of images from DockerHub before building to populate cache. The
           images are pulled by default only for the first time you run the
@@ -1018,7 +1025,6 @@ This is the current syntax for  `./breeze <./breeze>`_:
 
 
  .. END BREEZE HELP MARKER
-
 
 Convenience Scripts
 -------------------
