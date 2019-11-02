@@ -16,16 +16,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-IMAGE=${IMAGE:-airflow}
-TAG=${TAG:-latest}
-DIRNAME=$(cd "$(dirname "$0")" && pwd)
-AIRFLOW_ROOT="${DIRNAME}/../../../.."
+set -euo pipefail
+MY_DIR=$(cd "$(dirname "$0")" && pwd)
 
-set -e
-
-echo "Airflow directory ${AIRFLOW_ROOT}"
-echo "Airflow Docker directory ${DIRNAME}"
-
-cd "${DIRNAME}" && docker build --build-arg AIRFLOW_CI_IMAGE="${AIRFLOW_CONTAINER_DOCKER_IMAGE}" --pull "${DIRNAME}" --tag="${IMAGE}:${TAG}"
-
-kind load docker-image "${IMAGE}:${TAG}"
+echo
+echo "Set up Kubernetes cluster for tests"
+echo
+"${MY_DIR}/../kubernetes/setup_kubernetes.sh"
+"${MY_DIR}/../kubernetes/app/deploy_app.sh"
