@@ -83,6 +83,7 @@ There are three images that we are currently managing:
   (size of ~1GB). Its tag follows the pattern of ``<BRANCH>-python<PYTHON_VERSION>-ci``
   (for example, ``apache/airflow:master-python3.6-ci``). The image is built using the
   `<Dockerfile>`_ Dockerfile.
+* **Production-ready image** that is used TODO
 
 Before you run tests, enter the environment or run local static checks, the necessary local images should be
 pulled and built from Docker Hub. This happens automatically for the test environment but you need to
@@ -850,7 +851,8 @@ This is the current syntax for  `./breeze <./breeze>`_:
     * Build documentation with -O, --build-docs command
     * Setup local virtualenv with -e, --setup-virtualenv command
     * Setup autocomplete for itself with -a, --setup-autocomplete command
-    * Build CI docker images with -b, --build-only command
+    * Build CI docker image with -b, --build-only command
+    * Build PROD image with -z, --build-prod-image-only
     * Run test target specified with -t, --test-target connad
     * Execute arbitrary command in the test environment with -x, --execute-command command
     * Execute arbitrary docker-compose command with -d, --docker-compose command
@@ -917,7 +919,10 @@ This is the current syntax for  `./breeze <./breeze>`_:
           shell and when typing breeze command <TAB> will provide autocomplete for parameters and values.
 
   -b, --build-only
-          Only build CI docker images but do not enter the airflow-testing docker container.
+          Only build CI docker image but do not enter the airflow-testing docker container.
+
+  -z, --build-prod-image-only
+          Only build PROD docker image but do not enter the airflow-testing docker container.
 
   -t, --test-target <TARGET>
           Run the specified unit test target. There might be multiple

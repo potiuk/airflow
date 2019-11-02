@@ -20,7 +20,7 @@ ARG PYTHON_BASE_IMAGE="python:3.6-slim-buster"
 ARG NODE_BASE_IMAGE="node:12.11.1-buster"
 
 ############################################################################################################
-# Base image for Airflow - contains dependencies used by the main CI image
+# Base image for Airflow - contains dependencies used by both - Production and CI images
 ############################################################################################################
 FROM ${PYTHON_BASE_IMAGE} as airflow-base
 
@@ -265,7 +265,8 @@ RUN echo "Installing with extras: ${AIRFLOW_CI_EXTRAS}."
 
 ENV PATH="/root/.local/bin:/root:${PATH}"
 
-# Increase the value here to force reinstalling Apache Airflow pip dependencies
+# Increase the value here to force reinstalling pip dependencies from the scratch for CI build
+# It can also be overwritten manually by setting the build variable.
 ARG PIP_DEPENDENCIES_EPOCH_NUMBER="1"
 ENV PIP_DEPENDENCIES_EPOCH_NUMBER=${PIP_DEPENDENCIES_EPOCH_NUMBER}
 
@@ -276,7 +277,7 @@ RUN pip install --user \
         "https://github.com/${AIRFLOW_REPO}/archive/${AIRFLOW_BRANCH}.tar.gz#egg=apache-airflow[${AIRFLOW_CI_EXTRAS}]" \
         && pip uninstall --yes apache-airflow snakebite
 
-# Copy all www files here so that we can run npm building
+# Copy all www files here so that we can run npm building for production
 COPY airflow/www/ ${AIRFLOW_SOURCES}/airflow/www/
 
 WORKDIR ${AIRFLOW_SOURCES}/airflow/www
@@ -311,7 +312,8 @@ COPY airflow/__init__.py ${AIRFLOW_SOURCES}/airflow/__init__.py
 COPY airflow/bin/airflow ${AIRFLOW_SOURCES}/airflow/bin/airflow
 
 # The goal of this line is to install the dependencies from the most current setup.py from sources
-# This will be usually incremental small set of packages in the CI optimized build, so it will be very fast
+# This will be usually incremental small set of packages in CI optimized build, so it will be very fast
+# For production optimised build it is the first time dependencies are installed so it will be slower
 RUN pip install --user -e ".[${AIRFLOW_CI_EXTRAS}]" \
     && pip uninstall --yes apache-airflow
 
@@ -342,5 +344,127 @@ RUN "${AIRFLOW_SOURCES}/scripts/ci/docker_build/extract_tests.sh"
 EXPOSE 8080
 
 ENTRYPOINT ["/root/.local/bin/dumb-init", "--", "/entrypoint.sh"]
+
+CMD ["--help"]
+
+############################################################################################################
+# This is separate stage for packaging. WWW files with npm so that no node is needed for production image
+############################################################################################################
+FROM ${NODE_BASE_IMAGE} as airflow-www
+
+SHELL ["/bin/bash", "-o", "pipefail", "-e", "-u", "-x", "-c"]
+
+ARG AIRFLOW_SOURCES=/opt/airflow
+ENV AIRFLOW_SOURCES=${AIRFLOW_SOURCES}
+
+COPY airflow/www/ ${AIRFLOW_SOURCES}/airflow/www/
+
+WORKDIR ${AIRFLOW_SOURCES}/airflow/www
+
+RUN npm ci
+
+RUN mkdir -p "${AIRFLOW_SOURCES}/airflow/www/static" \
+    && mkdir -p "${AIRFLOW_SOURCES}/docs/build/_html" \
+    && pushd "${AIRFLOW_SOURCES}/airflow/www/static" || exit \
+    && ln -sf ../../../docs/_build/html docs \
+    && popd || exit
+
+# Package NPM for production
+RUN npm run prod
+
+# Remove node modules
+RUN rm -rf ${AIRFLOW_SOURCES}/airflow/www/node_modules
+
+############################################################################################################
+# Generated documentation
+############################################################################################################
+FROM airflow-ci as airflow-docs
+
+SHELL ["/bin/bash", "-o", "pipefail", "-e", "-u", "-x", "-c"]
+
+RUN "${AIRFLOW_SOURCES}/docs/build.sh"
+
+############################################################################################################
+# Production-ready Airflow image
+############################################################################################################
+FROM airflow-base as airflow-prod
+
+SHELL ["/bin/bash", "-o", "pipefail", "-e", "-u", "-x", "-c"]
+
+# Airflow Extras installed
+ARG AIRFLOW_PROD_EXTRAS="all"
+ENV AIRFLOW_PROD_EXTRAS=${AIRFLOW_PROD_EXTRAS}
+
+RUN echo "Installing with extras: ${AIRFLOW_PROD_EXTRAS}."
+
+ARG AIRFLOW_HOME=/home/airflow
+ENV AIRFLOW_HOME=${AIRFLOW_HOME}
+
+RUN chown airflow.airflow ${AIRFLOW_HOME}
+
+USER airflow
+
+ARG AIRFLOW_SOURCES=/opt/airflow
+ENV AIRFLOW_SOURCES=${AIRFLOW_SOURCES}
+
+WORKDIR ${AIRFLOW_SOURCES}
+
+# Airflow sources change frequently but dependency configuration won't change that often
+# We copy setup.py and other files needed to perform setup of dependencies
+# So in case setup.py changes we can install latest dependencies required.
+COPY setup.py ${AIRFLOW_SOURCES}/setup.py
+COPY setup.cfg ${AIRFLOW_SOURCES}/setup.cfg
+
+COPY airflow/version.py ${AIRFLOW_SOURCES}/airflow/version.py
+COPY airflow/__init__.py ${AIRFLOW_SOURCES}/airflow/__init__.py
+COPY airflow/bin/airflow ${AIRFLOW_SOURCES}/airflow/bin/airflow
+
+# Setting to 1 speeds up building the image. Cassandra driver without CYTHON saves around 10 minutes
+# But might not be suitable for production image
+ENV CASS_DRIVER_NO_CYTHON=""
+ENV CASS_DRIVER_BUILD_CONCURRENCY="8"
+
+ENV PATH="/home/airflow/.local/bin:/home/airflow:${PATH}"
+
+# The goal of this line is to install the dependencies from the most current setup.py from sources
+# This will be usually incremental small set of packages in CI optimized build, so it will be very fast
+# For production optimised build it is the first time dependencies are installed so it will be slower
+RUN pip install --user ".[${AIRFLOW_PROD_EXTRAS}]" \
+    && pip uninstall --yes apache-airflow snakebite
+
+# Cache for this line will be automatically invalidated if any
+# of airflow sources change
+COPY . ${AIRFLOW_SOURCES}/
+
+# Reinstall airflow again - this time with sources and remove the sources after installation
+RUN pip install --user ".[${AIRFLOW_PROD_EXTRAS}]"
+
+# Additional python deps to install
+ARG ADDITIONAL_PYTHON_DEPS=""
+
+RUN if [[ -n "${ADDITIONAL_PYTHON_DEPS}" ]]; then \
+        pip install --user ${ADDITIONAL_PYTHON_DEPS}; \
+    fi
+
+COPY --chown=airflow:airflow ./scripts/docker/entrypoint.sh /entrypoint.sh
+
+# Copy Airflow www packages
+COPY --chown=airflow:airflow --from=airflow-www /opt/airflow/airflow/www ${HOME}/.local/airflow/www
+
+COPY --chown=airflow:airflow --from=airflow-docs /opt/airflow/docs/_build/html \
+    ${HOME}/.local/airflow/www/static/docs
+
+RUN mkdir -pv "${AIRFLOW_HOME}" \
+    && mkdir -pv "${AIRFLOW_HOME}/dags" \
+    && mkdir -pv "${AIRFLOW_HOME}/logs"
+
+ENV AIRFLOW_USER=airflow
+ENV HOME=/home/airflow
+
+WORKDIR ${AIRFLOW_HOME}
+
+EXPOSE 8080
+
+ENTRYPOINT ["/home/airflow/.local/bin/dumb-init", "--", "/entrypoint.sh"]
 
 CMD ["--help"]
