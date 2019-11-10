@@ -196,6 +196,13 @@ repos:
         language: system
         always_run: true
         pass_filenames: false
+      - id: update-all-tests
+        name: Update list of all tests for auto-completion
+        entry: ./scripts/ci/pre_commit_extract_tests.sh
+        language: system
+        files: tests/.*\.py$
+        pass_filenames: false
+        require_serial: true
       - id: check-apache-license
         name: Check if licenses are OK for Apache
         entry: "./scripts/ci/pre_commit_check_license.sh"

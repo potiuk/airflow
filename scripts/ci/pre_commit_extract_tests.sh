@@ -16,24 +16,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# Bash sanity settings (error on exit, complain for undefined vars, error when pipe fails)
-set -euxo pipefail
+set -uo pipefail
 
-MY_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" || exit 1; pwd )"
+MY_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+export REMEMBER_LAST_ANSWER="false"
+export PYTHON_VERSION=3.5
 
-AIRFLOW_SOURCES=$(cd "${MY_DIR}/../../.." || exit 1; pwd)
-export AIRFLOW_SOURCES
-
-gosu "${AIRFLOW_USER}" nosetests --collect-only --with-xunit --xunit-file="${HOME}/all_tests.xml"
-
-gosu "${AIRFLOW_USER}" \
-    python "${AIRFLOW_SOURCES}/tests/test_utils/get_all_tests.py" \
-                    "${HOME}/all_tests.xml" >"${HOME}/all_tests.txt"; \
-
-echo ". ${HOME}/.bash_completion" >> "${HOME}/.bashrc"
-
-chmod +x "${HOME}/run-tests-complete"
-
-chmod +x "${HOME}/run-tests"
-
-chown "${AIRFLOW_USER}.${AIRFLOW_USER}" "${HOME}/.bashrc" "${HOME}/run-tests-complete" "${HOME}/run-tests"
+"${MY_DIR}/local_ci_extract_tests.sh"

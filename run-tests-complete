@@ -72,7 +72,7 @@ function _comp_run_tests {
     local GETOPT_OPTION
     local LAST_COMMAND_PREFIX
     local PREVIOUS_COMMAND
-    local ALL_TESTS_FILE="${HOME}/all_tests.txt"
+    local ALL_TESTS_FILE="${AIRFLOW_SOURCES}/tests/all_tests.txt"
 
     for OPTION in ${_RUN_TESTS_SHORT_OPTIONS}
     do

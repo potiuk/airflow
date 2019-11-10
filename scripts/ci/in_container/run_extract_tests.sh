@@ -17,33 +17,23 @@
 # under the License.
 
 #
-# Fixes ownership for files created inside container (files owned by root will be owned by host user)
-#
-
+# Bash sanity settings (error on exit, complain for undefined vars, error when pipe fails)
 set -euo pipefail
-MY_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# shellcheck source=scripts/ci/_utils.sh
-. "${MY_DIR}/_utils.sh"
+MY_DIR=$(cd "$(dirname "$0")" || exit 1; pwd)
 
-basic_sanity_checks
+# shellcheck source=scripts/ci/in_container/_in_container_utils.sh
+. "${MY_DIR}/_in_container_utils.sh"
 
-script_start
+in_container_basic_sanity_check
 
-export PYTHON_VERSION=3.5
+in_container_script_start
 
-export AIRFLOW_CONTAINER_DOCKER_IMAGE=\
-${DOCKERHUB_USER}/${DOCKERHUB_REPO}:${AIRFLOW_CONTAINER_BRANCH_NAME}-python${PYTHON_VERSION}-ci
+TMP_FILE=$(mktemp)
 
-HOST_USER_ID="$(id -ur)"
-export HOST_USER_ID
+nosetests --collect-only --with-xunit --xunit-file="${TMP_FILE}"
 
-HOST_GROUP_ID="$(id -gr)"
-export HOST_GROUP_ID
+python "${AIRFLOW_SOURCES}/tests/test_utils/get_all_tests.py" "${TMP_FILE}" \
+    >"${AIRFLOW_SOURCES}/tests/all_tests.txt"
 
-docker-compose \
-    -f "${MY_DIR}/docker-compose.yml" \
-    -f "${MY_DIR}/docker-compose-local.yml" \
-    run --no-deps airflow-testing /opt/airflow/scripts/ci/in_container/run_fix_ownership.sh
-
-script_end
+in_container_script_end
