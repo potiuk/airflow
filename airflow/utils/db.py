@@ -336,6 +336,8 @@ def resetdb():
     Clear out the database
     """
     from airflow import models
+    # noinspection PyUnresolvedReferences
+    from airflow.models.serialized_dag import SerializedDagModel  # noqa: F401 isort # isort:skip
 
     # alembic adds significant import time, so we import it lazily
     from alembic.migration import MigrationContext

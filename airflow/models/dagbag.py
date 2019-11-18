@@ -34,7 +34,6 @@ from airflow.configuration import conf
 from airflow.dag.base_dag import BaseDagBag
 from airflow.exceptions import AirflowDagCycleException
 from airflow.executors import get_default_executor
-from airflow.models.serialized_dag import SerializedDagModel
 from airflow.stats import Stats
 from airflow.utils import timezone
 from airflow.utils.dag_processing import correct_maybe_zipped, list_py_file_paths
@@ -124,7 +123,10 @@ class DagBag(BaseDagBag, LoggingMixin):
         :param from_file_only: returns a DAG loaded from file.
         :type from_file_only: bool
         """
-        from airflow.models.dag import DagModel  # Avoid circular import
+        # Avoid circular import
+        from airflow.models.dag import DagModel
+        from airflow.models.serialized_dag import SerializedDagModel
+        from airflow.serialization.serialized_dag import SerializedDAG
 
         # Only read DAGs from DB if this dagbag is store_serialized_dags.
         # from_file_only is an exception, currently it is for renderring templates
@@ -157,7 +159,6 @@ class DagBag(BaseDagBag, LoggingMixin):
         # Needs to load from file for a store_serialized_dags dagbag.
         enforce_from_file = False
         if self.store_serialized_dags and dag is not None:
-            from airflow.serialization.serialized_dag import SerializedDAG
             enforce_from_file = isinstance(dag, SerializedDAG)
 
         # If the dag corresponding to root_dag_id is absent or expired
@@ -444,6 +445,7 @@ class DagBag(BaseDagBag, LoggingMixin):
 
     def collect_dags_from_db(self):
         """Collects DAGs from database."""
+        from airflow.models.serialized_dag import SerializedDagModel
         start_dttm = timezone.utcnow()
         self.log.info("Filling up the DagBag from database")
 
