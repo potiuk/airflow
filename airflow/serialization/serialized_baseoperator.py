@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -19,6 +18,7 @@
 
 """Operator serialization with JSON."""
 from inspect import signature
+from typing import Any, Dict
 
 from airflow.models.baseoperator import BaseOperator
 from airflow.serialization.base_serialization import BaseSerialization
@@ -33,7 +33,7 @@ class SerializedBaseOperator(BaseOperator, BaseSerialization):
 
     _decorated_fields = {'executor_config', }
 
-    _CONSTRUCTOR_PARAMS = {
+    _CONSTRUCTOR_PARAMS: Dict[str, Any] = {
         k: v for k, v in signature(BaseOperator).parameters.items()
         if v.default is not v.empty and v.default is not None
     }
@@ -72,17 +72,16 @@ class SerializedBaseOperator(BaseOperator, BaseSerialization):
         return serialize_op
 
     @classmethod
-    def deserialize_operator(cls, encoded_op: dict) -> BaseOperator:
+    def deserialize_operator(cls, encoded_op: Dict[str, Any]) -> BaseOperator:
         """Deserializes an operator from a JSON object.
         """
         from airflow.serialization.serialized_dag import SerializedDAG
-        from airflow.plugins_manager import operator_extra_links
-
         op = SerializedBaseOperator(task_id=encoded_op['task_id'])
 
         # Extra Operator Links
-        op_extra_links_from_plugin = {}
+        op_extra_links_from_plugin: Dict[str, Any] = {}
 
+        from airflow.plugins_manager import operator_extra_links
         for ope in operator_extra_links:
             for operator in ope.operators:
                 if operator.__name__ == encoded_op["_task_type"] and \
@@ -113,7 +112,7 @@ class SerializedBaseOperator(BaseOperator, BaseSerialization):
         return op
 
     @classmethod
-    def _is_excluded(cls, var, attrname, op):
+    def _is_excluded(cls, var: Any, attrname: str, op: Any):
         if var is not None and op.has_dag() and attrname.endswith("_date"):
             # If this date is the same as the matching field in the dag, then
             # don't store it again at the task level.

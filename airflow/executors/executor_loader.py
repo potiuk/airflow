@@ -25,11 +25,11 @@ class ExecutorLoader:
     Keeps constants for all the currently available executors.
     """
 
-    LOCAL_EXECUTOR = "LocalExecutor"
-    SEQUENTIAL_EXECUTOR = "SequentialExecutor"
-    CELERY_EXECUTOR = "CeleryExecutor"
-    DASK_EXECUTOR = "DaskExecutor"
-    KUBERNETES_EXECUTOR = "KubernetesExecutor"
+    LOCAL_EXECUTOR: str = "LocalExecutor"
+    SEQUENTIAL_EXECUTOR: str = "SequentialExecutor"
+    CELERY_EXECUTOR: str = "CeleryExecutor"
+    DASK_EXECUTOR: str = "DaskExecutor"
+    KUBERNETES_EXECUTOR: str = "KubernetesExecutor"
 
     _default_executor: Optional[BaseExecutor] = None
 

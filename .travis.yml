@@ -24,7 +24,7 @@ env:
     - MOUNT_LOCAL_SOURCES="false"
     - AIRFLOW_MOUNT_HOST_VOLUMES_FOR_STATIC_CHECKS="false"
     - FORCE_ANSWER_TO_QUESTIONS="yes"
-    - AIRFLOW_CI_SILENT="true"
+    - AIRFLOW_CI_SILENT="false"
     - CI="true"
 python: "3.6"
 stages:

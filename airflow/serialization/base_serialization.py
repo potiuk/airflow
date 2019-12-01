@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -23,7 +22,7 @@ import datetime
 import enum
 import logging
 from inspect import Parameter
-from typing import Dict, Optional, Set, Union
+from typing import Any, Dict, Optional, Set, Union
 
 import pendulum
 from dateutil import relativedelta
@@ -84,13 +83,14 @@ class BaseSerialization:
         return cls.from_dict(json.loads(serialized_obj))
 
     @classmethod
-    def from_dict(cls, serialized_obj: dict) -> Union['BaseSerialization', dict, list, set, tuple]:
+    def from_dict(cls, serialized_obj: Dict[Encoding, Any]) -> \
+            Union['BaseSerialization', dict, list, set, tuple]:
         """Deserializes a python dict stored with type decorators and
         reconstructs all DAGs and operators it contains."""
         return cls._deserialize(serialized_obj)
 
     @classmethod
-    def validate_schema(cls, serialized_obj: Union[str, dict]):
+    def validate_schema(cls, serialized_obj: Union[str, dict]) -> None:
         """Validate serialized_obj satisfies JSON schema."""
         if cls._json_schema is None:
             raise AirflowException('JSON schema of {:s} is not set.'.format(cls.__name__))
@@ -103,17 +103,17 @@ class BaseSerialization:
             raise TypeError("Invalid type: Only dict and str are supported.")
 
     @staticmethod
-    def _encode(x, type_):
+    def _encode(x: Any, type_: Any) -> Dict[Encoding, Any]:
         """Encode data by a JSON dict."""
         return {Encoding.VAR: x, Encoding.TYPE: type_}
 
     @classmethod
-    def _is_primitive(cls, var):
+    def _is_primitive(cls, var) -> bool:
         """Primitive types."""
         return var is None or isinstance(var, cls._primitive_types)
 
     @classmethod
-    def _is_excluded(cls, var, attrname, instance):
+    def _is_excluded(cls, var: Any, attrname: str, instance: Any) -> bool:
         """Types excluded from serialization."""
         # pylint: disable=unused-argument
         return (
@@ -123,9 +123,10 @@ class BaseSerialization:
         )
 
     @classmethod
-    def serialize_to_json(cls, object_to_serialize: Union[BaseOperator, DAG], decorated_fields: Set):
+    def serialize_to_json(cls, object_to_serialize: Union[BaseOperator, DAG], decorated_fields: Set) \
+            -> Dict[str, Any]:
         """Serializes an object to json"""
-        serialized_object = {}
+        serialized_object: Dict[str, Any] = {}
         keys_to_serialize = object_to_serialize.get_serialized_fields()
         for key in keys_to_serialize:
             # None is ignored in serialized form and is added back in deserialization.
@@ -142,8 +143,9 @@ class BaseSerialization:
                 serialized_object[key] = value
         return serialized_object
 
+    # pylint: disable=too-many-return-statements
     @classmethod
-    def _serialize(cls, var):  # pylint: disable=too-many-return-statements
+    def _serialize(cls, var) -> Any:  # Unfortunately there is no support for recursive types in mypy
         """Helper function of depth first search for serialization.
 
         The serialization protocol is:
@@ -156,6 +158,7 @@ class BaseSerialization:
         """
         from airflow.serialization.serialized_dag import SerializedDAG
         from airflow.serialization.serialized_baseoperator import SerializedBaseOperator
+        # noinspection PyBroadException
         try:
             if cls._is_primitive(var):
                 # enum.IntEnum is an int instance, it causes json dumps error so we use its value.
@@ -203,9 +206,10 @@ class BaseSerialization:
         except Exception:  # pylint: disable=broad-except
             LOG.warning('Failed to stringify.', exc_info=True)
             return FAILED
+    # pylint: enable=too-many-return-statements
 
     @classmethod
-    def _deserialize(cls, encoded_var):  # pylint: disable=too-many-return-statements
+    def _deserialize(cls, encoded_var: Any) -> Any:  # pylint: disable=too-many-return-statements
         """Helper function of depth first search for deserialization."""
         from airflow.serialization.serialized_dag import SerializedDAG
         from airflow.serialization.serialized_baseoperator import SerializedBaseOperator
@@ -233,7 +237,7 @@ class BaseSerialization:
             return pendulum.timezone(var)
         elif type_ == DAT.RELATIVEDELTA:
             if 'weekday' in var:
-                var['weekday'] = relativedelta.weekday(*var['weekday'])
+                var['weekday'] = relativedelta.weekday(*var['weekday'])  # type: ignore
             return relativedelta.relativedelta(**var)
         elif type_ == DAT.SET:
             return {cls._deserialize(v) for v in var}
@@ -246,11 +250,11 @@ class BaseSerialization:
     _deserialize_timezone = pendulum.timezone
 
     @classmethod
-    def _deserialize_timedelta(cls, seconds):
+    def _deserialize_timedelta(cls, seconds: int) -> datetime.timedelta:
         return datetime.timedelta(seconds=seconds)
 
     @classmethod
-    def _value_is_hardcoded_default(cls, attrname, value):
+    def _value_is_hardcoded_default(cls, attrname: str, value: Any) -> bool:
         """
         Return true if ``value`` is the hard-coded default for the given attribute.
 

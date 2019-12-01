@@ -18,7 +18,6 @@
 # under the License.
 """Airflow models"""
 from airflow.models.base import ID_LEN, Base  # noqa: F401
-from airflow.models.baseoperator import BaseOperator, BaseOperatorLink  # noqa: F401
 from airflow.models.connection import Connection  # noqa: F401
 from airflow.models.dag import DAG, DagModel  # noqa: F401
 from airflow.models.dagbag import DagBag  # noqa: F401
@@ -35,6 +34,8 @@ from airflow.models.taskinstance import TaskInstance, clear_task_instances  # no
 from airflow.models.taskreschedule import TaskReschedule  # noqa: F401
 from airflow.models.variable import Variable  # noqa: F401
 from airflow.models.xcom import XCOM_RETURN_KEY, XCom  # noqa: F401
+
+from airflow.models.baseoperator import BaseOperator, BaseOperatorLink  # noqa: F401 # isort:skip
 
 # Load SQLAlchemy models during package initialization
 # Must be loaded after loading DAG model.
