@@ -231,13 +231,15 @@ class BigQueryUpdateDatasetOperatorTest(unittest.TestCase):
 class BigQueryOperatorTest(unittest.TestCase):
     def test_bql_deprecation_warning(self):
         with warnings.catch_warnings(record=True) as w:
-            BigQueryOperator(
+            task = BigQueryOperator(
                 task_id='test_deprecation_warning_for_bql',
                 bql='select * from test_table'
             )
-        self.assertIn(
-            'Deprecated parameter `bql`',
-            w[0].message.args[0])
+                assert task, "The task should be created."
+                assert len(w) >= 1, "There should be at least one warning."
+                self.assertIn(
+                    'Deprecated parameter `bql`',
+                    w[0].message.args[0])
 
     def setUp(self):
         self.dagbag = models.DagBag(
