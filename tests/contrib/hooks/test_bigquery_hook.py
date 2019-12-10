@@ -28,6 +28,7 @@ from googleapiclient.errors import HttpError
 from airflow.contrib.hooks import bigquery_hook as hook
 from airflow.contrib.hooks.bigquery_hook import _cleanse_time_partitioning, \
     _validate_value, _api_resource_configs_duplication_check
+from tests.test_utils.reset_warning_registry import reset_warning_registry
 
 bq_available = True
 
@@ -233,15 +234,15 @@ def mock_job_cancel(projectId, jobId):
 
 class TestBigQueryBaseCursor(unittest.TestCase):
     def test_bql_deprecation_warning(self):
-
+        with reset_warning_registry():
             with warnings.catch_warnings(record=True) as w:
                 hook.BigQueryBaseCursor("test", "test").run_query(
                     bql='select * from test_table'
                 )
                 yield
-                self.assertIn(
-                    'Deprecated parameter `bql`',
-                    w[0].message.args[0])
+            self.assertIn(
+                'Deprecated parameter `bql`',
+                w[0].message.args[0])
 
     def test_invalid_schema_update_options(self):
         with self.assertRaises(Exception) as context:

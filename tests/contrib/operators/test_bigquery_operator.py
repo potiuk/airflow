@@ -40,6 +40,7 @@ from airflow.exceptions import AirflowException
 from airflow.models import DAG, TaskFail, TaskInstance
 from airflow.settings import Session
 from tests.compat import mock
+from tests.test_utils.reset_warning_registry import reset_warning_registry
 
 TASK_ID = 'test-bq-create-table-operator'
 TEST_DATASET = 'test-dataset'
@@ -230,11 +231,12 @@ class BigQueryUpdateDatasetOperatorTest(unittest.TestCase):
 
 class BigQueryOperatorTest(unittest.TestCase):
     def test_bql_deprecation_warning(self):
-        with warnings.catch_warnings(record=True) as w:
-            task = BigQueryOperator(
-                task_id='test_deprecation_warning_for_bql',
-                bql='select * from test_table'
-            )
+        with reset_warning_registry():
+            with warnings.catch_warnings(record=True) as w:
+                task = BigQueryOperator(
+                    task_id='test_deprecation_warning_for_bql',
+                    bql='select * from test_table'
+                )
                 assert task, "The task should be created."
                 assert len(w) >= 1, "There should be at least one warning."
                 self.assertIn(

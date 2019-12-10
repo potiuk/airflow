@@ -73,6 +73,7 @@ from pendulum import utcnow
 import six
 
 from tests.test_utils.config import conf_vars
+from tests.test_utils.reset_warning_registry import reset_warning_registry
 
 NUM_EXAMPLE_DAGS = 19
 DEV_NULL = '/dev/null'
@@ -433,12 +434,13 @@ class CoreTest(unittest.TestCase):
         """
         Tests that Operators reject illegal arguments
         """
-        with warnings.catch_warnings(record=True) as w:
-            task = BashOperator(
-                task_id='test_illegal_args',
-                bash_command='echo success',
-                dag=self.dag,
-                illegal_argument_1234='hello?')
+        with reset_warning_registry():
+            with warnings.catch_warnings(record=True) as w:
+                task = BashOperator(
+                    task_id='test_illegal_args',
+                    bash_command='echo success',
+                    dag=self.dag,
+                    illegal_argument_1234='hello?')
                 assert task, "The task should be created."
                 assert len(w) >= 1, "There should be at least one warning."
                 self.assertTrue(
