@@ -16,7 +16,6 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-import importlib
 import os
 import six
 import sys
@@ -30,8 +29,10 @@ from tests.test_utils.config import conf_vars
 if six.PY2:
     # Need `assertWarns` back-ported from unittest2
     import unittest2 as unittest
+    from imp import reload
 else:
     import unittest
+    from importlib import reload
 
 SETTINGS_FILE_VALID = """
 LOGGING_CONFIG = {
@@ -167,7 +168,7 @@ class TestLoggingSettings(unittest.TestCase):
 
         for m in [m for m in sys.modules if m not in self.old_modules]:
             del sys.modules[m]
-        importlib.reload(airflow_local_settings)
+        reload(airflow_local_settings)
         configure_logging()
 
     # When we try to load an invalid config file, we expect an error
