@@ -27,9 +27,11 @@ from tempfile import mkdtemp
 
 import mock
 import psutil
+import pytest
 import six
 from mock import MagicMock, Mock, patch
 from parameterized import parameterized
+from sqlalchemy import and_, func, not_, or_
 
 import airflow.example_dags
 from airflow import AirflowException, models, settings
@@ -2887,3 +2889,55 @@ class TestSchedulerJob(unittest.TestCase):
             self.assertEqual(state, ti.state)
 
         session.close()
+
+
+class TestSynchronizeSession:
+    @provide_session
+    @pytest.mark.parametrize("sync_session", [False, 'fetch'])
+    def test_synchronize_session_scheduler_job_1_10(self, sync_session, session=None):
+        dag_ids = ['dag_id_1', 'dag_id_2']
+        old_states = [State.QUEUED, State.SCHEDULED]
+        new_state = [State.NONE]
+        query = session \
+            .query(models.TaskInstance) \
+            .outerjoin(models.DagRun, and_(
+            models.TaskInstance.dag_id == models.DagRun.dag_id,
+            models.TaskInstance.execution_date == models.DagRun.execution_date)) \
+            .filter(models.TaskInstance.dag_id.in_(dag_ids)) \
+            .filter(models.TaskInstance.state.in_(old_states)) \
+            .filter(or_(
+            models.DagRun.state != State.RUNNING,
+            models.DagRun.state.is_(None)))
+        subq = query.subquery()
+        tis_changed = session \
+            .query(models.TaskInstance) \
+            .filter(and_(
+            models.TaskInstance.dag_id == subq.c.dag_id,
+            models.TaskInstance.task_id == subq.c.task_id,
+            models.TaskInstance.execution_date ==
+            subq.c.execution_date)) \
+            .update({models.TaskInstance.state: new_state},
+                    synchronize_session=sync_session)
+        session.commit()
+        print("tis_changed: {}".format(tis_changed))
+
+    @provide_session
+    @pytest.mark.parametrize("sync_session", [False, 'fetch'])
+    def test_synchronize_session_scheduler_job_1_9(self, sync_session, session=None):
+        dag_ids = ['dag_id_1', 'dag_id_2']
+        old_states = [State.QUEUED, State.SCHEDULED]
+        new_state = [State.NONE]
+        tis_changed = (
+            session
+                .query(models.TaskInstance)
+                .filter(models.TaskInstance.dag_id.in_(dag_ids))
+                .filter(models.TaskInstance.state.in_(old_states))
+                .filter(and_(
+                models.DagRun.dag_id == models.TaskInstance.dag_id,
+                models.DagRun.execution_date == models.TaskInstance.execution_date,
+                models.DagRun.state != State.RUNNING))
+                .update({models.TaskInstance.state: new_state},
+                        synchronize_session=sync_session)
+        )
+        session.commit()
+        print("tis_changed: {}".format(tis_changed))

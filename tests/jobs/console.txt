@@ -1,0 +1,89 @@
+UPDATE task_instance, dag_run SET task_instance.state=NULL
+WHERE task_instance.dag_id IN ('dag_id_1', 'dag_id_2')
+AND task_instance.state IN ('queued', 'scheduled') AND dag_run.dag_id = task_instance.dag_id
+AND dag_run.execution_date = task_instance.execution_date AND dag_run.state != 'running';
+
+
+SELECT * FROM task_instance, dag_run
+WHERE task_instance.dag_id IN ('dag_id_1', 'dag_id_2')
+  AND task_instance.state IN ('queued', 'scheduled') AND dag_run.dag_id = task_instance.dag_id
+  AND dag_run.execution_date = task_instance.execution_date; AND dag_run.state != 'running';
+
+SHOW engine innodb status;
+
+show open tables where In_Use > 0 ;
+
+SELECT state from dag_run;
+
+EXPLAIN SELECT task_instance.task_id AS task_instance_task_id, task_instance.dag_id AS
+    task_instance_dag_id, task_instance.execution_date AS task_instance_execution_date
+FROM task_instance, dag_run
+WHERE task_instance.dag_id IN ('dag_id_1', 'dag_id_2') AND
+      task_instance.state IN ('queued', 'scheduled') AND
+      dag_run.dag_id = task_instance.dag_id AND
+      dag_run.execution_date = task_instance.execution_date AND dag_run.state != 'running';
+
+
+EXPLAIN UPDATE task_instance, dag_run SET task_instance.state=NULL WHERE
+task_instance.dag_id IN ('dag_id_1', 'dag_id_2') AND task_instance.state IN ('queued', 'scheduled') AND
+dag_run.dag_id = task_instance.dag_id AND
+dag_run.execution_date = task_instance.execution_date AND dag_run.state != 'running';
+
+
+
+UPDATE task_instance,
+    (SELECT task_instance.try_number AS try_number, task_instance.task_id AS task_id,
+            task_instance.dag_id AS dag_id, task_instance.execution_date AS execution_date,
+            task_instance.start_date AS start_date, task_instance.end_date AS end_date,
+            task_instance.duration AS duration, task_instance.state AS state,
+            task_instance.max_tries AS max_tries, task_instance.hostname AS hostname,
+            task_instance.unixname AS unixname, task_instance.job_id AS job_id, task_instance.pool AS pool,
+            task_instance.queue AS queue,
+            task_instance.priority_weight AS priority_weight, task_instance.operator AS operator,
+            task_instance.queued_dttm AS queued_dttm,
+            task_instance.pid AS pid, task_instance.executor_config AS executor_config
+    FROM task_instance LEFT OUTER JOIN dag_run ON task_instance.dag_id = dag_run.dag_id
+                                AND task_instance.execution_date = dag_run.execution_date
+                       WHERE task_instance.dag_id IN ('dag_id_1', 'dag_id_2') AND
+                             task_instance.state IN ('queued', 'scheduled') AND
+                             (dag_run.state != 'running' OR dag_run.state IS NULL)) AS anon_1
+                SET task_instance.state=NULL WHERE task_instance.dag_id = anon_1.dag_id
+                AND task_instance.task_id = anon_1.task_id AND task_instance.execution_date = anon_1.execution_date;
+
+
+UPDATE performance_schema.setup_instruments
+SET enabled = 'YES'
+WHERE name = 'wait/lock/metadata/sql/mdl';
+
+SELECT
+    pl.id
+     ,pl.user
+     ,pl.state
+     ,it.trx_id
+     ,it.trx_mysql_thread_id
+     ,it.trx_query AS query
+     ,it.trx_id AS blocking_trx_id
+     ,it.trx_mysql_thread_id AS blocking_thread
+     ,it.trx_query AS blocking_query
+FROM information_schema.processlist AS pl
+         INNER JOIN information_schema.innodb_trx AS it
+                    ON pl.id = it.trx_mysql_thread_id
+         INNER JOIN information_schema.innodb_lock_waits AS ilw
+                    ON it.trx_id = ilw.requesting_trx_id
+                        AND it.trx_id = ilw.blocking_trx_id;
+
+
+SHOW OPEN TABLES IN AIRFLOW;
+
+SELECT * FROM information_schema.innodb_lock_waits;
+
+Select * from mysql.general_log;
+
+SET GLOBAL log_output = 'TABLE';
+SET GLOBAL general_log = 'ON';
+
+SELECT Table_schema, Table_Name, Column_Name
+FROM Information_Schema.Columns
+Where (Table_Schema = 'information_schema'
+    or Table_Schema = 'sys')
+  AND Column_Name like '%lock%';

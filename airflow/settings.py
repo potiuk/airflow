@@ -185,7 +185,7 @@ def configure_orm(disable_connection_pool=False):
     # Allow the user to specify an encoding for their DB otherwise default
     # to utf-8 so jobs & users with non-latin1 characters can still use us.
     engine_args['encoding'] = conf.get('core', 'SQL_ENGINE_ENCODING', fallback='utf-8')
-
+    engine_args['echo'] = conf.getboolean('core', 'SQL_ENGINE_ECHO', fallback=True)
     if conf.has_option('core', 'sql_alchemy_connect_args'):
         connect_args = import_string(
             conf.get('core', 'sql_alchemy_connect_args')
