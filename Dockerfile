@@ -106,7 +106,7 @@ RUN KEY="A4A9406876FCBD3C456770C88C718D3B5072E1F5" \
     apt-key list > /dev/null \
     && echo "deb http://repo.mysql.com/apt/ubuntu/ trusty mysql-5.6" | tee -a /etc/apt/sources.list.d/mysql.list \
     && apt-get update \
-    && apt-get install --no-install-recommends -y \
+    && apt-get install --no-install-recommends -y \ .   
         libmysqlclient-dev \
         mysql-client \
     && apt-get autoremove -yqq --purge \
