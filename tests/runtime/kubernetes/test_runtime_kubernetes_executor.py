@@ -60,7 +60,6 @@ class TestKubernetesExecutor(unittest.TestCase):
         self._ensure_airflow_webserver_is_healthy()
 
     def tearDown(self):
-        self.dump_kubernetes_logs()
         self.session.close()
 
     def monitor_task(self, host, execution_date, dag_id, task_id, expected_final_state,
