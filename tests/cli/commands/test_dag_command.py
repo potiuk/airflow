@@ -24,6 +24,7 @@ import unittest
 from datetime import datetime, time, timedelta
 
 import mock
+import pytest
 import pytz
 
 from airflow import settings
@@ -237,6 +238,7 @@ class TestCliDags(unittest.TestCase):
             verbose=False,
         )
 
+    @pytest.mark.quarantined
     def test_next_execution(self):
         # A scaffolding function
         def reset_dr_db(dag_id):
