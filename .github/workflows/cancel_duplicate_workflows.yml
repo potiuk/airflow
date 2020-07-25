@@ -27,7 +27,8 @@ jobs:
     name: "Cancel duplicate workflows"
     runs-on: ubuntu-latest
     steps:
-      - uses: n1hility/cancel-previous-runs@v2
+      - uses: potiuk/cancel-previous-runs@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           workflow: ci.yml
+          cancelLastRunOnFailedJobs: '["static-checks","docs"]'
