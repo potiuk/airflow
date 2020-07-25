@@ -22,7 +22,7 @@ on:
     - cron: '*/5 * * * *'
 jobs:
   cancel-duplicate-workflows:
-    if: github.repository == 'apache/airflow'
+#    if: github.repository == 'apache/airflow'
     timeout-minutes: 10
     name: "Cancel duplicate workflows"
     runs-on: ubuntu-latest
