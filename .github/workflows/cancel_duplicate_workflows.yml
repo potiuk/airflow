@@ -27,7 +27,7 @@ jobs:
     name: "Cancel duplicate workflows"
     runs-on: ubuntu-latest
     steps:
-      - uses: potiuk/cancel-previous-runs@v2
+      - uses: potiuk/cancel-previous-runs@master
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           workflow: ci.yml
