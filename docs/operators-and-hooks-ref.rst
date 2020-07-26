@@ -35,9 +35,6 @@ Fundamentals
    * - Module
      - Guides
 
-   * - :mod:`airflow.hooks.base_hook`
-     -
-
    * - :mod:`airflow.hooks.dbapi_hook`
      -
 
