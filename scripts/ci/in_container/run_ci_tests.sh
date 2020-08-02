@@ -33,6 +33,15 @@ if [[ "${RES}" == "0" && ${CI:="false"} == "true" ]]; then
     bash <(curl -s https://codecov.io/bash)
 fi
 
+if [[ ${ONLY_RUN_QUARANTINED_TESTS:=} = "true" && ${GITHUB_ACTOR} == "potiuk" ]]; then
+    if [[ ${RES} == "1" || ${RES} == "0" ]]; then
+        echo "Pytest exited with ${RES} result. Updating Quarantine Issue!"
+        "${IN_CONTAINER_DIR}/update_quarantined_test_status.py" "${RESULT_LOG_FILE}"
+    else
+        echo "Pytest exited with ${RES} result. NOT Updating Quarantine Issue!"
+    fi
+fi
+
 if [[ ${CI:=} == "true" ]]; then
     send_airflow_logs_to_file_io
 fi

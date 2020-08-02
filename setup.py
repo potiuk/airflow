@@ -451,6 +451,7 @@ devel = [
     'flake8-colors',
     'flaky',
     'freezegun',
+    'github3.py',
     'gitpython',
     'ipdb',
     'jira',
