@@ -50,6 +50,4 @@ if [[ ${CI} == "true" ]]; then
     dump_airflow_logs
 fi
 
-in_container_script_end
-
 exit "${RES}"

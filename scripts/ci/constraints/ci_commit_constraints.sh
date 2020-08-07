@@ -15,19 +15,24 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+export PYTHON_MAJOR_MINOR_VERSION=${PYTHON_MAJOR_MINOR_VERSION:-3.6}
 
 # shellcheck source=scripts/ci/libraries/_script_init.sh
 . "$( dirname "${BASH_SOURCE[0]}" )/../libraries/_script_init.sh"
 
-function run_bats_tests() {
-    FILES=("$@")
-    if [[ "${#FILES[@]}" == "0" ]]; then
-        docker run --workdir /airflow -v "$(pwd):/airflow" --rm \
-            bats/bats:latest --tap -r /airflow/tests/bats
-    else
-        docker run --workdir /airflow -v "$(pwd):/airflow" --rm \
-            bats/bats:latest --tap -r "${FILES[@]}"
-    fi
-}
+get_environment_for_builds_on_ci
 
-run_bats_tests "$@"
+cp -v ./artifacts/constraints-*/constraints*.txt repo/
+cd repo || exit 1
+git config --local user.email "dev@airflow.apache.org"
+git config --local user.name "Automated Github Actions commit"
+git diff --exit-code || git commit --all --message "Updating constraints. Build id:${CI_BUILD_ID}
+
+This update in constraints is automatically committed by the CI 'constraints-push' step based on
+HEAD of '${CI_REF}' in '${CI_TARGET_REPO}'
+with commit sha ${COMMIT_SHA}.
+
+All tests passed in this build so we determined we can push the updated constraints.
+
+See https://github.com/apache/airflow/blob/master/README.md#installing-from-pypi for details.
+"

@@ -16,10 +16,10 @@
 # specific language governing permissions and limitations
 # under the License.
 set -euo pipefail
-
 export FORCE_ANSWER_TO_QUESTIONS=${FORCE_ANSWER_TO_QUESTIONS:="quit"}
 export REMEMBER_LAST_ANSWER="true"
+export NO_TERMINAL_OUTPUT_FROM_SCRIPTS="true"
 
 # Hide lines between ****/**** (detailed list of files)
-"$( dirname "${BASH_SOURCE[0]}" )/../static_checks/ci_check_license.sh" 2>&1 | \
+"$( dirname "${BASH_SOURCE[0]}" )/../static_checks/check_license.sh" 2>&1 | \
     (sed "/Files with Apache License headers will be marked AL.*$/,/^\**$/d" || true)

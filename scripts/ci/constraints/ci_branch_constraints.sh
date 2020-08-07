@@ -20,24 +20,15 @@ export PYTHON_MAJOR_MINOR_VERSION=${PYTHON_MAJOR_MINOR_VERSION:-3.6}
 # shellcheck source=scripts/ci/libraries/_script_init.sh
 . "$( dirname "${BASH_SOURCE[0]}" )/../libraries/_script_init.sh"
 
-function run_mypy() {
-    FILES=("$@")
-    if [[ "${#FILES[@]}" == "0" ]]; then
-      FILES=(airflow tests docs)
-    fi
-
-    docker run "${EXTRA_DOCKER_FLAGS[@]}" \
-        --entrypoint "/usr/local/bin/dumb-init"  \
-        "-v" "${AIRFLOW_SOURCES}/.mypy_cache:/opt/airflow/.mypy_cache" \
-        "${AIRFLOW_CI_IMAGE}" \
-        "--" "/opt/airflow/scripts/ci/in_container/run_mypy.sh" "${FILES[@]}" \
-        | tee -a "${OUTPUT_LOG}"
-}
-
 get_environment_for_builds_on_ci
 
-prepare_ci_build
-
-rebuild_ci_image_if_needed
-
-run_mypy "$@"
+if [[ ${GITHUB_REF} == 'refs/heads/master' ]]; then
+  echo "::set-output name=branch::constraints-master"
+elif [[ ${GITHUB_REF} == 'refs/heads/v1-10-test' ]]; then
+  echo "::set-output name=branch::constraints-1-10"
+else
+  echo
+  echo "Unexpected ref ${GITHUB_REF}. Exiting!"
+  echo
+  exit 1
+fi

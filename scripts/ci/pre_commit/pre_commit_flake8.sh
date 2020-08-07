@@ -17,6 +17,7 @@
 # under the License.
 export FORCE_ANSWER_TO_QUESTIONS=${FORCE_ANSWER_TO_QUESTIONS:="quit"}
 export REMEMBER_LAST_ANSWER="true"
+export NO_TERMINAL_OUTPUT_FROM_SCRIPTS="true"
 
-# shellcheck source=scripts/ci/static_checks/ci_flake8.sh
-. "$( dirname "${BASH_SOURCE[0]}" )/../static_checks/ci_flake8.sh" "${@}"
+# shellcheck source=scripts/ci/static_checks/flake8.sh
+. "$( dirname "${BASH_SOURCE[0]}" )/../static_checks/flake8.sh" "${@}"

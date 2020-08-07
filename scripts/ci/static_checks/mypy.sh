@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -14,23 +15,28 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-#
----
-name: Cancel other workflow runs
-on:
-  schedule:
-    - cron: '*/5 * * * *'
-jobs:
-  cancel-other-workflow-runs:
-    if: github.repository == 'apache/airflow'
-    timeout-minutes: 10
-    name: "Cancel other workflow runs"
-    runs-on: ubuntu-latest
-    steps:
-      - uses: potiuk/cancel-workflow-runs@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: ci.yml
-          failFastJobNames: >
-            ["^Static checks.*", "^Build docs$", "^Backport packages$",
-             "^Checks: Helm tests$", "^Build prod image .*", "^Test OpenAPI.*"]
+export PYTHON_MAJOR_MINOR_VERSION=${PYTHON_MAJOR_MINOR_VERSION:-3.6}
+
+# shellcheck source=scripts/ci/libraries/_script_init.sh
+. "$( dirname "${BASH_SOURCE[0]}" )/../libraries/_script_init.sh"
+
+function run_mypy() {
+    FILES=("$@")
+    if [[ "${#FILES[@]}" == "0" ]]; then
+      FILES=(airflow tests docs)
+    fi
+
+    verbose_docker run "${EXTRA_DOCKER_FLAGS[@]}" \
+        --entrypoint "/usr/local/bin/dumb-init"  \
+        "-v" "${AIRFLOW_SOURCES}/.mypy_cache:/opt/airflow/.mypy_cache" \
+        "${AIRFLOW_CI_IMAGE}" \
+        "--" "/opt/airflow/scripts/ci/in_container/run_mypy.sh" "${FILES[@]}"
+}
+
+get_environment_for_builds_on_ci
+
+prepare_ci_build
+
+rebuild_ci_image_if_needed
+
+run_mypy "$@"

@@ -15,36 +15,21 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+export FORCE_ANSWER_TO_QUESTIONS=quit
+
 # shellcheck source=scripts/ci/libraries/_script_init.sh
 . "$( dirname "${BASH_SOURCE[0]}" )/../libraries/_script_init.sh"
 
-function run_docker_lint() {
-    FILES=("$@")
-    if [[ "${#FILES[@]}" == "0" ]]; then
-        echo
-        echo "Running docker lint for all Dockerfiles"
-        echo
-        docker run \
-            -v "$(pwd):/root" \
-            -w /root \
-            --rm \
-            hadolint/hadolint:v1.17.5-12-gef29cb7-debian /bin/hadolint Dockerfile*
-        echo
-        echo "Docker pylint completed with no errors"
-        echo
-    else
-        echo
-        echo "Running docker lint for $*"
-        echo
-        docker run \
-            -v "$(pwd):/root" \
-            -w /root \
-            --rm \
-            hadolint/hadolint /bin/hadolint "$@"
-        echo
-        echo "Docker pylint completed with no errors"
-        echo
-    fi
+function refresh_pylint_todo() {
+    verbose_docker run "${EXTRA_DOCKER_FLAGS[@]}" \
+        "${AIRFLOW_CI_IMAGE}" \
+        /opt/airflow/scripts/ci/in_container/refresh_pylint_todo.sh
 }
 
-run_docker_lint "$@"
+get_environment_for_builds_on_ci
+
+prepare_ci_build
+
+rebuild_ci_image_if_needed
+
+refresh_pylint_todo

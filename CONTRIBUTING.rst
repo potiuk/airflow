@@ -583,7 +583,38 @@ Documentation
 The latest API documentation (for the master branch) is usually available
 `here <https://airflow.readthedocs.io/en/latest/>`__.
 
-To generate a local version:
+To generate a local version you can use `<BREEZE.rst>`_ or use local virtualenv to build
+the documentation.
+
+The documentation build consists of three steps:
+
+* verifying consistency of indexes
+* building documentation
+* spell checking
+
+You can disable the latter two by providing ``--disable-docs-build`` or ``--disable-spell-check``.
+
+Build docs with Breeze
+----------------------
+
+.. code-block:: bash
+
+    ./breeze build-docs
+
+or just to run spell-check
+
+.. code-block:: bash
+
+     ./breeze build-docs -- --disable-docs-build
+
+or just to run documentation building
+
+.. code-block:: bash
+
+     ./breeze build-docs -- --disable-spell-check
+
+Build docs with local virtualenv
+--------------------------------
 
 1.  Set up an Airflow development environment.
 
@@ -599,11 +630,26 @@ To generate a local version:
 .. code-block:: bash
 
     cd docs
-    ./build
-    ./start_doc_server.sh
+    ./build_docs.py
+
+or just to run spell-check
+
+.. code-block:: bash
+
+    cd docs
+    ./build_docs.py --disable-docs-build
+
+or just to run documentation building
+
+.. code-block:: bash
+
+    cd docs
+    ./build_docs.py --disable-spell-check
 
 .. note::
-    The docs build script ``build`` requires Python 3.6 or greater.
+    The docs build script ``build_docs.py`` requires Python 3.6 or greater.
+
+Also documentation is available as downloadable artifact in GitHub Actions after the CI builds your PR.
 
 **Known issues:**
 

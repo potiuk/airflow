@@ -21,7 +21,7 @@ export PYTHON_MAJOR_MINOR_VERSION=${PYTHON_MAJOR_MINOR_VERSION:-3.6}
 . "$( dirname "${BASH_SOURCE[0]}" )/../libraries/_script_init.sh"
 
 function run_test_package_import_all_classes() {
-    docker run "${EXTRA_DOCKER_FLAGS[@]}" \
+    verbose_docker run "${EXTRA_DOCKER_FLAGS[@]}" \
         --entrypoint "/usr/local/bin/dumb-init"  \
         -v "${AIRFLOW_SOURCES}/dist:/dist:cached" \
         -v "${AIRFLOW_SOURCES}/setup.py:/airflow_sources/setup.py:cached" \
@@ -30,9 +30,7 @@ function run_test_package_import_all_classes() {
         -v "${AIRFLOW_SOURCES}/airflow/version.py:/airflow_sources/airflow/version.py:cached" \
         -v "${AIRFLOW_SOURCES}/backport_packages/import_all_provider_classes.py:/import_all_provider_classes.py:cached" \
         "${AIRFLOW_CI_IMAGE}" \
-        "--" "/opt/airflow/scripts/ci/in_container/run_test_package_import_all_classes.sh" \
-        | tee -a "${OUTPUT_LOG}"
-
+        "--" "/opt/airflow/scripts/ci/in_container/run_test_package_import_all_classes.sh"
 }
 
 get_environment_for_builds_on_ci

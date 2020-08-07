@@ -39,17 +39,19 @@ function in_container_script_end() {
     #shellcheck disable=2181
     EXIT_CODE=$?
     if [[ ${EXIT_CODE} != 0 ]]; then
-        if [[ -n ${OUT_FILE:=} ]]; then
-            echo "  ERROR ENCOUNTERED!"
-            echo
-            echo "  Output:"
-            echo
-            cat "${OUT_FILE}"
+        if [[ "${NO_TERMINAL_OUTPUT_FROM_SCRIPTS:=}" != "true" ]] ;then
+            if [[ -n ${OUT_FILE_PRINTED_ON_ERROR:=} ]]; then
+                echo "  ERROR ENCOUNTERED!"
+                echo
+                echo "  Output:"
+                echo
+                cat "${OUT_FILE_PRINTED_ON_ERROR}"
+                echo "###########################################################################################"
+            fi
+            echo "###########################################################################################"
+            echo "  [IN CONTAINER]   EXITING ${0} WITH STATUS CODE ${EXIT_CODE}"
             echo "###########################################################################################"
         fi
-        echo "###########################################################################################"
-        echo "                   EXITING ${0} WITH STATUS CODE ${EXIT_CODE}"
-        echo "###########################################################################################"
     fi
 
     if [[ ${VERBOSE_COMMANDS} == "true" ]]; then
@@ -83,7 +85,7 @@ function in_container_cleanup_pycache() {
         -path "./.eggs" -prune -o \
         -path "./docs/_build" -prune -o \
         -path "./build" -prune -o \
-        -name "__pycache__" | grep "__pycache__" | sudo xargs rm -rvf
+        -name "__pycache__" | grep "__pycache__" | sudo xargs rm -rf
     set -o pipefail
 }
 

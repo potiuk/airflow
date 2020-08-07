@@ -20,20 +20,19 @@ export PYTHON_MAJOR_MINOR_VERSION=${PYTHON_MAJOR_MINOR_VERSION:-3.6}
 # shellcheck source=scripts/ci/libraries/_script_init.sh
 . "$( dirname "${BASH_SOURCE[0]}" )/../libraries/_script_init.sh"
 
-function run_pylint() {
+function run_flake8() {
     FILES=("$@")
+
     if [[ "${#FILES[@]}" == "0" ]]; then
-        docker run "${EXTRA_DOCKER_FLAGS[@]}" \
+        verbose_docker run "${EXTRA_DOCKER_FLAGS[@]}" \
             --entrypoint "/usr/local/bin/dumb-init"  \
             "${AIRFLOW_CI_IMAGE}" \
-            "--" "/opt/airflow/scripts/ci/in_container/run_pylint.sh" \
-            | tee -a "${OUTPUT_LOG}"
+            "--" "/opt/airflow/scripts/ci/in_container/run_flake8.sh"
     else
-        docker run "${EXTRA_DOCKER_FLAGS[@]}" \
-            --entrypoint "/usr/local/bin/dumb-init" \
+        verbose_docker run "${EXTRA_DOCKER_FLAGS[@]}" \
+            --entrypoint "/usr/local/bin/dumb-init"  \
             "${AIRFLOW_CI_IMAGE}" \
-            "--" "/opt/airflow/scripts/ci/in_container/run_pylint.sh" "${FILES[@]}" \
-            | tee -a "${OUTPUT_LOG}"
+            "--" "/opt/airflow/scripts/ci/in_container/run_flake8.sh" "${FILES[@]}"
     fi
 }
 
@@ -41,16 +40,6 @@ get_environment_for_builds_on_ci
 
 prepare_ci_build
 
-# rebuild_ci_image_if_needed
+rebuild_ci_image_if_needed
 
-if [[ "${#@}" != "0" ]]; then
-    filter_out_files_from_pylint_todo_list "$@"
-
-    if [[ "${#FILTERED_FILES[@]}" == "0" ]]; then
-        echo "Filtered out all files. Skipping pylint."
-    else
-        run_pylint "${FILTERED_FILES[@]}"
-    fi
-else
-    run_pylint
-fi
+run_flake8 "$@"

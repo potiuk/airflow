@@ -25,6 +25,7 @@ function check_verbose_setup {
     fi
 }
 
+
 # In case "VERBOSE" is set to "true" (--verbose flag in Breeze) all docker commands run will be
 # printed before execution
 function verbose_docker {
@@ -32,7 +33,18 @@ function verbose_docker {
        # do not print echo if VERBOSE_COMMAND is set (set -x does it already)
         echo "docker" "${@}"
     fi
-    docker "${@}"
+    if [[ ${NO_TERMINAL_OUTPUT_FROM_SCRIPTS} == "true" ]]; then
+        docker "${@}" >>"${OUTPUT_LOG}" 2>&1
+    else
+        docker "${@}" 2>&1 | tee -a "${OUTPUT_LOG}"
+    fi
+    EXIT_CODE="$?"
+    if [[ ${EXIT_CODE} == "0" ]]; then
+        # No matter if "set -e" is used the log will be removed on success.
+        # This way in the output log we only see the most recent failed command and what was echoed before
+        rm -f "${OUTPUT_LOG}"
+    fi
+    return "${EXIT_CODE}"
 }
 
 # In case "VERBOSE" is set to "true" (--verbose flag in Breeze) all helm commands run will be
@@ -42,7 +54,11 @@ function verbose_helm {
        # do not print echo if VERBOSE_COMMAND is set (set -x does it already)
         echo "helm" "${@}"
     fi
-    helm "${@}"
+    helm "${@}" | tee -a "${OUTPUT_LOG}"
+    if [[ ${EXIT_CODE} == "0" ]]; then
+        # No matter if "set -e" is used the log will be removed on success.
+        rm -f "${OUTPUT_LOG}"
+    fi
 }
 
 # In case "VERBOSE" is set to "true" (--verbose flag in Breeze) all kubectl commands run will be
@@ -52,7 +68,11 @@ function verbose_kubectl {
        # do not print echo if VERBOSE_COMMAND is set (set -x does it already)
         echo "kubectl" "${@}"
     fi
-    kubectl "${@}"
+    kubectl "${@}" | tee -a "${OUTPUT_LOG}"
+    if [[ ${EXIT_CODE} == "0" ]]; then
+        # No matter if "set -e" is used the log will be removed on success.
+        rm -f "${OUTPUT_LOG}"
+    fi
 }
 
 # In case "VERBOSE" is set to "true" (--verbose flag in Breeze) all kind commands run will be
@@ -62,20 +82,9 @@ function verbose_kind {
        # do not print echo if VERBOSE_COMMAND is set (set -x does it already)
         echo "kind" "${@}"
     fi
+    # kind outputs nice output on terminal.
     kind "${@}"
 }
-
-
-# In case "VERBOSE" is set to "true" (--verbose flag in Breeze) all docker commands run will be
-# printed before execution
-function verbose_docker_hide_output_on_success {
-    if [[ ${VERBOSE:="false"} == "true" && ${VERBOSE_COMMANDS:=} != "true" ]]; then
-       # do not print echo if VERBOSE_COMMAND is set (set -x does it already)
-        echo "docker" "${@}"
-    fi
-    docker "${@}" >>"${OUTPUT_LOG}" 2>&1
-}
-
 
 # Prints verbose information in case VERBOSE variable is set
 function print_info() {

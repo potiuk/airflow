@@ -16,6 +16,7 @@
 # specific language governing permissions and limitations
 # under the License.
 export REMEMBER_LAST_ANSWER="true"
+export NO_TERMINAL_OUTPUT_FROM_SCRIPTS="true"
 
-# shellcheck source=scripts/ci/static_checks/ci_lint_dockerfile.sh
-. "$( dirname "${BASH_SOURCE[0]}" )/../static_checks/ci_lint_dockerfile.sh" "${@}"
+# shellcheck source=scripts/ci/static_checks/lint_dockerfile.sh
+. "$( dirname "${BASH_SOURCE[0]}" )/../static_checks/lint_dockerfile.sh" "${@}"

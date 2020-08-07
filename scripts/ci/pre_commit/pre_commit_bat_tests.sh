@@ -17,6 +17,7 @@
 # under the License.
 export FORCE_ANSWER_TO_QUESTIONS=${FORCE_ANSWER_TO_QUESTIONS:="quit"}
 export REMEMBER_LAST_ANSWER="true"
+export NO_TERMINAL_OUTPUT_FROM_SCRIPTS="true"
 
 if [[ $# -eq 0 ]]; then
     PARAMS=("tests/bats")
@@ -24,5 +25,5 @@ else
     PARAMS=("${@}")
 fi
 
-# shellcheck source=scripts/ci/static_checks/ci_bat_tests.sh
-. "$( dirname "${BASH_SOURCE[0]}" )/../static_checks/ci_bat_tests.sh" "${PARAMS[@]}"
+# shellcheck source=scripts/ci/static_checks/bat_tests.sh
+. "$( dirname "${BASH_SOURCE[0]}" )/../static_checks/bat_tests.sh" "${PARAMS[@]}"

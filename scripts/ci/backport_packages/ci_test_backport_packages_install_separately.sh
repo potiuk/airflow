@@ -21,12 +21,11 @@ export PYTHON_MAJOR_MINOR_VERSION=${PYTHON_MAJOR_MINOR_VERSION:-3.6}
 . "$( dirname "${BASH_SOURCE[0]}" )/../libraries/_script_init.sh"
 
 function run_test_package_installation_separately() {
-    docker run "${EXTRA_DOCKER_FLAGS[@]}" \
+    verbose_docker run "${EXTRA_DOCKER_FLAGS[@]}" \
         --entrypoint "/usr/local/bin/dumb-init"  \
         -v "${AIRFLOW_SOURCES}/dist:/dist:cached" \
         "${AIRFLOW_CI_IMAGE}" \
-        "--" "/opt/airflow/scripts/ci/in_container/run_test_package_installation_separately.sh" \
-        | tee -a "${OUTPUT_LOG}"
+        "--" "/opt/airflow/scripts/ci/in_container/run_test_package_installation_separately.sh"
 }
 
 get_environment_for_builds_on_ci

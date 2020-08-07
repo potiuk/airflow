@@ -53,7 +53,8 @@ function fix_group_permissions() {
     # and this deals with directories
     git ls-tree -z -r -d --name-only HEAD | filterout_deleted_files | xargs -0 chmod og-w,og+x
     popd >/dev/null || exit 1
-    echo "Fixed group permissions"
-    echo
+    print_info
+    print_info "Fixed group permissions"
+    print_info
     export PERMISSIONS_FIXED="true"
 }

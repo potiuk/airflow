@@ -15,11 +15,36 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-export PYTHON_MAJOR_MINOR_VERSION=${PYTHON_MAJOR_MINOR_VERSION:-3.6}
-
 # shellcheck source=scripts/ci/libraries/_script_init.sh
 . "$( dirname "${BASH_SOURCE[0]}" )/../libraries/_script_init.sh"
 
-prepare_ci_build
+function run_docker_lint() {
+    FILES=("$@")
+    if [[ "${#FILES[@]}" == "0" ]]; then
+        echo
+        echo "Running docker lint for all Dockerfiles"
+        echo
+        verbose_docker run \
+            -v "$(pwd):/root" \
+            -w /root \
+            --rm \
+            hadolint/hadolint:v1.17.5-12-gef29cb7-debian /bin/hadolint Dockerfile*
+        echo
+        echo "Docker pylint completed with no errors"
+        echo
+    else
+        echo
+        echo "Running docker lint for $*"
+        echo
+        verbose_docker run \
+            -v "$(pwd):/root" \
+            -w /root \
+            --rm \
+            hadolint/hadolint /bin/hadolint "$@"
+        echo
+        echo "Docker pylint completed with no errors"
+        echo
+    fi
+}
 
-push_ci_image
+run_docker_lint "$@"

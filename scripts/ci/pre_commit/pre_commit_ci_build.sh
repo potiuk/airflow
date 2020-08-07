@@ -17,6 +17,7 @@
 # under the License.
 export PYTHON_MAJOR_MINOR_VERSION="${1}"
 export REMEMBER_LAST_ANSWER="${2}"
+export NO_TERMINAL_OUTPUT_FROM_SCRIPTS="true"
 
 # shellcheck source=scripts/ci/libraries/_script_init.sh
 . "$( dirname "${BASH_SOURCE[0]}" )/../libraries/_script_init.sh"

@@ -27,10 +27,7 @@ RES="$?"
 set -e
 
 if [[ "${RES}" != 0 ]]; then
-    echo >&2
-    echo >&2 "There were some flake8 errors. Exiting"
-    echo >&2
-    exit 1
+    exit "${RES}"
 else
     echo
     echo "Flake8 check succeeded"

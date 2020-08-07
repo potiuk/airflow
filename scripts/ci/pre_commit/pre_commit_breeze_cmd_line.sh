@@ -15,12 +15,11 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
 set -euo pipefail
-
 PRE_COMMIT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 AIRFLOW_SOURCES=$(cd "${PRE_COMMIT_DIR}/../../../" && pwd);
 cd "${AIRFLOW_SOURCES}" || exit 1
+export NO_TERMINAL_OUTPUT_FROM_SCRIPTS="true"
 
 
 TMP_FILE=$(mktemp)

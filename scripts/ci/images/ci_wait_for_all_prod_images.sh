@@ -15,22 +15,29 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-export FORCE_ANSWER_TO_QUESTIONS=quit
 
+# This is hook build used by DockerHub. We are also using it
+# on CI to potentially rebuild (and refresh layers that
+# are not cached) Docker images that are used to run CI jobs
 # shellcheck source=scripts/ci/libraries/_script_init.sh
 . "$( dirname "${BASH_SOURCE[0]}" )/../libraries/_script_init.sh"
 
-function refresh_pylint_todo() {
-    docker run "${EXTRA_DOCKER_FLAGS[@]}" \
-        "${AIRFLOW_CI_IMAGE}" \
-        /opt/airflow/scripts/ci/in_container/refresh_pylint_todo.sh \
-        | tee -a "${OUTPUT_LOG}"
-}
 
-get_environment_for_builds_on_ci
 
-prepare_ci_build
+echo
+echo "Waiting for all images to appear: ${CURRENT_PYTHON_MAJOR_MINOR_VERSIONS[*]}"
+echo
 
-rebuild_ci_image_if_needed
+echo
+echo "Check if jq is installed"
+echo
+command -v jq
 
-refresh_pylint_todo
+jq --version
+for PYTHON_MAJOR_MINOR_VERSION in "${CURRENT_PYTHON_MAJOR_MINOR_VERSIONS[@]}"
+do
+    export AIRFLOW_PROD_IMAGE_NAME="${BRANCH_NAME}-python${PYTHON_MAJOR_MINOR_VERSION}"
+    export AIRFLOW_PROD_BUILD_IMAGE_NAME="${BRANCH_NAME}-python${PYTHON_MAJOR_MINOR_VERSION}-build"
+    wait_for_github_registry_image "${AIRFLOW_PROD_IMAGE_NAME}" "${GITHUB_REGISTRY_PULL_IMAGE_TAG}"
+    wait_for_github_registry_image "${AIRFLOW_PROD_BUILD_IMAGE_NAME}" "${GITHUB_REGISTRY_PULL_IMAGE_TAG}"
+done
