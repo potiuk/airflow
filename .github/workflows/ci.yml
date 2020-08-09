@@ -108,7 +108,7 @@ jobs:
       - name: "Checkout ${{ github.ref }} ( ${{ github.sha }} )"
         uses: actions/checkout@v2
       - name: "Helm Tests"
-        run: ./scripts/ci/kubernetes/ci_run_helm_testing.sh
+        run: ./scripts/ci/kubernetes/ci_run_helm_testing.shzz
 
   test-openapi-client-generation:
     name: "Test OpenAPI client generation"
