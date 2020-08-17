@@ -236,7 +236,7 @@ ENV COMMIT_SHA=${COMMIT_SHA}
 
 LABEL org.apache.airflow.buildImage.buildId=${BUILD_ID}
 LABEL org.apache.airflow.buildImage.commitSha=${COMMIT_SHA}
-
+x
 ##############################################################################################
 # This is the actual Airflow image - much smaller than the build one. We copy
 # installed Airflow and all it's dependencies from the build image to make it smaller.
