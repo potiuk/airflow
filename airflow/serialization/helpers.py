@@ -37,7 +37,7 @@ def serialize_template_field(template_field: dict) -> Union[str, dict]:
         except (TypeError, OverflowError):
             return False
 
-    if not is_jsonable(template_field):
+    if not is_jsonable( template_field):
         return str(template_field)
     else:
         return template_field

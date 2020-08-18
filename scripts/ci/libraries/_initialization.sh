@@ -220,7 +220,6 @@ function initialize_common_environment {
 
     # Namespace where airflow is installed via helm
     export HELM_AIRFLOW_NAMESPACE="airflow"
-
 }
 
 # Retrieves CI environment variables needed - depending on the CI system we run it in.
@@ -237,9 +236,9 @@ function get_environment_for_builds_on_ci() {
     export CI_BUILD_ID="default-build-id"
     export CI_JOB_ID="default-job-id"
     if [[ ${CI:=} != "true" ]]; then
-        echo
-        echo "This is not a CI environment!. Staying with the defaults"
-        echo
+        print_info
+        print_info "This is not a CI environment!. Staying with the defaults"
+        print_info
     else
         if [[ ${TRAVIS:=} == "true" ]]; then
             export CI_TARGET_REPO="${TRAVIS_REPO_SLUG}"
@@ -271,12 +270,12 @@ function get_environment_for_builds_on_ci() {
                 BRANCH_EXISTS=$(git ls-remote --heads \
                     "https://github.com/${CI_SOURCE_REPO}.git" "${CI_SOURCE_BRANCH}" || true)
                 if [[ ${BRANCH_EXISTS} == "" ]]; then
-                    echo
-                    echo "https://github.com/${CI_SOURCE_REPO}.git Branch ${CI_SOURCE_BRANCH} does not exist"
-                    echo
-                    echo
-                    echo "Fallback to https://github.com/${CI_TARGET_REPO}.git Branch ${CI_TARGET_BRANCH}"
-                    echo
+                    print_info
+                    print_info "https://github.com/${CI_SOURCE_REPO}.git Branch ${CI_SOURCE_BRANCH} does not exist"
+                    print_info
+                    print_info
+                    print_info "Fallback to https://github.com/${CI_TARGET_REPO}.git Branch ${CI_TARGET_BRANCH}"
+                    print_info
                     # Fallback to the target repository if the repo does not exist
                     export CI_SOURCE_REPO="${CI_TARGET_REPO}"
                     export CI_SOURCE_BRANCH="${CI_TARGET_BRANCH}"
@@ -295,20 +294,22 @@ function get_environment_for_builds_on_ci() {
             export CI_SOURCE_REPO="apache/airflow"
             export CI_SOURCE_BRANCH="${DEFAULT_BRANCH:="master"}"
         else
-            echo
-            echo "ERROR! Unknown CI environment. You can set LOCAL_CI_TESTING=\"true\" to run it locally."
+            print_info
+            print_info "ERROR! Unknown CI environment. You can set LOCAL_CI_TESTING=\"true\" to run it locally."
             exit 1
         fi
     fi
-    echo
-    echo "Detected CI build environment"
-    echo
-    echo "CI_EVENT_TYPE=${CI_EVENT_TYPE}"
-    echo "CI_TARGET_REPO=${CI_TARGET_REPO}"
-    echo "CI_TARGET_BRANCH=${CI_TARGET_BRANCH}"
-    echo "CI_SOURCE_REPO=${CI_SOURCE_REPO}"
-    echo "CI_SOURCE_BRANCH=${CI_SOURCE_BRANCH}"
-    echo "CI_BUILD_ID=${CI_BUILD_ID}"
-    echo "CI_JOB_ID=${CI_JOB_ID}"
-    echo
+    if [[ ${VERBOSE} == "true" ]] ; then
+       cat << EOF
+     "Detected CI build environment"
+
+     "CI_EVENT_TYPE=${CI_EVENT_TYPE}"
+     "CI_TARGET_REPO=${CI_TARGET_REPO}"
+     "CI_TARGET_BRANCH=${CI_TARGET_BRANCH}"
+     "CI_SOURCE_REPO=${CI_SOURCE_REPO}"
+     "CI_SOURCE_BRANCH=${CI_SOURCE_BRANCH}"
+     "CI_BUILD_ID=${CI_BUILD_ID}"
+     "CI_JOB_ID=${CI_JOB_ID}"
+EOF
+    fi
 }
