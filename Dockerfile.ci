@@ -82,6 +82,8 @@ RUN curl --fail --location https://deb.nodesource.com/setup_10.x | bash - \
            rsync \
            sasl2-bin \
            sudo \
+           unixodbc \
+           unixodbc-dev \
            yarn \
            ${ADDITIONAL_DEV_DEPS} \
     && apt-get autoremove -yqq --purge \
