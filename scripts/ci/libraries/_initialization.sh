@@ -87,7 +87,7 @@ function initialize_branch_variables() {
 function initialize_dockerhub_variables() {
     # You can override DOCKERHUB_USER to use your own DockerHub account and play with your
     # own docker images. In this case you can build images locally and push them
-    export DOCKERHUB_USER=${DOCKERHUB_USER:="apache"}
+    export DOCKERHUB_USER=${DOCKERHUB_USER:="potiuk"}
 
     # You can override DOCKERHUB_REPO to use your own DockerHub repository and play with your
     # own docker images. In this case you can build images locally and push them
