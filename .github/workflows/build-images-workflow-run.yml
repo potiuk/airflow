@@ -193,6 +193,18 @@ jobs:
         uses: actions/checkout@v2
         with:
           ref: ${{ needs.cancel-workflow-runs.outputs.sourceHeadSha }}
+      - name: "Retrieve DEFAULTS from the _initialization.sh"
+        # We cannot "source" the script here because that would be a security problem (we cannot run
+        # any code that comes from the sources coming from the PR. Therefore we extract the
+        # DEFAULT_BRANCH and DEFAULT_CONSTRAINTS_BRANCH via custom grep/awk/sed commands
+        run: |
+          DEFAULT_BRANCH=$(grep "export DEFAULT_BRANCH" scripts/ci/libraries/_initialization.sh | \
+            awk 'BEGIN{FS="="} {print $3}' | sed s'/["}]//g')
+          echo "::set-env DEFAULT_BRANCH=${DEFAULT_BRANCH}"
+          DEFAULT_CONSTRAINTS_BRANCH=$(grep "export DEFAULT_CONSTRAINTS_BRANCH" \
+            scripts/ci/libraries/_initialization.sh | \
+            awk 'BEGIN{FS="="} {print $3}' | sed s'/["}]//g')
+          echo "::set-env DEFAULT_CONSTRAINTS_BRANCH=${DEFAULT_CONSTRAINTS_BRANCH}"
       - name: "Checkout ${{ github.ref }} ( ${{ github.sha }} ) to 'main-airflow' to use main scripts"
         uses: actions/checkout@v2
         with:
