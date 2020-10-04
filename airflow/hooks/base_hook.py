@@ -26,7 +26,7 @@ from airflow.utils.log.logging_mixin import LoggingMixin
 log = logging.getLogger(__name__)
 
 
-class BaseHook(LoggingMixin):
+class BaseHook(LoggingMixin) :
     """
     Abstract base class for hooks, hooks are meant as an interface to
     interact with external systems. MySqlHook, HiveHook, PigHook return
