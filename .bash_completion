@@ -20,3 +20,4 @@ for BCFILE in "${HOME}"/.bash_completion.d/* ; do
   # shellcheck disable=SC1090
   . "${BCFILE}"
 done
+
