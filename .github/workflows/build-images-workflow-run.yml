@@ -307,8 +307,12 @@ jobs:
       - name: "Push PROD images ${{ matrix.python-version }}:${{ github.event.workflow_run.id }}"
         run: ./scripts/ci/images/ci_push_production_images.sh
         if: matrix.image-type == 'PROD' && steps.defaults.outputs.proceed == 'true'
+
+  cancel-on-build-failure:
+    if: cancelled() || failure()
+    needs: [build-images]
+    steps:
       - name: "Canceling the CI Build source workflow in case of failure!"
-        if: cancelled() || failure()
         uses: potiuk/cancel-workflow-runs@test-pr
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
