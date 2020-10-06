@@ -1,8 +1,8 @@
 ---
-name: "Cancel duplicate CodeQL workflows"
+name: "Cancel duplicate Security Scan workflows"
 on:
   workflow_run:
-    workflows: ["CodeQL"]
+    workflows: ["Security Scan"]
     types: ['requested']
 jobs:
   cancel-workflow-runs:
