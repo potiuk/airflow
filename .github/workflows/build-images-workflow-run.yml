@@ -270,7 +270,7 @@ jobs:
               echo "::set-output name=proceed::false"
           fi
       - name: Initiate Github Checks for Building image
-        uses: LouisBrunner/checks-action@v1.1.0
+        uses: potiuk/checks-action@v1.1.0
         id: build-image-check
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -318,7 +318,7 @@ jobs:
         run: ./scripts/ci/images/ci_push_production_images.sh
         if: matrix.image-type == 'PROD' && steps.defaults.outputs.proceed == 'true'
       - name: Update Github Checks for Building image with status
-        uses: LouisBrunner/checks-action@v1.1.0
+        uses: potiuk/checks-action@v1.1.0
         if: always() && steps.defaults.outputs.proceed == 'true'
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
