@@ -333,16 +333,33 @@ jobs:
             [Image Build](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
             for details" }
 
-  cancel-on-build-failure:
-    name: "Cancel 'CI Build' jobs on build image failure"
+  cancel-on-build-cancel:
+    name: "Cancel 'CI Build' jobs on build image cancelling."
     runs-on: ubuntu-latest
-    if: cancelled() || failure()
+    if: cancelled()
     needs: [build-images]
     steps:
       - name: "Canceling the 'CI Build' source workflow in case of failure!"
-        uses: potiuk/cancel-workflow-runs@e9e87cb7738dbb999654aa90d69359d62c9e4eae #v3
+        uses: potiuk/cancel-workflow-runs@cancel-message #v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           cancelMode: self
           notifyPRCancel: true
+          notifyPRCancelMessage: "Building image for the PR has been cancelled"
+          sourceRunId: ${{ github.event.workflow_run.id }}
+
+  cancel-on-build-failure:
+    name: "Cancel 'CI Build' jobs on build image failing."
+    runs-on: ubuntu-latest
+    if: failure()
+    needs: [build-images]
+    steps:
+      - name: "Canceling the 'CI Build' source workflow in case of failure!"
+        uses: potiuk/cancel-workflow-runs@cancel-message #v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          cancelMode: self
+          notifyPRCancel: true
+          notifyPRCancelMessage: |
+            Building images for the PR has failed. Follow the the workflow link to check the reason.
           sourceRunId: ${{ github.event.workflow_run.id }}
