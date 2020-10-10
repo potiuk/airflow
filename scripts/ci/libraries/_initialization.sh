@@ -101,7 +101,7 @@ function initialization::initialize_base_variables() {
     CURRENT_POSTGRES_VERSIONS+=("9.6" "10")
     export CURRENT_POSTGRES_VERSIONS
 
-   # Currently supported versions of MySQL
+    # Currently supported versions of MySQL
     CURRENT_MYSQL_VERSIONS+=("5.7" "8")
     export CURRENT_MYSQL_VERSIONS
 
@@ -175,7 +175,6 @@ function initialization::initialize_available_integrations() {
     export AVAILABLE_INTEGRATIONS="cassandra kerberos mongo openldap presto rabbitmq redis"
 }
 
-
 # Needs to be declared outside of function for MacOS
 FILES_FOR_REBUILD_CHECK=()
 
@@ -192,7 +191,6 @@ function initialization::initialize_files_for_rebuild_check() {
         "airflow/www/webpack.config.js"
     )
 }
-
 
 # Needs to be declared outside of function for MacOS
 
@@ -442,8 +440,10 @@ function initialization::initialize_github_variables() {
     # Used only in CI environment
     export GITHUB_TOKEN="${GITHUB_TOKEN=""}"
     export GITHUB_USERNAME="${GITHUB_USERNAME=""}"
+}
 
-
+function initialization::initialize_test_variables() {
+    export TEST_TYPE=${TEST_TYPE:="All"}
 }
 
 # Common environment that is initialized by both Breeze and CI scripts
@@ -462,6 +462,7 @@ function initialization::initialize_common_environment() {
     initialization::initialize_kubernetes_variables
     initialization::initialize_git_variables
     initialization::initialize_github_variables
+    initialization::initialize_test_variables
 }
 
 function initialization::set_default_python_version_if_empty() {
@@ -564,6 +565,10 @@ Initialization variables:
     INSTALL_WHEELS: ${INSTALL_WHEELS}
     DISABLE_RBAC: ${DISABLE_RBAC}
 
+Test variables:
+
+    TEST_TYPE: ${TEST_TYPE}
+
 EOF
 
 }
@@ -634,7 +639,6 @@ function initialization::make_constants_read_only() {
     readonly WEBSERVER_HOST_PORT
     readonly POSTGRES_HOST_PORT
     readonly MYSQL_HOST_PORT
-
 
     readonly HOST_USER_ID
     readonly HOST_GROUP_ID
@@ -717,7 +721,6 @@ function initialization::make_constants_read_only() {
     readonly GITHUB_TOKEN
     readonly GITHUB_USERNAME
 
-
     readonly FORWARD_CREDENTIALS
     readonly USE_GITHUB_REGISTRY
 
@@ -741,20 +744,17 @@ function initialization::make_constants_read_only() {
 
 }
 
-
 # converts parameters to json array
 function initialization::parameters_to_json() {
     echo -n "["
     local separator=""
     local var
-    for var in "${@}"
-    do
+    for var in "${@}"; do
         echo -n "${separator}\"${var}\""
         separator=","
     done
     echo "]"
 }
-
 
 # output parameter name and value - both to stdout and to be set by GitHub Actions
 function initialization::ga_output() {

@@ -35,7 +35,7 @@ fi
 
 MAIN_GITHUB_REPOSITORY="apache/airflow"
 
-if [[ ${ONLY_RUN_QUARANTINED_TESTS:=} = "true" ]]; then
+if [[ ${TEST_TYPE:=} == "Quarantined" ]]; then
     if [[ ${GITHUB_REPOSITORY} == "${MAIN_GITHUB_REPOSITORY}" ]]; then
         if [[ ${RES} == "1" || ${RES} == "0" ]]; then
             echo

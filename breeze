@@ -1128,6 +1128,12 @@ function breeze::parse_arguments() {
             echo
             shift
             ;;
+        --test-type)
+            export TEST_TYPE="${2}"
+            echo "Selected test type: ${TEST_TYPE}"
+            echo
+            shift 2
+            ;;
         --)
             shift
             break
@@ -1288,12 +1294,8 @@ function breeze::parse_arguments() {
             ;;
         tests)
             last_subcommand="${1}"
-            if [[ $# -lt 2 ]]; then
-                run_help="true"
-            else
-                shift
-            fi
             command_to_run="run_tests"
+            shift
             ;;
         toggle-suppress-cheatsheet)
             last_subcommand="${1}"
@@ -1437,6 +1439,11 @@ function breeze::prepare_formatted_versions() {
     FORMATTED_DEFAULT_PROD_EXTRAS=$(echo "${DEFAULT_PROD_EXTRAS=}" |
         tr ',' ' ' | fold -w "${indented_screen_width}" -s | sed "s/ /,/g; s/^/${list_prefix}/")
     readonly FORMATTED_DEFAULT_PROD_EXTRAS
+
+    FORMATTED_TEST_TYPES=$(echo "${_breeze_allowed_test_types=""}" |
+        tr ',' ' ' | fold -w "${indented_screen_width}" -s | sed "s/ /,/g; s/^/${list_prefix}/")
+    readonly FORMATTED_TEST_TYPES
+
 }
 
 #######################################################################################################
@@ -1835,7 +1842,7 @@ ${CMDNAME} tests [FLAGS] [TEST_TARGET ..] [-- <EXTRA_ARGS>]
       '${CMDNAME} tests tests
 
 Flags:
-$(breeze::flag_footer)
+$(breeze::flag_tests)
 "
     readonly DETAILED_USAGE_TESTS
     export DETAILED_USAGE_TOGGLE_SUPPRESS_CHEATSHEET="
@@ -2477,6 +2484,25 @@ function breeze::flag_start_airflow() {
 "
 }
 
+#####################################################################################################
+#
+# Prints flags that control tests
+#
+# Outputs:
+#    Flag information.
+#######################################################################################################
+function breeze::flag_tests() {
+    echo "
+--test-type TEST_TYPE
+        Type of the test to run. One of:
+
+${FORMATTED_TEST_TYPES}
+
+        Default: ${_breeze_default_test_type:=}
+
+"
+}
+
 #######################################################################################################
 #
 # Prints all flags
@@ -2537,6 +2563,10 @@ $(breeze::flag_build_docker_images)
 $(breeze::print_star_line)
  Flags for pulling/pushing Docker images (both CI and production)
 $(breeze::flag_pull_push_docker_images)
+
+$(breeze::print_star_line)
+ Flags for running tests
+$(breeze::flag_tests)
 
 $(breeze::print_star_line)
  Flags for generation of the backport packages
