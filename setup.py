@@ -688,7 +688,7 @@ EXTRAS_REQUIREMENTS.update(
 )
 
 #####################################################################################################
-# IMPORTANT NOTE!!!!!!!!!!!!!!!
+# IMPORTANT NOTE!!!!!!!!!!!!!!!  !
 # IF you are removing dependencies from this list, please make sure that you also increase
 # DEPENDENCIES_EPOCH_NUMBER in the Dockerfile.ci
 #####################################################################################################
