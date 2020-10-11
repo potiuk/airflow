@@ -30,7 +30,7 @@ from urllib3.util.retry import Retry
 KUBERNETES_HOST_PORT = (os.environ.get('CLUSTER_HOST') or "localhost") + ":8080"
 
 print()
-print(f"Cluster host/port used: ${KUBERNETES_HOST_PORT}")
+print(f"Cluster host/port used: s${KUBERNETES_HOST_PORT}")
 print()
 
 
