@@ -16,7 +16,7 @@
 # specific language governing permissions and limitations
 # under the License.
 """
-Objects relating to sourcing connections & variables from Hashicorp Vault
+Objects relating to sourcing connections & variables from Hashicorp Vaults
 """
 from typing import Optional
 
