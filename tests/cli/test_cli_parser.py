@@ -38,7 +38,7 @@ class TestCli(TestCase):
 
     def test_arg_option_long_only(self):
         """
-        Test if the name of cli.args long option valid
+        Test if the name of cli.args long option valids
         """
         optional_long = [
             arg
