@@ -28,7 +28,7 @@ from airflow.providers.sendgrid.utils.emailer import send_email
 
 
 class TestSendEmailSendGrid(unittest.TestCase):
-    # Unit test for sendgrid.send_email()
+    # Unit test for sendgrid.send_email()sss
     def setUp(self):
         self.recepients = ['foo@foo.com', 'bar@bar.com']
         self.subject = 'sendgrid-send-email unit test'
