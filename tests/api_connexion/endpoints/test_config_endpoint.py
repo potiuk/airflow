@@ -44,7 +44,7 @@ class TestGetConfig:
             cls.app, username="test", role_name="Test", permissions=[('can_read', 'Config')]  # type: ignore
         )
         create_user(cls.app, username="test_no_permissions", role_name="TestNoPermissions")  # type: ignore
-
+        # comment
         cls.client = None
 
     @classmethod
