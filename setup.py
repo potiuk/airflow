@@ -33,9 +33,16 @@ logger = logging.getLogger(__name__)
 
 # Kept manually in sync with airflow.__version__
 spec = util.spec_from_file_location("airflow.version", os.path.join('airflow', 'version.py'))  # noqa
-mod = util.module_from_spec(spec)
-spec.loader.exec_module(mod)  # type: ignore
-version = mod.version  # type: ignore
+try:
+    mod = util.module_from_spec(spec)
+    spec.loader.exec_module(mod)  # type: ignore
+    version = mod.version  # type: ignore
+# in case of reading the setup py from external package the magic to retrieve version does not work in all
+# cases - for example this happens when the setup.py is read by scripts to verify and prepare
+# provider package documentation. It's safe to disable it. There is no way any of the
+# packaging tools will validate an empty version.
+except Exception:  # pylint: disable=broad-except
+    version = None
 
 PY3 = sys.version_info[0] == 3
 
@@ -362,7 +369,7 @@ postgres = [
 presto = [
     'presto-python-client>=0.7.0,<0.8'
 ]
-qds = [
+qubole = [
     'qds-sdk>=1.10.4',
 ]
 rabbitmq = [
@@ -537,11 +544,12 @@ PROVIDERS_REQUIREMENTS: Dict[str, Iterable[str]] = {
     "plexus": plexus,
     "postgres": postgres,
     "presto": presto,
-    "qubole": qds,
+    "qubole": qubole,
     "redis": redis,
     "salesforce": salesforce,
     "samba": samba,
     "segment": segment,
+    "sendgrid": sendgrid,
     "sftp": ssh,
     "singularity": singularity,
     "slack": slack,
@@ -553,7 +561,7 @@ PROVIDERS_REQUIREMENTS: Dict[str, Iterable[str]] = {
     "zendesk": zendesk,
 }
 
-EXTRAS_REQUIREMENTS: Dict[str, Iterable[str]] = {
+EXTRAS_REQUIREMENTS: Dict[str, List[str]] = {
     'all_dbs': all_dbs,
     'amazon': amazon,
     'apache.atlas': atlas,
@@ -614,7 +622,8 @@ EXTRAS_REQUIREMENTS: Dict[str, Iterable[str]] = {
     'plexus': plexus,
     'postgres': postgres,
     'presto': presto,
-    'qds': qds,
+    'qds': qubole,  # TODO: remove this in Airflow 2.1
+    'qubole': qubole,
     'rabbitmq': rabbitmq,
     'redis': redis,
     'salesforce': salesforce,
@@ -635,6 +644,99 @@ EXTRAS_REQUIREMENTS: Dict[str, Iterable[str]] = {
     'winrm': winrm,  # TODO: remove this in Airflow 2.1
     'yandexcloud': yandexcloud,
 }
+
+EXTRAS_PROVIDERS_PACKAGES: Dict[str, Iterable[str]] = {
+    'all': list(PROVIDERS_REQUIREMENTS.keys()),
+    # this is not 100% accurate with devel_ci definition, but we really want to have all providers
+    # when devel_ci extra is installed!
+    'devel_ci': list(PROVIDERS_REQUIREMENTS.keys()),
+    'all_dbs': [
+        "apache.cassandra", "apache.druid", "apache.hdfs", "apache.hive", "apache.pinot",
+        "cloudant", "exasol",
+        "mongo", "microsoft.mssql", "mysql", "postgres", "presto", "vertica"
+    ],
+    'amazon': ["amazon"],
+    'apache.atlas': [],
+    'apache.beam': [],
+    "apache.cassandra": ["apache.cassandra"],
+    "apache.druid": ["apache.druid"],
+    "apache.hdfs": ["apache.hdfs"],
+    "apache.hive": ["apache.hive"],
+    "apache.kylin": ["apache.kylin"],
+    "apache.pinot": ["apache.pinot"],
+    "apache.webhdfs": ["apache.hdfs"],
+    'async': [],
+    'atlas': [],  # TODO: remove this in Airflow 2.1
+    'aws': ["amazon"],  # TODO: remove this in Airflow 2.1
+    'azure': ["microsoft.azure"],  # TODO: remove this in Airflow 2.1
+    'cassandra': ["apache.cassandra"],  # TODO: remove this in Airflow 2.1
+    'celery': ["celery"],
+    'cgroups': [],
+    'cloudant': ["cloudant"],
+    'cncf.kubernetes': ["cncf.kubernetes"],
+    'dask': ["dask"],
+    'databricks': ["databricks"],
+    'datadog': ["datadog"],
+    'devel': ["cncf.kubernetes", "mysql"],
+    'devel_hadoop': ["apache.hdfs", "apache.hive", "presto"],
+    'doc': [],
+    'docker': ["docker"],
+    'druid': ["apache.druid"],  # TODO: remove this in Airflow 2.1
+    'elasticsearch': ["elasticsearch"],
+    'exasol': ["exasol"],
+    'facebook': ["facebook"],
+    'gcp': ["google"],  # TODO: remove this in Airflow 2.1
+    'gcp_api': ["google"],  # TODO: remove this in Airflow 2.1
+    'github_enterprise': [],
+    'google': ["google"],
+    'google_auth': [],
+    'grpc': ["grpc"],
+    'hashicorp': ["hashicorp"],
+    'hdfs': ["apache.hdfs"],  # TODO: remove this in Airflow 2.1
+    'hive': ["apache.hive"],  # TODO: remove this in Airflow 2.1
+    'jdbc': ["jdbc"],
+    'jira': ["jira"],
+    'kerberos': [],
+    'kubernetes': ["cncf.kubernetes"],   # TODO: remove this in Airflow 2.1
+    'ldap': [],
+    "microsoft.azure": ["microsoft.azure"],
+    "microsoft.mssql": ["microsoft.mssql"],
+    "microsoft.winrm": ["microsoft.winrm"],
+    'mongo': ["mongo"],
+    'mssql': ["microsoft.mssql"],  # TODO: remove this in Airflow 2.1
+    'mysql': ["microsoft.mssql"],
+    'odbc': ["odbc"],
+    'oracle': ["oracle"],
+    'pagerduty': ["pagerduty"],
+    'papermill': ["papermill"],
+    'password': [],
+    'pinot': ["apache.pinot"],  # TODO: remove this in Airflow 2.1
+    'plexus': ["plexus"],
+    'postgres': ["postgres"],
+    'presto': ["presto"],
+    'qds': ["qubole"],  # TODO: remove this in Airflow 2.1
+    'qubole': ["qubole"],
+    'rabbitmq': ["rabbitmq"],
+    'redis': ["redis"],
+    'salesforce': ["salesforce"],
+    'samba': ["samba"],
+    'segment': ["segment"],
+    'sendgrid': ["sendgrid"],
+    'sentry': ["sentry"],
+    'singularity': ["singularity"],
+    'slack': ["slack"],
+    'snowflake': ["snowflake"],
+    'spark': ["spark"],
+    'ssh': ["ssh"],
+    'statsd': ["statsd"],
+    'tableau': ["tableau"],
+    'vertica': ["vertica"],
+    'virtualenv': ["virtualenv"],
+    'webhdfs': ["apache.hdfs"],  # TODO: remove this in Airflow 2.1
+    'winrm': ["microsoft.winrm"],  # TODO: remove this in Airflow 2.1
+    'yandexcloud': ["yandexcloud"],
+}
+
 
 # Make devel_all contain all providers + extras + unique
 devel_all = list(set(devel +
@@ -743,13 +845,27 @@ INSTALL_REQUIREMENTS = [
 ]
 
 
+def get_provider_package_from_package_id(package_id: str):
+    """
+    Builds the name of provider package out of the package id provided/
+
+    :param package_id: id of the package (like amazon or microsoft.azure)
+    :return: full name of package in PyPI
+    """
+    package_suffix = package_id.replace(".", "-")
+    return f"apache-airflow-providers-{package_suffix}"
+
+
 def do_setup():
     """Perform the Airflow package setup."""
-    install_providers_from_sources = os.getenv('INSTALL_PROVIDERS_FROM_SOURCES')
-    exclude_patterns = \
-        [] if install_providers_from_sources and install_providers_from_sources == 'true' \
-        else ['airflow.providers', 'airflow.providers.*']
+    install_providers_from_sources = os.getenv('INSTALL_PROVIDERS_FROM_SOURCES') == 'true'
+    exclude_patterns = [] if install_providers_from_sources else ['airflow.providers', 'airflow.providers.*']
     write_version()
+    if not install_providers_from_sources:
+        for key, value in EXTRAS_PROVIDERS_PACKAGES.items():
+            EXTRAS_REQUIREMENTS[key].extend(
+                [get_provider_package_from_package_id(package_name) for package_name in value]
+            )
     setup(
         name='apache-airflow',
         description='Programmatically author, schedule and monitor data pipelines',
