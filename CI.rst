@@ -363,14 +363,13 @@ that to your own repository by setting those environment variables:
 CI Architecture
 ===============
 
-.. image:: images/ci/CI.png
-    :align: center
-    :alt: CI architecture of Apache Airflow
-
  .. This image is an export from the 'draw.io' graph available in
     https://cwiki.apache.org/confluence/display/AIRFLOW/AIP-23+Migrate+out+of+Travis+CI
     You can edit it there and re-export.
 
+.. image:: images/ci/CI.png
+    :align: center
+    :alt: CI architecture of Apache Airflow
 
 The following components are part of the CI infrastructure
 
@@ -628,6 +627,86 @@ delete old artifacts that are > 7 days old. It only runs for the 'apache/airflow
 
 We also have a script that can help to clean-up the old artifacts:
 `remove_artifacts.sh <dev/remove_artifacts.sh>`_
+
+Selective CI Checks
+===================
+
+In order to optimise our CI builds, we've implemented optimisations to only run selected checks for some
+kind of changes. The logic implemented reflects the internal architecture of Airflow 2.0 packages
+and it is helps to keep down both the usage of jobs in GitHub Actions as well as CI feedback time to
+contributors in case of simpler changes.
+
+We have the following test types (separated by packages in which they are):
+
+* Core - for the core Airflow functionality (core folder)
+* API - Tests for the API of Airflow (api and api_connexion folders)
+* CLI - Tests for the CLI of Airflow (cli folder)
+* WWW - Tests for the webserver of Airflow (www and www_rbac in 1.10 folders)
+* Providers - Tests for all Providers of Airflow (providers folder)
+* Other - all other tests (all other folders that are not part of any of the above)
+
+We also have several special kinds of tests that are not separated by packages but they are marked with
+pytest markers. They can be found in any of those packages and they can be selected by the appropriate
+pylint custom command line options. See `TESTING.rst <TESTING.rst>`_ for details but those are:
+
+* Integration - tests that require external integration images running in docker-compose
+* Heisentests - tests that are vulnerable to some side effects and are better to be run on their own
+* Quarantined - tests that are flaky and need to be fixed
+* Postgres - tests that require Postgres database. They are only run when backend is Postgres
+* MySQL - tests that require MySQL database. They are only run when backend is MySQL
+
+
+The logic implemented for the changes works as follows:
+
+1) In case of direct push (so when PR gets merged) or scheduled run, we always run all tests and checks.
+   This is in order to make sure that the merge did not miss anything important. The remainder of the logic
+   is executed only in case of Pull Requests.
+
+2) We retrieve which files have changed in the incoming Merge Commit (github.sha is a merge commit
+   automatically prepared by GitHub in case of Pull Request, so we can retrieve list of changed
+   files from that commit directly).
+
+3) If any of the important, environment files changed (Dockerfile, ci scripts, setup.py, github workflow
+   files), then we again run all tests and checks. Those are cases where the logic of the checks changed
+   or the environment for the checks changed so we want to make sure to check everything.
+
+4) If any of docs changed: we need to have CI image so we enable image building
+
+5) If any of chart files changed, we need to run helm tests so we enable helm unit tests
+
+6) If any of API files changed, we need to run API tests so we enable them
+
+7) if any of the relevant source files that trigger the tests have changed at all. Those are airflow
+   sources, chart, tests and kubernetes_tests. If any of those files changed, we enable tests and we
+   enable image building, because the CI images are needed to run tests.
+
+8) Then we determine which types of the tests should be run. We count all the changed files in the
+   relevant airflow sources (airflow, chart, tests, kubernetes_tests) first and then we count how many
+   files changed in different packages:
+
+   a) if any of the API files changed we enable ``API`` test type
+   b) if any of the CLI files changed we enable ``CLI`` test type
+   c) if any of the Provider files changed we enable ``Providers`` test type
+   d) if any of the WWW files changed we enable ``WWW`` test type
+   e) if any of the Kubernetes files changed we enable ``Kubernetes`` test type
+   f) Then we subtract count of all the ``specific`` above per-type changed files from the count of
+      all changed files. In case there are any files changed, then we assume that some unknown files
+      changed (likely from the core of airflow) and in this case we enable all test types above and the
+      Core test types - simply because we do not want to risk to miss anything.
+    g) In all cases where tests are enabled we also add Heisentests, Integration and - depending on
+       the backend used = Postgres or MySQL types of tests.
+
+9) Quarantined tests are always run when tests are run: - we need to run them often to observe how
+   often they fail so that we can decide to move them out of quarantine. Details about the
+   Quarantined tests are described in `TESTING.rst <TESTING.rst>`_
+
+10) There is a special case of static checks. In case the above logic determines that teh CI image
+    needs to be build, we run long and more comprehensive version of static checks - including Pylint,
+    MyPy, Flake8. And those tests are run on all files, no matter how many files changed.
+    In case the image is not built, we run only simpler set of changes - the longer static checks
+    that require CI image are skipped, and we only run the tests on the files that changed in the incoming
+    commit - unlike pylint/flake8/mypy, those static checks are per-file based and they should not miss any
+    important change.
 
 
 Naming conventions for stored images
