@@ -36,7 +36,7 @@ echo > "${OUT_FILE_PRINTED_ON_ERROR}"
 
 cd "${AIRFLOW_SOURCES}/provider_packages" || exit 1
 
-python3 setup_provider_packages.py update-package-release-notes "$@"
+python3 prepare_provider_packages.py update-package-release-notes "$@"
 
 AIRFLOW_PROVIDER_README_TGZ_FILE="/files/airflow-readme-$(date +"%Y-%m-%d-%H.%M.%S").tar.gz"
 
