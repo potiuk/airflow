@@ -1,1 +1,3 @@
 *.egg-info
+setup.py
+^CHANGELOG.txt
