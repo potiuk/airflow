@@ -53,8 +53,8 @@ jobs:
       sourceHeadSha: ${{ steps.source-run-info.outputs.sourceHeadSha }}
       mergeCommitSha: ${{ steps.source-run-info.outputs.mergeCommitSha }}
       targetCommitSha: ${{ steps.source-run-info.outputs.targetCommitSha }}
-      pullRequestNumber: ${{ steps.workflow-run-info.outputs.pullRequestNumber }}
-      pullRequestLabels: ${{ steps.workflow-run-info.outputs.pullRequestLabels }}
+      pullRequestNumber: ${{ steps.source-run-info.outputs.pullRequestNumber }}
+      pullRequestLabels: ${{ steps.source-run-info.outputs.pullRequestLabels }}
       sourceEvent: ${{ steps.source-run-info.outputs.sourceEvent }}
       cacheDirective: ${{ steps.cache-directive.outputs.docker-cache }}
       buildImages: ${{ steps.build-images.outputs.buildImages }}
@@ -62,7 +62,7 @@ jobs:
     if: github.repository == 'apache/airflow' || github.event.workflow_run.event != 'schedule'
     steps:
       - name: "Get information about the original trigger of the run"
-        uses: potiuk/get-workflow-origin@e3ba776faee1134e17551924b852bfb374e1703d  # v1_1
+        uses: potiuk/get-workflow-origin@15d83ef87a7549dc36622ec5bbe20e15849cecf7  # v1_2
         id: source-run-info
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -230,6 +230,7 @@ jobs:
         env:
           EVENT_NAME: ${{ needs.cancel-workflow-runs.outputs.sourceEvent }}
           INCOMING_COMMIT_SHA: ${{ needs.cancel-workflow-runs.outputs.targetCommitSha }}
+          PR_LABELS: ${{ needs.cancel-workflow-runs.outputs.pullRequestLabels }}
         run: |
           if [[ ${EVENT_NAME} == "pull_request" ]]; then
             # Run selective checks
