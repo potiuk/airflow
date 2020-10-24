@@ -71,6 +71,7 @@ jobs:
     outputs:
       waitForImage: ${{ steps.wait-for-image.outputs.wait-for-image }}
       pythonVersions: ${{ steps.selective-checks.outputs.python-versions }}
+      pythonVersionsListAsString: ${{ steps.selective-checks.outputs.python-versions-list-as-string }}
       defaultPythonVersion: ${{ steps.selective-checks.outputs.default-python-version }}
       kubernetesVersions: ${{ steps.selective-checks.outputs.kubernetes-versions }}
       defaultKubernetesVersion: ${{ steps.selective-checks.outputs.default-kubernetes-version }}
@@ -132,6 +133,7 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           INCOMING_COMMIT_SHA: ${{ github.sha }}
+          PR_LABELS: "${{ steps.source-run-info.outputs.pullRequestLabels }}"
         run: |
           if [[ ${EVENT_NAME} == "pull_request" ]]; then
             # Run selective checks
@@ -193,6 +195,9 @@ jobs:
       - name: >
           Wait for CI images
           ${{ needs.build-info.outputs.pythonVersions }}:${{ env.GITHUB_REGISTRY_PULL_IMAGE_TAG }}"
+        env:
+          CURRENT_PYTHON_MAJOR_MINOR_VERSIONS_AS_STRING: >
+            ${{needs.build-info.outputs.pythonVersionsListAsString}}
         # We wait for the images to be available either from the build-ci-image step or from
         # "build-images-workflow-run.yml' run as pull_request_target (it has the write
         # permissions in case pull_request from fork is run.
@@ -716,6 +721,9 @@ jobs:
       - name: >
           Wait for PROD images
           ${{ needs.build-info.outputs.pythonVersions }}:${{ env.GITHUB_REGISTRY_PULL_IMAGE_TAG }}"
+        env:
+          CURRENT_PYTHON_MAJOR_MINOR_VERSIONS_AS_STRING: >
+            ${{needs.build-info.outputs.pythonVersionsListAsString}}
         run: ./scripts/ci/images/ci_wait_for_all_prod_images.sh
         if: needs.build-info.outputs.waitForImage == 'true'
 

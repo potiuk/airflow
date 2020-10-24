@@ -1,0 +1,84 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+---
+name: Label when approved
+on: pull_request_review  # yamllint disable-line rule:truthy
+
+jobs:
+
+  label-when-approved:
+    name: "Label PRs when approved"
+    runs-on: ubuntu-latest
+    outputs:
+      labelSet: ${{ steps.label-when-approved-by-commiters.outputs.labelSet }}
+    steps:
+      - name: "Checkout ${{ github.ref }} ( ${{ github.sha }} )"
+        uses: actions/checkout@v2
+      - name: >
+          Event: ${{ github.event_name }}
+          Repo: ${{ github.repository }}
+          Branch: ${{ github.head_ref }}
+          Run id: ${{ github.run_id }}
+          Sha: ${{ github.sha }}
+          Ref: ${{ github.ref }}
+        run: printenv
+      - name: Selective checks
+        id: selective-checks
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INCOMING_COMMIT_SHA: ${{ github.sha }}
+          PR_LABELS: "${{ steps.source-run-info.outputs.pullRequestLabels }}"
+        run: |
+          ./scripts/ci/selective_ci_checks.sh "${INCOMING_COMMIT_SHA}"
+      - name: "Label when approved by committers for PRs requiring full tests"
+        uses: TobKed/label-when-approved-action@3393d807ee13fd674dec9dcbc52d84cdc7bd80dc  # v1
+        id: label-test-prs-when-approved-by-commiters
+        if: steps.selective-checks.outputs.run-tests == 'true'
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          label: 'okay to test'
+          require_committers_approval: 'true'
+          comment: >
+            The PR is ready to run all tests! Please rebase it to latest master or
+            ask committer to re-run it
+      - name: "Initiate GitHub Check forcing rerun of SH ${{ github.event.pull_request.head.sha }}"
+        uses: LouisBrunner/checks-action@9f02872da71b6f558c6a6f190f925dde5e4d8798  # v1.1.0
+        id: full-test-check
+        if: |
+          steps.label-test-prs-when-approved-by-commiters.outputs.labelSet == 'true' &&
+          steps.selective-checks.outputs.run-tests == 'true'
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          name: "Rebase to run full tests"
+          status: "in_progress"
+          sha: ${{ github.event.pull_request.head.sha }}
+          details_url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          output: >
+            {"summary":
+            "Please rebase the PR as it's status changed to approved!
+            [It was set by](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            "}
+      - name: Label when approved by commiters for PRs that do not require tests
+        uses: TobKed/label-when-approved-action@3393d807ee13fd674dec9dcbc52d84cdc7bd80dc  # v1
+        id: label-non-test-prs-when-approved-by-commiters
+        if: steps.selective-checks.outputs.run-tests != 'true'
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          label: 'okay to merge'
+          require_committers_approval: 'true'
+          comment: "The PR is ready to be merged. No tests are needed!."

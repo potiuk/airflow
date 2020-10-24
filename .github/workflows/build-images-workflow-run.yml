@@ -53,8 +53,8 @@ jobs:
       sourceHeadSha: ${{ steps.source-run-info.outputs.sourceHeadSha }}
       mergeCommitSha: ${{ steps.source-run-info.outputs.mergeCommitSha }}
       targetCommitSha: ${{ steps.source-run-info.outputs.targetCommitSha }}
-      pullRequestNumber: ${{ steps.workflow-run-info.outputs.pullRequestNumber }}
-      pullRequestLabels: ${{ steps.workflow-run-info.outputs.pullRequestLabels }}
+      pullRequestNumber: ${{ steps.source-run-info.outputs.pullRequestNumber }}
+      pullRequestLabels: ${{ steps.source-run-info.outputs.pullRequestLabels }}
       sourceEvent: ${{ steps.source-run-info.outputs.sourceEvent }}
       cacheDirective: ${{ steps.cache-directive.outputs.docker-cache }}
       buildImages: ${{ steps.build-images.outputs.buildImages }}
@@ -230,6 +230,7 @@ jobs:
         env:
           EVENT_NAME: ${{ needs.cancel-workflow-runs.outputs.sourceEvent }}
           INCOMING_COMMIT_SHA: ${{ needs.cancel-workflow-runs.outputs.targetCommitSha }}
+          PR_LABELS: ${{ needs.cancel-workflow-runs.outputs.pullRequestLabels }}
         run: |
           if [[ ${EVENT_NAME} == "pull_request" ]]; then
             # Run selective checks
