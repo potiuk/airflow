@@ -138,6 +138,7 @@ who do not want to build the software themselves.
 
 Those are - in the order of most common ways people install Airflow:
 
+
 - [PyPI releases](https://pypi.org/project/apache-airflow/) to install Airflow using standard `pip` tool
 - [Docker Images](https://hub.docker.com/repository/docker/apache/airflow) to install airflow via
   `docker` tool, use them in Kubernetes, Helm Charts, `docker-compose`, `docker swarm` etc. You can
