@@ -22,7 +22,7 @@ on: pull_request_review  # yamllint disable-line rule:truthy
 jobs:
 
   label-when-approved:
-    name: "Label PRs when approved"
+    name: "Label PRs when reviewed"
     runs-on: ubuntu-latest
     outputs:
       labelSet: ${{ steps.label-when-approved-by-commiters.outputs.labelSet }}
