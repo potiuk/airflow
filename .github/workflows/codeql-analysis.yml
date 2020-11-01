@@ -25,7 +25,7 @@ on:  # yamllint disable-line rule:truthy
     branches: [master]
   schedule:
     - cron: '0 2 * * *'
-
+#
 jobs:
   selective-checks:
     name: Selective checks
