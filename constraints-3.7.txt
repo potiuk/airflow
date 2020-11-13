@@ -1,4 +1,4 @@
-# Editable install with no version control (apache-airflow==2.0.0a2)
+# Editable install with no version control (apache-airflow==2.0.0b2)
 Authlib==0.14.3
 Babel==2.8.0
 Flask-AppBuilder==3.1.1
@@ -100,6 +100,7 @@ cloudant==2.14.0
 cloudpickle==1.4.1
 colorama==0.4.3
 colorlog==4.0.2
+commonmark==0.9.1
 connexion==2.7.0
 coverage==5.2.1
 croniter==0.3.34
@@ -164,6 +165,7 @@ google-cloud-language==1.3.0
 google-cloud-logging==1.15.1
 google-cloud-memcache==0.2.0
 google-cloud-monitoring==1.0.0
+google-cloud-os-login==1.0.0
 google-cloud-pubsub==1.7.0
 google-cloud-redis==1.0.0
 google-cloud-secret-manager==1.0.0
@@ -335,6 +337,7 @@ requests-oauthlib==1.1.0
 requests-toolbelt==0.9.1
 requests==2.24.0
 responses==0.10.16
+rich==9.2.0
 rsa==4.6
 s3transfer==0.3.3
 sasl==0.2.1
