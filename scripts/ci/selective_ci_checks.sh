@@ -27,7 +27,6 @@
 # The logic of retrieving changes works by comparing the incoming commit with the target branch
 # The commit addresses.
 #
-#
 declare -a pattern_array
 
 if [[ ${PR_LABELS=} == *"full tests needed"* ]]; then
