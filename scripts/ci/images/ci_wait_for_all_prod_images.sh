@@ -16,6 +16,19 @@
 # specific language governing permissions and limitations
 # under the License.
 export AIRFLOW_SOURCES="${AIRFLOW_SOURCES:=$( cd "$( dirname "${BASH_SOURCE[0]}" )/../../.." && pwd )}"
+
+function verify_prod_image_dependencies {
+    echo
+    echo "Checking if Airflow dependencies are non-conflicting in PROD image."
+    echo
+
+    push_pull_remove_images::pull_image_github_dockerhub "${AIRFLOW_PROD_IMAGE}" "${GITHUB_REGISTRY_AIRFLOW_PROD_IMAGE}:${GITHUB_REGISTRY_PULL_IMAGE_TAG}"
+    docker run --rm --entrypoint /bin/bash "${AIRFLOW_PROD_IMAGE}" -c 'pip check'
+
+    return $?
+}
+
+
 echo
 echo "Airflow sources: ${AIRFLOW_SOURCES}"
 echo
@@ -56,3 +69,33 @@ do
     push_pull_remove_images::wait_for_github_registry_image "${AIRFLOW_PROD_IMAGE_NAME}" "${GITHUB_REGISTRY_PULL_IMAGE_TAG}"
     push_pull_remove_images::wait_for_github_registry_image "${AIRFLOW_PROD_BUILD_IMAGE_NAME}" "${GITHUB_REGISTRY_PULL_IMAGE_TAG}"
 done
+
+
+echo
+echo "Verifying the images after pulling them"
+echo
+
+set +e
+
+verification_error="false"
+
+for PYTHON_MAJOR_MINOR_VERSION in ${CURRENT_PYTHON_MAJOR_MINOR_VERSIONS_AS_STRING}
+do
+    export AIRFLOW_PROD_IMAGE_NAME="${BRANCH_NAME}-python${PYTHON_MAJOR_MINOR_VERSION}"
+
+    echo
+    echo "Verifying ${AIRFLOW_PROD_IMAGE_NAME}"
+    echo
+
+    if ! verify_prod_image_dependencies; then
+        verification_error="true"
+    fi
+done
+
+if [[ ${verification_error} == "true" ]]; then
+    echo
+    echo "ERROR! Some images did not pass verification!"
+    echo
+# TODO: we should enable that once constraints get updated and pip-checked in CI image
+#    exit 1
+fi

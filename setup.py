@@ -163,7 +163,8 @@ _SPHINX_AIRFLOW_THEME_URL = (
 # If you change this mark you should also change ./scripts/ci/check_order_setup.py
 # Start dependencies group
 amazon = [
-    'boto3>=1.12.0,<2.0.0',
+    'boto3>=1.16.0,<2.0.0',
+    'botocore>=1.18.0,<1.19.0',
     'watchtower~=0.7.3',
 ]
 apache_beam = [
@@ -188,7 +189,8 @@ azure = [
     'azure-mgmt-datalake-store>=0.5.0',
     'azure-mgmt-resource>=2.2.0',
     'azure-storage>=0.34.0, <0.37.0',
-    'azure-storage-blob<12.0',
+    'azure-storage-blob',
+    'azure-storage-common',
 ]
 cassandra = [
     'cassandra-driver>=3.13.0,<3.21.0',
@@ -463,7 +465,7 @@ devel = [
     'ipdb',
     'jira',
     'mongomock',
-    'moto>=1.3.16',
+    'moto',
     'parameterized',
     'paramiko',
     'pipdeptree',

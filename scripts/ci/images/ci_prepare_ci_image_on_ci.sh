@@ -59,5 +59,5 @@ function build_ci_image_on_ci() {
     export CHECK_IMAGE_FOR_REBUILD="false"
 }
 
-
 build_ci_image_on_ci
+verify_prod_image_dependencies

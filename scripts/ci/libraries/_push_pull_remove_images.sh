@@ -268,7 +268,7 @@ function push_pull_remove_images::wait_for_github_registry_image() {
     GITHUB_API_ENDPOINT="https://${GITHUB_REGISTRY}/v2/${github_repository_lowercase}"
     IMAGE_NAME="${1}"
     IMAGE_TAG=${2}
-    echo "Waiting for ${IMAGE_NAME}:${IMAGE_TAG} image"
+    echo "Waiting for ${GITHUB_REPOSITORY}/${IMAGE_NAME}:${IMAGE_TAG} image"
 
     GITHUB_API_CALL="${GITHUB_API_ENDPOINT}/${IMAGE_NAME}/manifests/${IMAGE_TAG}"
     while true; do
