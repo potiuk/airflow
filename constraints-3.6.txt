@@ -1,4 +1,5 @@
-# Editable install with no version control (apache-airflow==2.0.0b3)
+# Editable install with no version control (apache-airflow==2.0.0)
+APScheduler==3.6.3
 Authlib==0.15.2
 Babel==2.9.0
 Flask-AppBuilder==3.1.1
@@ -26,7 +27,7 @@ PyNaCl==1.4.0
 PySmbClient==0.1.5
 PyYAML==5.3.1
 Pygments==2.7.2
-SQLAlchemy-JSONField==0.9.0
+SQLAlchemy-JSONField==1.0.0
 SQLAlchemy-Utils==0.36.8
 SQLAlchemy==1.3.20
 Sphinx==3.3.1
@@ -137,11 +138,9 @@ fissix==20.8.0
 flake8-colors==0.1.9
 flake8==3.8.4
 flaky==3.7.0
-flask-swagger==0.2.13
 flower==0.9.5
 freezegun==1.0.0
 fsspec==0.8.4
-funcsigs==1.0.2
 future-fstrings==1.2.0
 future==0.18.2
 gcsfs==0.7.1
@@ -161,17 +160,17 @@ google-cloud-bigquery==2.4.0
 google-cloud-bigtable==1.6.0
 google-cloud-container==1.0.1
 google-cloud-core==1.4.3
-google-cloud-datacatalog==0.7.0
+google-cloud-datacatalog==1.0.0
 google-cloud-dataproc==1.1.1
 google-cloud-dlp==1.0.0
-google-cloud-kms==1.4.0
+google-cloud-kms==2.2.0
 google-cloud-language==1.3.0
 google-cloud-logging==1.15.1
 google-cloud-memcache==0.2.0
 google-cloud-monitoring==1.1.0
-google-cloud-os-login==1.0.0
-google-cloud-pubsub==1.7.0
-google-cloud-redis==1.0.0
+google-cloud-os-login==2.0.0
+google-cloud-pubsub==2.2.0
+google-cloud-redis==2.0.0
 google-cloud-secret-manager==1.0.0
 google-cloud-spanner==1.19.1
 google-cloud-speech==1.3.2
@@ -295,7 +294,7 @@ ptyprocess==0.6.0
 py4j==0.10.9
 py==1.9.0
 pyOpenSSL==19.1.0
-pyarrow==0.17.1
+pyarrow==2.0.0
 pyasn1-modules==0.2.8
 pyasn1==0.4.8
 pycodestyle==2.6.0
@@ -308,7 +307,7 @@ pyenchant==3.1.1
 pyexasol==0.14.3
 pyflakes==2.2.0
 pykerberos==1.2.1
-pylint==2.5.3
+pylint==2.6.0
 pymongo==3.11.1
 pymssql==2.1.5
 pyodbc==4.0.30
@@ -331,6 +330,7 @@ python-jenkins==1.7.0
 python-jose==3.2.0
 python-nvd3==0.15.0
 python-slugify==4.0.1
+python-telegram-bot==13.0
 python3-openid==3.2.0
 pytz==2020.4
 pytzdata==2020.1
@@ -364,7 +364,7 @@ snowflake-connector-python==2.3.6
 snowflake-sqlalchemy==1.2.4
 sortedcontainers==2.3.0
 soupsieve==2.0.1
-sphinx-airflow-theme @ https://github.com/apache/airflow-site/releases/download/v0.0.1/sphinx_airflow_theme-0.0.1-py3-none-any.whl
+sphinx-airflow-theme==0.0.2
 sphinx-argparse==0.2.5
 sphinx-autoapi==1.0.0
 sphinx-copybutton==0.3.1
