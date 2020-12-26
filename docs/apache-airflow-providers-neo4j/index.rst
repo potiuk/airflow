@@ -46,3 +46,41 @@ Content
     :caption: Resources
 
     PyPI Repository <https://pypi.org/project/apache-airflow-providers-neo4j/>
+
+.. THE REMINDER OF THE FILE IS AUTOMATICALLY GENERATED. IT WILL BE OVERWRITTEN AT RELEASE TIME!
+
+
+Package apache-airflow-providers-neo4j
+------------------------------------------------------
+
+Release: 1.0.0
+
+Provider package
+----------------
+
+This is a provider package for ``neo4j`` provider. All classes for this provider package
+are in ``airflow.providers.neo4j`` python package.
+
+Installation
+------------
+
+.. note::
+
+    On November 2020, new version of PIP (20.3) has been released with a new, 2020 resolver. This resolver
+    does not yet work with Apache Airflow and might lead to errors in installation - depends on your choice
+    of extras. In order to install Airflow you need to either downgrade pip to version 20.2.4
+    ``pip install --upgrade pip==20.2.4`` or, in case you use Pip 20.3, you need to add option
+    ``--use-deprecated legacy-resolver`` to your pip install command.
+
+
+You can install this package on top of an existing airflow 2.* installation via
+``pip install apache-airflow-providers-neo4j``
+
+PIP requirements
+----------------
+
+=============  ==================
+PIP package    Version required
+=============  ==================
+``neo4j``      ``>=4.2.1``
+=============  ==================
