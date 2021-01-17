@@ -1488,7 +1488,7 @@ This is the current syntax for  `./breeze <./breeze>`_:
           Github registry used. GitHub has legacy Packages registry and Public Beta Container
           registry.
 
-          Default: docker.pkg.github.com.
+          Default: ghcr.io.
 
           If you use this flag, automatically --use-github-registry flag is enabled.
 
@@ -1658,7 +1658,7 @@ This is the current syntax for  `./breeze <./breeze>`_:
           Github registry used. GitHub has legacy Packages registry and Public Beta Container
           registry.
 
-          Default: docker.pkg.github.com.
+          Default: ghcr.io.
 
           If you use this flag, automatically --use-github-registry flag is enabled.
 
@@ -2638,7 +2638,7 @@ This is the current syntax for  `./breeze <./breeze>`_:
           Github registry used. GitHub has legacy Packages registry and Public Beta Container
           registry.
 
-          Default: docker.pkg.github.com.
+          Default: ghcr.io.
 
           If you use this flag, automatically --use-github-registry flag is enabled.
 

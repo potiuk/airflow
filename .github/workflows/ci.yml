@@ -37,7 +37,7 @@ env:
   DOCKER_CACHE: "pulled"
   USE_GITHUB_REGISTRY: "true"
   # Might be either 'ghcr.io' or 'docker.pkg.github.com'
-  GITHUB_REGISTRY: "docker.pkg.github.com"
+  GITHUB_REGISTRY: "ghcr.io"
   GITHUB_REPOSITORY: ${{ github.repository }}
   GITHUB_USERNAME: ${{ github.actor }}
   # In builds from forks, this token is read-only. For scheduler/direct push it is WRITE one

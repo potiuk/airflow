@@ -34,7 +34,7 @@ env:
   PYTHON_MAJOR_MINOR_VERSION: 3.6
   USE_GITHUB_REGISTRY: "true"
   # Might be either 'ghcr.io' or 'docker.pkg.github.com'
-  GITHUB_REGISTRY: "docker.pkg.github.com"
+  GITHUB_REGISTRY: "ghcr.io"
   GITHUB_REPOSITORY: ${{ github.repository }}
   GITHUB_USERNAME: ${{ github.actor }}
   # This token is WRITE one - schedule type of events always have the WRITE token
