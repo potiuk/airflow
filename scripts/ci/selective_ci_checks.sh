@@ -30,6 +30,7 @@
 #
 declare -a pattern_array
 
+
 if [[ ${PR_LABELS=} == *"full tests needed"* ]]; then
     echo
     echo "Found the right PR labels in '${PR_LABELS=}': 'full tests needed''"
