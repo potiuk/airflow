@@ -1,4 +1,3 @@
-#!/usr/bin/env bash
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -15,9 +14,22 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-# shellcheck source=scripts/ci/libraries/_script_init.sh
-. "$( dirname "${BASH_SOURCE[0]}" )/../libraries/_script_init.sh"
-
-build_images::prepare_ci_build
-build_images::rebuild_ci_image_if_needed_with_group
-runs::run_prepare_provider_readme "$@"
+---
+version: "2.2"
+services:
+  airflow:
+    stdin_open: true  # docker run -i
+    tty: true  # docker run -t
+    # We need to mount files and directories individually because some files
+    # such apache_airflow.egg-info should not be mounted from host
+    # we only mount those files, so that it makes sense to edit while developing
+    # or those that might be useful to see in the host as output of the
+    # tests (such as logs)
+    volumes:
+      - ../../../.bash_aliases:/root/.bash_aliases:cached
+      - ../../../.bash_history:/root/.bash_history:cached
+      - ../../../.inputrc:/root/.inputrc:cached
+      - ../../../tmp:/tmp:cached
+      - ../../../:/opt/airflow:cached
+    ports:
+      - "${WEBSERVER_HOST_PORT}:8080"

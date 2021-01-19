@@ -16,6 +16,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
+# Can be used to add extra parameters when generating providers
+# We will be able to remove it after we drop backport providers
+OPTIONAL_BACKPORT_FLAG=()
+PROVIDER_PACKAGES_DIR="${AIRFLOW_SOURCES}/dev/provider_packages"
+
 #######################################################################################################
 #
 # Adds trap to the traps already set.
@@ -381,6 +386,7 @@ function setup_provider_packages() {
         export PACKAGE_PREFIX_UPPERCASE="BACKPORT_"
         export PACKAGE_PREFIX_LOWERCASE="backport_"
         export PACKAGE_PREFIX_HYPHEN="backport-"
+        OPTIONAL_BACKPORT_FLAG+=("--backports")
     else
         export PACKAGE_TYPE="regular"
         export PACKAGE_PREFIX_UPPERCASE=""
@@ -538,6 +544,78 @@ function in_container_set_colors() {
     export COLOR_RED
     export COLOR_RESET
     export COLOR_YELLOW
+}
+
+
+function check_missing_providers() {
+    PACKAGE_ERROR="false"
+
+    pushd "${AIRFLOW_SOURCES}/airflow/providers" >/dev/null 2>&1 || exit 1
+
+    LIST_OF_DIRS_FILE=$(mktemp)
+    find . -type d | sed 's!./!!; s!/!.!g' | grep -E 'hooks|operators|sensors|secrets|utils' \
+        > "${LIST_OF_DIRS_FILE}"
+
+    popd >/dev/null 2>&1 || exit 1
+
+    # Check if all providers are included
+    for PACKAGE in "${PROVIDER_PACKAGES[@]}"
+    do
+        if ! grep -E "^${PACKAGE}" <"${LIST_OF_DIRS_FILE}" >/dev/null; then
+            echo "The package ${PACKAGE} is not available in providers dir"
+            PACKAGE_ERROR="true"
+        fi
+        sed -i "/^${PACKAGE}.*/d" "${LIST_OF_DIRS_FILE}"
+    done
+
+    if [[ ${PACKAGE_ERROR} == "true" ]]; then
+        echo
+        echo "ERROR! Some packages from ${PROVIDER_PACKAGES_DIR}/prepare_provider_packages.py are missing in providers dir"
+        exit 1
+    fi
+
+    if [[ $(wc -l < "${LIST_OF_DIRS_FILE}") != "0" ]]; then
+        echo "ERROR! Some folders from providers package are not defined"
+        echo "       Please add them to ${PROVIDER_PACKAGES_DIR}/prepare_provider_packages.py:"
+        echo
+        cat "${LIST_OF_DIRS_FILE}"
+        echo
+
+        rm "$LIST_OF_DIRS_FILE"
+        exit 1
+    fi
+    rm "$LIST_OF_DIRS_FILE"
+}
+
+function get_providers_to_act_on() {
+    group_start "Get all providers"
+    if [[ -z "$*" ]]; then
+        while IFS='' read -r line; do PROVIDER_PACKAGES+=("$line"); done < <(
+            python3 "${PROVIDER_PACKAGES_DIR}/prepare_provider_packages.py" \
+                "${OPTIONAL_BACKPORT_FLAG[@]}" \
+                list-providers-packages
+        )
+        if [[ "$BACKPORT_PACKAGES" != "true" ]]; then
+            # Don't check for missing packages when we are building backports -- we have filtered some out,
+            # and the non-backport build will check for any missing.
+            check_missing_providers
+        fi
+    else
+        if [[ "${1}" == "--help" ]]; then
+            echo
+            echo "Builds all provider packages."
+            echo
+            echo "You can provide list of packages to build out of:"
+            echo
+            python3 "${PROVIDER_PACKAGES_DIR}/prepare_provider_packages.py" \
+                "${OPTIONAL_BACKPORT_FLAG[@]}" \
+                list-providers-packages | tr '\n ' ' ' | fold -w 100 -s
+            echo
+            echo
+            exit
+        fi
+    fi
+    group_end
 }
 
 # Starts group for Github Actions - makes logs much more readable

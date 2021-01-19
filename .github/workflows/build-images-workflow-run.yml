@@ -22,7 +22,7 @@ on:  # yamllint disable-line rule:truthy
     workflows: ["CI Build"]
     types: ['requested']
 env:
-  MOUNT_LOCAL_SOURCES: "false"
+  MOUNT_SELECTED_LOCAL_SOURCES: "false"
   FORCE_ANSWER_TO_QUESTIONS: "yes"
   FORCE_PULL_IMAGES: "true"
   CHECK_IMAGE_FOR_REBUILD: "true"

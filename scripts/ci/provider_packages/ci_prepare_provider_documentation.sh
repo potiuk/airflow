@@ -15,24 +15,9 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-export MOUNT_SELECTED_LOCAL_SOURCES="false"
-
 # shellcheck source=scripts/ci/libraries/_script_init.sh
-. "$(dirname "${BASH_SOURCE[0]}")/../../scripts/ci/libraries/_script_init.sh"
-
-function enter_breeze_with_mapped_sources() {
-    docker run -it "${EXTRA_DOCKER_FLAGS[@]}" \
-        -v "${AIRFLOW_SOURCES}/setup.py:/airflow_sources/setup.py:cached" \
-        -v "${AIRFLOW_SOURCES}/setup.cfg:/airflow_sources/setup.cfg:cached" \
-        -v "${AIRFLOW_SOURCES}/airflow/__init__.py:/airflow_sources/airflow/__init__.py:cached" \
-        -v "${AIRFLOW_SOURCES}/empty:/opt/airflow/airflow:cached" \
-        -v "${AIRFLOW_SOURCES}/scripts/in_container:/opt/airflow/scripts/in_container:cached" \
-        -v "${AIRFLOW_SOURCES}/dev/import_all_classes.py:/opt/airflow/dev/import_all_classes.py:cached" \
-        "${AIRFLOW_CI_IMAGE}"
-}
+. "$( dirname "${BASH_SOURCE[0]}" )/../libraries/_script_init.sh"
 
 build_images::prepare_ci_build
-
-build_images::rebuild_ci_image_if_needed
-
-enter_breeze_with_mapped_sources
+build_images::rebuild_ci_image_if_needed_with_group
+runs::run_prepare_provider_documentation "$@"

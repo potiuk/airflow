@@ -15,8 +15,9 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+import argparse
 import os
-import sys
+import textwrap
 import token
 from os.path import dirname
 from shutil import copyfile, copytree, rmtree
@@ -25,6 +26,7 @@ from typing import List
 from bowler import LN, TOKEN, Capture, Filename, Query
 from fissix.fixer_util import Comma, KeywordArg, Name
 from fissix.pytree import Leaf
+from rich import print
 
 from dev.provider_packages.prepare_provider_packages import (
     get_source_airflow_folder,
@@ -34,7 +36,7 @@ from dev.provider_packages.prepare_provider_packages import (
 )
 
 
-def copy_provider_sources() -> None:
+def copy_provider_sources(backports: bool) -> None:
     """
     Copies provider sources to directory where they will be refactored.
     """
@@ -45,7 +47,9 @@ def copy_provider_sources() -> None:
         """
         build_dir = os.path.join(dirname(__file__), "build")
         if os.path.isdir(build_dir):
+            print(f"\nRemoving the {build_dir} directory: ", end='')
             rmtree(build_dir)
+            print("[green]OK[/]")
 
     def ignore_google_auth_backend(src: str, names: List[str]) -> List[str]:
         del names
@@ -61,8 +65,17 @@ def copy_provider_sources() -> None:
     rm_build_dir()
     package_providers_dir = get_target_providers_folder()
     if os.path.isdir(package_providers_dir):
+        print(f"\nRemoving the previous source tree from {package_providers_dir}: ", end='')
         rmtree(package_providers_dir)
-    copytree(get_source_providers_folder(), get_target_providers_folder(), ignore=ignore_some_files)
+        print("[green]OK[/]")
+
+    print(f"\nCopying the whole source tree to {package_providers_dir}: ", end='')
+    copytree(
+        get_source_providers_folder(),
+        get_target_providers_folder(),
+        ignore=ignore_some_files if backports else None,
+    )
+    print("[green]OK[/]\n")
 
 
 def copy_helper_py_file(target_file_path: str) -> None:
@@ -755,6 +768,7 @@ class RefactorBackportPackages:
         )
 
     def do_refactor(self, in_process: bool = False) -> None:  # noqa
+        print("Perform refactoring.", end='')
         self.rename_deprecated_modules()
         self.refactor_amazon_package()
         self.refactor_google_package()
@@ -767,27 +781,38 @@ class RefactorBackportPackages:
         self.refactor_kubernetes_pod_operator()
         # In order to debug Bowler - set in_process to True
         self.qry.execute(write=True, silent=False, interactive=False, in_process=in_process)
+        print("[green]OK[/]")
+
+
+def get_parser():
+    cli_parser = argparse.ArgumentParser(
+        description="Copies sources and optionally refactors provider code to be Airflow 1.10 compatible.",
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    cli_parser.add_argument(
+        "--backports",
+        action='store_true',
+        help=textwrap.dedent("Includes refactoring to prepare backport packages rather than regular ones"),
+    )
+    cli_parser.add_argument(
+        "--debug",
+        action='store_true',
+        help=textwrap.dedent(
+            "Run bowler refactoring in single process. Makes it debuggable with regular"
+            " IDE debugger (much slower)"
+        ),
+    )
+    return cli_parser
 
 
 if __name__ == '__main__':
-    BACKPORT_PACKAGES = os.getenv('BACKPORT_PACKAGES') == "true"
-    in_process = False
-    if len(sys.argv) > 1:
-        if sys.argv[1] in ['--help', '-h']:
-            print()
-            print("Refactors provider packages to be Airflow 1.10 compatible.")
-            print()
-            print(f"Usage: {sys.argv[0]} [--debug] | [-h] | [--help]")
-            print()
-            print("You can use --debug flag in order to run bowler refactoring in process.")
-            print("This allows you to debug bowler process as usual using your IDE debugger")
-            print("Otherwise it heavily uses multi-processing and is next-to-impossible to debug")
-            print()
-            print("Note - Bowler is also a lot slower in this mode.")
-            print()
-            sys.exit(0)
-        if sys.argv[1] == '--debug':
-            in_process = True
-    copy_provider_sources()
-    if BACKPORT_PACKAGES:
+    parser = get_parser()
+    args = parser.parse_args()
+
+    in_process = args.debug
+    copy_provider_sources(args.backports)
+    os.chdir(get_target_providers_folder())
+    if args.backports:
+        print("\nRefactoring code to be Airflow 1.10 - compatible\n")
         RefactorBackportPackages().do_refactor(in_process=in_process)
+        print("\n[green]Refactored code successfully[/]\n")
