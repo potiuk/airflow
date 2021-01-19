@@ -65,7 +65,6 @@ function build_provider_packages() {
             continue
         fi
         if [[ ${res} != "0" ]]; then
-            cat "${LOG_FILE}"
             error_packages+=("${provider_package}")
             continue
         fi
