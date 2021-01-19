@@ -1754,7 +1754,7 @@ def list_providers_packages(args: Any):
 
 def update_package_documentation(args: Any):
     """Updates package documentation."""
-    release_ver = ""
+    current_release_version = args.release_version
     version_suffix = args.version_suffix
     if not args.package:
         print("[red]ERROR: You must specify a package as parameter[/]")
@@ -1762,26 +1762,34 @@ def update_package_documentation(args: Any):
     if args.release_version and not args.backports:
         print("[red]ERROR: Release version can only be specified for backports[/]")
         sys.exit(1)
-    provider_package = args.package
-    verify_provider_package(provider_package)
+    provider_package_id = args.package
+    verify_provider_package(provider_package_id)
     if args.release_version:
-        print(f"Preparing release version: {release_ver}")
+        print(f"Preparing release version: {current_release_version}")
     else:
         print("Updating documentation for the latest release version.")
     print()
     make_sure_remote_apache_exists_and_fetch()
-    with with_group(f"Update generated files for package '{provider_package}' "):
+    with with_group(f"Update generated files for package '{provider_package_id}' "):
         if args.backports:
+            provider_details = get_provider_details(provider_package_id)
+            past_releases = get_all_releases_for_backport_providers(
+                provider_package_path=provider_details.source_provider_package_path
+            )
+            current_release_version, previous_release_commit_ref = check_if_release_version_ok(
+                past_releases,
+                current_release_version,
+            )
             update_generated_files_for_backport_package(
-                provider_package,
-                release_ver,
+                provider_package_id,
+                current_release_version,
                 version_suffix,
                 update_release_notes=True,
                 update_setup=False,
             )
         else:
             update_generated_files_for_regular_package(
-                provider_package,
+                provider_package_id,
                 version_suffix,
                 update_release_notes=True,
                 update_setup=False,
@@ -2009,6 +2017,7 @@ Only useful when generating RC candidates for PyPI."""
     cli_parser.add_argument(
         "--release-version",
         metavar='YYYY.MM.DD',
+        default='',
         help='Optional release version - only used in case of backport packages',
     )
     cli_parser.add_argument(
