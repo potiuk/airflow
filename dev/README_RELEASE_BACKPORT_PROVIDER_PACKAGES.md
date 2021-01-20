@@ -461,7 +461,7 @@ For 1.10 releases you can also use `--no-rbac-ui` flag disable RBAC UI of Airflo
 
 ### Building your own docker image
 
-If you prefer to build your own image, you can also use the official image andipi PyPI packages to test
+If you prefer to build your own image, you can also use the official image and PyPI packages to test
 backport packages. This is especially helpful when you want to test integrations, but you need to install
 additional tools. Below is an example Dockerfile, which installs backport providers for Google and
 an additional third-party tools:
