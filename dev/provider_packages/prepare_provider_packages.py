@@ -1632,6 +1632,13 @@ def update_generated_files_for_backport_package(
     """
     verify_provider_package(provider_package_id)
     provider_details = get_provider_details(provider_package_id)
+    past_releases = get_all_releases_for_backport_providers(
+        provider_package_path=provider_details.source_provider_package_path
+    )
+    current_release_version, previous_release_commit_ref = check_if_release_version_ok(
+        past_releases,
+        current_release_version,
+    )
     jinja_context = get_provider_jinja_context(
         provider_details=provider_details,
         current_release_version=current_release_version,
@@ -1650,14 +1657,6 @@ def update_generated_files_for_backport_package(
             f"None of the classes were imported for {provider_package_id},"
         )
     entity_summaries = get_package_class_summary(provider_details.full_package_name, imported_classes)
-    past_releases = get_all_releases_for_backport_providers(
-        provider_package_path=provider_details.source_provider_package_path
-    )
-    current_release_version, previous_release_commit_ref = check_if_release_version_ok(
-        past_releases,
-        current_release_version,
-    )
-
     previous_release_commit_ref = get_previous_release_info(
         previous_release_version=previous_release_commit_ref,
         past_releases=past_releases,
