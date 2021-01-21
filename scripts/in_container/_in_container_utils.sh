@@ -287,7 +287,7 @@ function install_airflow_from_wheel() {
         >&2 echo
         exit 4
     fi
-    pip install "${airflow_package}${1}" >"${OUTPUT_PRINTED_ONLY_ON_ERROR}" 2>&1
+    pip install "${airflow_package}${1}"
 }
 
 function install_airflow_from_sdist() {
@@ -304,7 +304,7 @@ function install_airflow_from_sdist() {
         >&2 echo
         exit 4
     fi
-    pip install "${airflow_package}${1}" >"${OUTPUT_PRINTED_ONLY_ON_ERROR}" 2>&1
+    pip install "${airflow_package}${1}"
 }
 
 function reinstall_azure_storage_blob() {
@@ -322,25 +322,16 @@ function reinstall_azure_storage_blob() {
 
 function install_remaining_dependencies() {
     group_start "Installs all remaining dependencies that are not installed by '${AIRFLOW_EXTRAS}' "
-    pip install apache-beam[gcp] >"${OUTPUT_PRINTED_ONLY_ON_ERROR}" 2>&1
+    pip install apache-beam[gcp]
     group_end
 }
 
 function uninstall_airflow() {
-    echo
-    echo "Uninstalling airflow"
-    echo
     pip uninstall -y apache-airflow || true
-    echo
-    echo "Remove all AIRFLOW_HOME remnants"
-    echo
     find /root/airflow/ -type f -print0 | xargs -0 rm -f --
 }
 
 function uninstall_providers() {
-    echo
-    echo "Uninstalling all provider packages"
-    echo
     local provider_packages_to_uninstall
     provider_packages_to_uninstall=$(pip freeze | grep apache-airflow-providers || true)
     if [[ -n ${provider_packages_to_uninstall} ]]; then
@@ -361,7 +352,7 @@ function install_released_airflow_version() {
     echo
 
     rm -rf "${AIRFLOW_SOURCES}"/*.egg-info
-    pip install --upgrade "apache-airflow${extras}==${version}" >"${OUTPUT_PRINTED_ONLY_ON_ERROR}" 2>&1
+    pip install --upgrade "apache-airflow${extras}==${version}"
 }
 
 function install_all_provider_packages_from_wheels() {
@@ -369,7 +360,7 @@ function install_all_provider_packages_from_wheels() {
     echo "Installing all provider packages from wheels"
     echo
     uninstall_providers
-    pip install /dist/apache_airflow*providers_*.whl >"${OUTPUT_PRINTED_ONLY_ON_ERROR}" 2>&1
+    pip install /dist/apache_airflow*providers_*.whl
 }
 
 function install_all_provider_packages_from_sdist() {
@@ -377,7 +368,7 @@ function install_all_provider_packages_from_sdist() {
     echo "Installing all provider packages from .tar.gz"
     echo
     uninstall_providers
-    pip install /dist/apache-airflow-*providers-*.tar.gz >"${OUTPUT_PRINTED_ONLY_ON_ERROR}" 2>&1
+    pip install /dist/apache-airflow-*providers-*.tar.gz
 }
 
 function setup_provider_packages() {
