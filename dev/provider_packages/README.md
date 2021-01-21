@@ -133,31 +133,31 @@ providers by running:
 The examples below show how you can build selected packages, but you can also build all packages by
 omitting the package ids altogether.
 
-By default, you build only wheel packages, but you can use `--package-format both` to generate
-both wheel and sdist packages, or `--package-format sdist` to only generate sdist packages.
+By default, you build `both` packages, but you can use `--package-format wheel` to generate
+only wheel package, or `--package-format sdist` to only generate sdist package.
 
 * To build the release candidate packages for SVN Apache upload run the following command:
 
 ```bash
-./breeze prepare-provider-packages --package-format both --version-suffix-for-svn=rc1 [PACKAGE_ID] ...
+./breeze prepare-provider-packages --version-suffix-for-svn=rc1 [PACKAGE_ID] ...
 ```
 
 for example:
 
 ```bash
-./breeze prepare-provider-packages --package-format both  --version-suffix-for-svn=rc1 http ...
+./breeze prepare-provider-packages --version-suffix-for-svn=rc1 http ...
 ```
 
 * To build the release candidate packages for PyPI upload run the following command:
 
 ```bash
-./breeze prepare-provider-packages --package-format both --version-suffix-for-pypi=rc1 [PACKAGE_ID] ...
+./breeze prepare-provider-packages --version-suffix-for-pypi=rc1 [PACKAGE_ID] ...
 ```
 
 for example:
 
 ```bash
-./breeze prepare-provider-packages --package-format both --version-suffix-for-pypi=rc1 http ...
+./breeze prepare-provider-packages --version-suffix-for-pypi=rc1 http ...
 ```
 
 
@@ -172,7 +172,7 @@ Where PACKAGE_FORMAT might be one of : `wheel`, `sdist`, `both` (`wheel` is the 
 for example:
 
 ```bash
-./breeze prepare-provider-packages --package-format both http ...
+./breeze prepare-provider-packages http ...
 ```
 
 * For each package, this creates a wheel package and source distribution package in your `dist` folder with
@@ -432,8 +432,8 @@ In case version being prepared is already tagged in the repo documentation prepa
 and prints error. You can prepare the error regardless and build the packages even if the tag exists, by
 specifying ``--version-suffix`` (for example ``--version-suffix dev``).
 
-By default, you prepare only ``.whl`` package, but you can add ``--package-format`` argument and specify
-``wheel``, ``sdist`` or ``both``.
+By default, you prepare ``both`` packages, but you can add ``--package-format`` argument and specify
+``wheel``, ``sdist`` to build only one of them.
 
 
 # Testing provider packages
@@ -449,7 +449,7 @@ if all classes can be imported. It is rather simple but requires some semi-autom
 1. Prepare regular packages
 
 ```shell script
-./breeze prepare-provider-packages --package-format both
+./breeze prepare-provider-packages
 ```
 
 This prepares all provider packages in the "dist" folder
@@ -457,7 +457,7 @@ This prepares all provider packages in the "dist" folder
 2. Prepare airflow package from sources
 
 ```shell script
-./breeze prepare-airflow-packages --package-format both
+./breeze prepare-airflow-packages
 ```
 
 This prepares airflow package in the "dist" folder

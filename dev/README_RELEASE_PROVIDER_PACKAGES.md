@@ -99,13 +99,13 @@ generates corresponding .asc and .sha512 files for each file to sign.
 ```shell script
 export VERSION=1.1.0rc1
 
-./breeze prepare-provider-packages --package-format both --version-suffix-for-svn rc1
+./breeze prepare-provider-packages --version-suffix-for-svn rc1
 ```
 
 if you ony build few packages, run:
 
 ```shell script
-./breeze prepare-provider-packages --package-format both --version-suffix-for-svn rc1 PACKAGE PACKAGE ....
+./breeze prepare-provider-packages --version-suffix-for-svn rc1 PACKAGE PACKAGE ....
 ```
 
 * Sign all your packages
@@ -160,13 +160,13 @@ though they should be generated from the same sources.
 this will clean up dist folder before generating the packages, so you will only have the right packages there.
 
 ```shell script
-./breeze prepare-provider-packages --package-format both --version-suffix-for-pypi a1 --version-suffix-for-SVN a1
+./breeze prepare-provider-packages --version-suffix-for-pypi a1 --version-suffix-for-SVN a1
 ```
 
 if you ony build few packages, run:
 
 ```shell script
-./breeze prepare-provider-packages --package-format both --version-suffix-for-pypi a1 \
+./breeze prepare-provider-packages --version-suffix-for-pypi a1 \
     PACKAGE PACKAGE ....
 ```
 

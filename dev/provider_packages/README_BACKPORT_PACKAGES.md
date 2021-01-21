@@ -138,31 +138,31 @@ providers by running:
 The examples below show how you can build selected packages, but you can also build all packages by
 omitting the package ids altogether.
 
-By default, you build only wheel packages, but you can use `--package-format both` to generate
-both wheel and sdist packages, or `--package-format sdist` to only generate sdist packages.
+By default, you build ``both`` packages, but you can use `--package-format wheel` to generate
+wheel package, or `--package-format sdist` to only generate sdist package.
 
 * To build the release candidate packages for SVN Apache upload run the following command:
 
 ```bash
-./breeze --backports --package-format both --version-suffix-for-svn=rc1 prepare-provider-packages [PACKAGE_ID] ...
+./breeze --backports --version-suffix-for-svn=rc1 prepare-provider-packages [PACKAGE_ID] ...
 ```
 
 for example:
 
 ```bash
-./breeze --backports --package-format both  --version-suffix-for-svn=rc1 prepare-provider-packages http ...
+./breeze --backports --version-suffix-for-svn=rc1 prepare-provider-packages http ...
 ```
 
 * To build the release candidate packages for PyPI upload run the following command:
 
 ```bash
-./breeze --backports --package-format both --version-suffix-for-pypi=rc1 prepare-provider-packages [PACKAGE_ID] ...
+./breeze --backports --version-suffix-for-pypi=rc1 prepare-provider-packages [PACKAGE_ID] ...
 ```
 
 for example:
 
 ```bash
-./breeze --backports --package-format both --version-suffix-for-pypi=rc1 prepare-provider-packages http ...
+./breeze --backports --version-suffix-for-pypi=rc1 prepare-provider-packages http ...
 ```
 
 
@@ -172,12 +172,12 @@ for example:
 ./breeze --backports prepare-provider-packages  [--package-format PACKAGE_FORMAT] [PACKAGE_ID] ...
 ```
 
-Where PACKAGE_FORMAT might be one of : `wheel`, `sdist`, `both` (`wheel` is the default format)
+Where PACKAGE_FORMAT might be one of : `wheel`, `sdist`, `both` (`both` is the default format)
 
 for example:
 
 ```bash
-./breeze --backports prepare-provider-packages  --package-format both http ...
+./breeze --backports prepare-provider-packages  --package-format wheel http ...
 ```
 
 * For each package, this creates a wheel package and source distribution package in your `dist` folder with
@@ -210,7 +210,7 @@ importability of all the packages. It is rather simple but requires some semi-au
 1. Prepare backport packages
 
 ```shell script
-./breeze --backports prepare-provider-packages --package-format both
+./breeze --backports prepare-provider-packages --package-format wheel
 ```
 
 This prepares all backport packages in the "dist" folder

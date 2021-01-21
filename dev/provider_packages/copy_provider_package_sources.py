@@ -809,10 +809,9 @@ if __name__ == '__main__':
     parser = get_parser()
     args = parser.parse_args()
 
-    in_process = args.debug
     copy_provider_sources(args.backports)
     os.chdir(get_target_providers_folder())
     if args.backports:
         print("\nRefactoring code to be Airflow 1.10 - compatible\n")
-        RefactorBackportPackages().do_refactor(in_process=in_process)
+        RefactorBackportPackages().do_refactor(in_process=args.debug)
         print("\n[green]Refactored code successfully[/]\n")

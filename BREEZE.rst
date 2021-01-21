@@ -556,20 +556,19 @@ The below example builds provider packages in the wheel format.
      ./breeze prepare-provider-packages
 
 If you run this command without packages, you will prepare all packages, you can however specify
-providers that you would like to build. By default only ``wheel`` packages are prepared,
-but you can change it providing optional --package-format flag.
-
+providers that you would like to build. By default ``both`` types of packages are prepared (
+``wheel`` and ``sdist``, but you can change it providing optional --package-format flag.
 
 .. code-block:: bash
 
-     ./breeze prepare-provider-packages --package-format=both google amazon
+     ./breeze prepare-provider-packages google amazon
 
 You can also prepare backport provider packages, if you specify ``--backport`` flag. You can read more
 about backport packages in `dev <dev/README.md>`_
 
 .. code-block:: bash
 
-     ./breeze prepare-provider-packages --backports --package-format=both google amazon
+     ./breeze prepare-provider-packages --backports google amazon
 
 You can see all providers available by running this command:
 
@@ -586,11 +585,12 @@ You can also prepare airflow packages using breeze:
 
 This prepares airflow .whl package in the dist folder.
 
-Again, you can specify optional ``--package-format`` flag to build airflow packages.
+Again, you can specify optional ``--package-format`` flag to build selected formats of airflow packages,
+default is to build ``both`` type of packages ``sdist`` and ``wheel``.
 
 .. code-block:: bash
 
-     ./breeze prepare-airflow-packages --package-format=bot
+     ./breeze prepare-airflow-packages --package-format=wheel
 
 
 Building Production images
@@ -1703,9 +1703,9 @@ This is the current syntax for  `./breeze <./breeze>`_:
 
           One of:
 
-                 wheel,sdist,both
+                 both,sdist,wheel
 
-          Default: wheel
+          Default: both
 
   --backports
 
@@ -2099,9 +2099,9 @@ This is the current syntax for  `./breeze <./breeze>`_:
 
           One of:
 
-                 wheel,sdist,both
+                 both,sdist,wheel
 
-          Default: 
+          Default: both
 
   --backports
 
@@ -2141,7 +2141,7 @@ This is the current syntax for  `./breeze <./breeze>`_:
 
         'breeze prepare-provider-packages' or
         'breeze prepare-provider-packages google' or
-        'breeze prepare-provider-packages --package-format both google' or
+        'breeze prepare-provider-packages --package-format wheel google' or
         'breeze prepare-provider-packages --version-suffix-for-svn rc1 http google amazon' or
         'breeze prepare-provider-packages --version-suffix-for-pypi rc1 http google amazon'
         'breeze prepare-provider-packages --version-suffix-for-pypi a1
@@ -2164,8 +2164,9 @@ This is the current syntax for  `./breeze <./breeze>`_:
 
           One of:
 
-                 wheel,sdist,both
+                 both,sdist,wheel
 
+          Default: both
           Default: wheel
 
   --backports

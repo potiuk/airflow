@@ -1380,8 +1380,6 @@ def update_generated_files_for_regular_package(
     provider_info = get_provider_info_from_provider_yaml(provider_package_id)
     versions: List[str] = provider_info['versions']
     current_release_version = versions[0]
-    # previous_release = versions[1] if len(versions) > 1 else None
-    # previous_release_commit_ref = f"providers-{provider_package_id.replace('.','-')}/{previous_release}"
     jinja_context = get_provider_jinja_context(
         provider_details=provider_details,
         current_release_version=current_release_version,
@@ -2022,8 +2020,8 @@ Only useful when generating RC candidates for PyPI."""
     )
     cli_parser.add_argument(
         "--package-format",
-        choices=["wheel", "sdist", "both"],
-        default="wheel",
+        choices=["both", "wheel", "sdist"],
+        default="both",
         help='Optional format - only used in case of building packages (default: wheel)',
     )
     command_help = '\n'

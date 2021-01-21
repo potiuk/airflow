@@ -1843,7 +1843,7 @@ ${CMDNAME} prepare-provider-packages [FLAGS] [PACKAGE_ID ...]
 
       '${CMDNAME} prepare-provider-packages' or
       '${CMDNAME} prepare-provider-packages google' or
-      '${CMDNAME} prepare-provider-packages --package-format both google' or
+      '${CMDNAME} prepare-provider-packages --package-format wheel google' or
       '${CMDNAME} prepare-provider-packages --version-suffix-for-svn rc1 http google amazon' or
       '${CMDNAME} prepare-provider-packages --version-suffix-for-pypi rc1 http google amazon'
       '${CMDNAME} prepare-provider-packages --version-suffix-for-pypi a1
