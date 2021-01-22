@@ -24,10 +24,17 @@
 
 #}
 
+.. toctree::
+    :maxdepth: 1
+    :caption: Commits
+
+    Detailed list of commits <commits>
+
+
 Package {{ PACKAGE_PIP_NAME }}
 ------------------------------------------------------
 
-{{ PACKAGE_DESCRIPTION }}
+{{  PROVIDER_DESCRIPTION | safe }}
 
 Release: {{ RELEASE }}{{ VERSION_SUFFIX }}
 
@@ -76,6 +83,5 @@ You can install such cross-provider dependencies when installing from PyPI. For 
 {{ CROSS_PROVIDERS_DEPENDENCIES_TABLE_RST | safe }}
 
 {%- endif %}
-{{ CHANGELOG | safe }}
 
-You can see list of detailed commits in
+{{ CHANGELOG | safe }}

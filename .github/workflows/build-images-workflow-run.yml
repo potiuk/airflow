@@ -398,6 +398,8 @@ jobs:
       GITHUB_REGISTRY_PULL_IMAGE_TAG: ${{ github.event.workflow_run.id }}
       UPGRADE_TO_NEWER_DEPENDENCIES: ${{ needs.build-info.outputs.upgradeToNewerDependencies }}
       DOCKER_CACHE: ${{ needs.cancel-workflow-runs.outputs.cacheDirective }}
+      VERSION_SUFFIX_FOR_PYPI: "dev"
+      VERSION_SUFFIX_FOR_SVN: "dev"
     steps:
       - name: >
           Checkout [${{ needs.cancel-workflow-runs.outputs.sourceEvent }}]

@@ -51,8 +51,14 @@ function run_prepare_documentation() {
         if [[ ${res} == "64" ]]; then
             skipped_documentation+=("${provider_package}")
             continue
+            echo "${COLOR_YELLOW}"
+            echo "Skipping provider ${provider_package}"
+            echo "${COLOR_RESET}"
         fi
         if [[ ${res} != "0" ]]; then
+            echo "${COLOR_RED}"
+            echo "Error when generating provider ${provider_package}"
+            echo "${COLOR_RESET}"
             error_documentation+=("${provider_package}")
             continue
         fi
@@ -95,8 +101,11 @@ pip install --upgrade "pip==${AIRFLOW_PIP_VERSION}"
 # TODO: remove it when devel_all == devel_ci
 install_remaining_dependencies
 reinstall_azure_storage_blob
-import_all_provider_classes
-verify_provider_packages_named_properly
+
+if [[ ${BACKPORT_PACKAGES} != "true" ]]; then
+    import_all_provider_classes
+    verify_provider_packages_named_properly
+fi
 
 # We will be able to remove it when we get rid of BACKPORT_PACKAGES
 OPTIONAL_RELEASE_VERSION_ARGUMENT=()

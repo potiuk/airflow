@@ -31,6 +31,7 @@ from rich import print
 from dev.provider_packages.prepare_provider_packages import (
     get_source_airflow_folder,
     get_source_providers_folder,
+    get_target_folder,
     get_target_providers_folder,
     get_target_providers_package_folder,
 )
@@ -810,7 +811,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     copy_provider_sources(args.backports)
-    os.chdir(get_target_providers_folder())
+    os.chdir(get_target_folder())
     if args.backports:
         print("\nRefactoring code to be Airflow 1.10 - compatible\n")
         RefactorBackportPackages().do_refactor(in_process=args.debug)

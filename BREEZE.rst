@@ -2167,7 +2167,6 @@ This is the current syntax for  `./breeze <./breeze>`_:
                  both,sdist,wheel
 
           Default: both
-          Default: wheel
 
   --backports
 

@@ -95,7 +95,7 @@ def with_group(title):
     https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-commands-for-github-actions#grouping-log-lines
     """
     if os.environ.get('GITHUB_ACTIONS', 'false') != "true":
-        print("[blue]" + "#" * 20 + ' ' + title + ' ' + "#" * 20 + "[/]")
+        print("[blue]" + "#" * 10 + ' ' + title + ' ' + "#" * 10 + "[/]")
         yield
         return
     print(f"::group::{title}")
@@ -131,6 +131,8 @@ class ProviderPackageDetails(NamedTuple):
     full_package_name: str
     source_provider_package_path: str
     documentation_provider_package_path: str
+    provider_description: str
+    versions: List[str]
 
 
 ENTITY_NAMES = {
@@ -746,13 +748,14 @@ def convert_git_changes_to_table(
         if line == "":
             continue
         full_hash, short_hash, date, message = line.split(" ", maxsplit=3)
+        message_without_backticks = message.replace("`", "'")
         table_data.append(
             (
                 f"[{short_hash}]({base_url}{full_hash})"
                 if markdown
                 else f"`{short_hash} <{base_url}{full_hash}>`_",
                 date,
-                message,
+                f"`{message_without_backticks}`" if markdown else f"``{message_without_backticks}``",
             )
         )
     table = tabulate(table_data, headers=headers, tablefmt="pipe" if markdown else "rst")
@@ -958,7 +961,7 @@ def make_sure_remote_apache_exists_and_fetch():
                 print("[red]Error: when adding remote:[/]", ex)
         else:
             raise
-    print("[yellow]Fetching tags from remote. This might override your local tags![/]")
+    print("Fetching tags from remote. This might override your local tags!")
     subprocess.check_call(
         ["git", "fetch", "--tags", "--force", "apache-https-for-providers"], stderr=subprocess.DEVNULL
     )
@@ -1063,7 +1066,47 @@ def get_changelog_for_package(provider_package_path: str) -> str:
     if os.path.isfile(changelog_path):
         with open(changelog_path) as changelog_file:
             return changelog_file.read()
-    return ""
+    else:
+        print(f"[red]ERROR: Missing ${changelog_path}[/]")
+        print("Please add the file with initial content:")
+        print()
+        syntax = Syntax(
+            """
+
+
+ .. Licensed to the Apache Software Foundation (ASF) under one
+    or more contributor license agreements.  See the NOTICE file
+    distributed with this work for additional information
+    regarding copyright ownership.  The ASF licenses this file
+    to you under the Apache License, Version 2.0 (the
+    "License"); you may not use this file except in compliance
+    with the License.  You may obtain a copy of the License at
+
+ ..   http://www.apache.org/licenses/LICENSE-2.0
+
+ .. Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an
+    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+    KIND, either express or implied.  See the License for the
+    specific language governing permissions and limitations
+    under the License.
+
+
+Changelog
+---------
+
+1.0.0
+.....
+
+Initial version of the provider.
+""",
+            "rst",
+            theme="ansi_dark",
+        )
+    console = Console(width=100)
+    console.print(syntax)
+    print()
+    raise Exception(f"Missing {changelog_path}")
 
 
 def is_camel_case_with_acronyms(s: str):
@@ -1220,7 +1263,7 @@ def get_version_tag(version: str, provider_package_id: str, version_suffix: str)
 
 
 def print_changes_table(changes_table):
-    syntax = Syntax(changes_table, "rst", theme="light")
+    syntax = Syntax(changes_table, "rst", theme="ansi_dark")
     console = Console(width=200)
     console.print(syntax)
 
@@ -1289,11 +1332,14 @@ def get_all_changes_for_regular_packages(
 
 
 def get_provider_details(provider_package_id: str) -> ProviderPackageDetails:
+    provider_info = get_provider_info_from_provider_yaml(provider_package_id)
     return ProviderPackageDetails(
         provider_package_id=provider_package_id,
         full_package_name=f"airflow.providers.{provider_package_id}",
         source_provider_package_path=get_source_package_path(provider_package_id),
         documentation_provider_package_path=get_documentation_package_path(provider_package_id),
+        provider_description=provider_info['description'],
+        versions=provider_info['versions'],
     )
 
 
@@ -1343,6 +1389,7 @@ def get_provider_jinja_context(
         "PIP_REQUIREMENTS": PROVIDERS_REQUIREMENTS[provider_details.provider_package_id],
         "PROVIDER_TYPE": "Backport provider" if backport_packages else "Provider",
         "PROVIDERS_FOLDER": "backport-providers" if backport_packages else "providers",
+        "PROVIDER_DESCRIPTION": provider_details.provider_description,
         "INSTALL_REQUIREMENTS": get_install_requirements(
             provider_package_id=provider_details.provider_package_id, backport_packages=backport_packages
         ),
@@ -1386,8 +1433,7 @@ def update_generated_files_for_regular_package(
     verify_provider_package(provider_package_id)
     provider_details = get_provider_details(provider_package_id)
     provider_info = get_provider_info_from_provider_yaml(provider_package_id)
-    versions: List[str] = provider_info['versions']
-    current_release_version = versions[0]
+    current_release_version = provider_details.versions[0]
     jinja_context = get_provider_jinja_context(
         provider_details=provider_details,
         current_release_version=current_release_version,
@@ -1397,7 +1443,10 @@ def update_generated_files_for_regular_package(
     jinja_context["PROVIDER_INFO"] = provider_info
     if update_release_notes:
         proceed, changes = get_all_changes_for_regular_packages(
-            versions, provider_package_id, provider_details.source_provider_package_path, version_suffix
+            provider_details.versions,
+            provider_package_id,
+            provider_details.source_provider_package_path,
+            version_suffix,
         )
         if not proceed:
             print()
@@ -1456,7 +1505,9 @@ def update_index_rst_for_regular_providers(
     target_path,
 ):
     index_template_name = PROVIDER_TEMPLATE_PREFIX + "INDEX"
-    index_update = render_template(template_name=index_template_name, context=context, extension='.rst')
+    index_update = render_template(
+        template_name=index_template_name, context=context, extension='.rst', keep_trailing_newline=False
+    )
     index_file_path = os.path.join(target_path, "index.rst")
     old_text = ""
     if os.path.isfile(index_file_path):
@@ -1478,7 +1529,9 @@ def update_commits_rst_for_regular_providers(
     target_path,
 ):
     commits_template_name = PROVIDER_TEMPLATE_PREFIX + "COMMITS"
-    new_text = render_template(template_name=commits_template_name, context=context, extension='.rst')
+    new_text = render_template(
+        template_name=commits_template_name, context=context, extension='.rst', keep_trailing_newline=True
+    )
     index_file_path = os.path.join(target_path, "commits.rst")
     old_text = ""
     if os.path.isfile(index_file_path):
@@ -1703,7 +1756,6 @@ def update_generated_files_for_backport_package(
     if update_setup:
         prepare_setup_py_file(jinja_context)
         prepare_setup_cfg_file(jinja_context)
-        prepare_get_provider_info_py_file(jinja_context, provider_package_id)
         prepare_manifest_in_file(jinja_context)
 
 

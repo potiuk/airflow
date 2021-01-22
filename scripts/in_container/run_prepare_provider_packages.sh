@@ -31,7 +31,9 @@ function copy_sources() {
         echo "==================================================================================="
     fi
 
+    pushd "${AIRFLOW_SOURCES}"
     python3 "${PROVIDER_PACKAGES_DIR}/copy_provider_package_sources.py" "${OPTIONAL_BACKPORT_FLAG[@]}"
+    popd
 
     group_end
 }
@@ -68,6 +70,8 @@ function build_provider_packages() {
             error_packages+=("${provider_package}")
             continue
         fi
+        group_start "Determine suffix of package for ${provider_package}"
+        echo "-----------------------------------------------------------------------------------"
         if [[ "${VERSION_SUFFIX_FOR_PYPI}" == '' && "${VERSION_SUFFIX_FOR_SVN}" == ''
                 && ${FILE_VERSION_SUFFIX} == '' ]]; then
             echo
@@ -92,10 +96,14 @@ function build_provider_packages() {
             echo
         fi
         echo "-----------------------------------------------------------------------------------"
+        group_end
         set +e
         package_suffix=""
-        if [[ -z "${VERSION_SUFFIX_FOR_SVN}" && -n ${VERSION_SUFFIX_FOR_PYPI} ]]; then
-            # only adds suffix to setup.py if version suffix for PyPI is set but the SVN one is not
+        if [[ -z "${VERSION_SUFFIX_FOR_SVN}" && -n ${VERSION_SUFFIX_FOR_PYPI} ||
+              -n "${VERSION_SUFFIX_FOR_SVN}" && -n "${VERSION_SUFFIX_FOR_PYPI}" ]]; then
+            # only adds suffix to setup.py if version suffix for PyPI is set but the SVN one is not set
+            # (so when rc is prepared)
+            # or when they are both set (so when we prepare alpha/beta/dev)
             package_suffix="${VERSION_SUFFIX_FOR_PYPI}"
         fi
         python3 "${PROVIDER_PACKAGES_DIR}/prepare_provider_packages.py" \
@@ -112,6 +120,7 @@ function build_provider_packages() {
         fi
         if [[ ${res} != "0" ]]; then
             error_packages+=("${provider_package}")
+            echo "${COLOR_RED}Error when preparing ${provider_package} package${COLOR_RESET}"
             continue
         fi
         prepared_packages+=("${provider_package}")
@@ -119,20 +128,18 @@ function build_provider_packages() {
     echo "==================================================================================="
     echo "Summary of prepared packages:"
     echo
-    echo "   Prepared:"
-    echo "${COLOR_GREEN}"
+    echo "${COLOR_GREEN}    Prepared:${COLOR_RESET}"
     echo "${prepared_packages[*]}" | fold -w 100
-    echo "${COLOR_RESET}"
-    echo "   Skipped:"
-    echo "${COLOR_YELLOW}"
+    echo "${COLOR_YELLOW}    Skipped:${COLOR_RESET}"
     echo "${skipped_packages[*]}" | fold -w 100
-    echo "${COLOR_RESET}"
-    echo "   Errors:"
-    echo "${COLOR_RED}"
+    echo "${COLOR_RED}    Errors:${COLOR_RESET}"
     echo "${error_packages[*]}" | fold -w 100
-    echo "${COLOR_RESET}"
     echo
     echo "==================================================================================="
+    if [[ ${#error_packages[@]} != "0" ]]; then
+        echo "${COLOR_RED}There were some errors when preparing packages ${COLOR_RESET}"
+        exit 1
+    fi
 }
 
 function rename_packages_if_needed() {
@@ -156,6 +163,7 @@ function rename_packages_if_needed() {
     popd >/dev/null
 }
 
+install_remaining_dependencies
 setup_provider_packages
 
 cd "${PROVIDER_PACKAGES_DIR}" || exit 1
@@ -170,5 +178,5 @@ build_provider_packages
 rename_packages_if_needed
 
 echo
-echo "${COLOR_GREEN}OK Airflow packages are prepared in dist folder${COLOR_RESET}"
+echo "${COLOR_GREEN}All good! Airflow packages are prepared in dist folder${COLOR_RESET}"
 echo

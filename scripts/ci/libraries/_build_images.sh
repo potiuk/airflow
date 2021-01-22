@@ -266,7 +266,7 @@ function build_images::get_local_build_cache_hash() {
     set +e
     # Remove the container just in case
     docker rm --force "local-airflow-ci-container" 2>/dev/null >/dev/null
-    if ! docker inspect "${AIRFLOW_CI_IMAGE}" 2>/dev/null </dev/null; then
+    if ! docker inspect "${AIRFLOW_CI_IMAGE}" 2>/dev/null >/dev/null; then
         verbosity::print_info
         verbosity::print_info "Local airflow CI image not available"
         verbosity::print_info
