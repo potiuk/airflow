@@ -746,7 +746,15 @@ def convert_git_changes_to_table(
         if line == "":
             continue
         full_hash, short_hash, date, message = line.split(" ", maxsplit=3)
-        table_data.append((f"[{short_hash}]({base_url}{full_hash})", date, message))
+        table_data.append(
+            (
+                f"[{short_hash}]({base_url}{full_hash})"
+                if markdown
+                else f"`{short_hash} <{base_url}{full_hash}>`_",
+                date,
+                message,
+            )
+        )
     table = tabulate(table_data, headers=headers, tablefmt="pipe" if markdown else "rst")
     header = ""
     if not markdown:
@@ -1398,12 +1406,15 @@ def update_generated_files_for_regular_package(
             )
             print()
             sys.exit(64)
-        jinja_context["DETAILED_CHANGES"] = changes
+        jinja_context["DETAILED_CHANGES_RST"] = changes
         jinja_context["DETAILED_CHANGES_PRESENT"] = len(changes) > 0
         print()
         print(f"Update index.rst for {provider_package_id}")
         print()
         update_index_rst_for_regular_providers(
+            jinja_context, provider_package_id, provider_details.documentation_provider_package_path
+        )
+        update_commits_rst_for_regular_providers(
             jinja_context, provider_package_id, provider_details.documentation_provider_package_path
         )
     if update_setup:
@@ -1458,6 +1469,21 @@ def update_index_rst_for_regular_providers(
             new_text = "\n".join(lines[:index])
     new_text += "\n" + AUTOMATICALLY_GENERATED_CONTENT + "\n"
     new_text += index_update
+    replace_content(index_file_path, old_text, new_text, provider_package_id)
+
+
+def update_commits_rst_for_regular_providers(
+    context,
+    provider_package_id,
+    target_path,
+):
+    commits_template_name = PROVIDER_TEMPLATE_PREFIX + "COMMITS"
+    new_text = render_template(template_name=commits_template_name, context=context, extension='.rst')
+    index_file_path = os.path.join(target_path, "commits.rst")
+    old_text = ""
+    if os.path.isfile(index_file_path):
+        with open(index_file_path) as readme_file_read:
+            old_text = readme_file_read.read()
     replace_content(index_file_path, old_text, new_text, provider_package_id)
 
 

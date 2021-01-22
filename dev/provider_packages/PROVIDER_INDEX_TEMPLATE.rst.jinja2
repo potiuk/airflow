@@ -27,6 +27,8 @@
 Package {{ PACKAGE_PIP_NAME }}
 ------------------------------------------------------
 
+{{ PACKAGE_DESCRIPTION }}
+
 Release: {{ RELEASE }}{{ VERSION_SUFFIX }}
 
 Provider package
@@ -75,10 +77,5 @@ You can install such cross-provider dependencies when installing from PyPI. For 
 
 {%- endif %}
 {{ CHANGELOG | safe }}
-{%- if DETAILED_CHANGES_PRESENT %}
 
-Detailed changelog
-------------------
-
-{{ DETAILED_CHANGES| safe }}
-{%- endif %}
+You can see list of detailed commits in
