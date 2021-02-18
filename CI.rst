@@ -582,10 +582,11 @@ It's possible to disable this feature and go back to the previous behaviour via
 the behaviour that each job builds own image.
 
 You can also switch back to jobs building the images on its own on the fork level by setting
-``AIRFLOW_GITHUB_REGISTRY_WAIT_FOR_IMAGE`` secret to ``false``. This will disable pushing the "RUN_ID"
-images to GitHub Registry and all the images will be built locally by each job. It is about 20%
-slower for the whole build on average, but it does not require to have access to push images to
-GitHub, which sometimes might be not available (depending on the account status).
+``GITHUB_REGISTRY_WAIT_FOR_IMAGE`` env to ``false`` in ci.yml and disabling "Build Image" workflow.
+This will disable pushing the "RUN_ID" images to GitHub Registry and all the images will be built locally
+by each job. It is about 20% slower for the whole build on average, but it does not require to
+have access to push images to GitHub, which sometimes might be not available
+(depending on the account status).
 
 The write permission also allows to cancel duplicate workflows. It is not possible for the Pull Request
 CI Builds run from the forks as they have no Write permission allowing them to cancels running workflows.

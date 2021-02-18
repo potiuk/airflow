@@ -40,7 +40,6 @@ env:
   CONTAINER_REGISTRY_TOKEN: ${{ secrets.PAT_CR }}
   GITHUB_REGISTRY_PULL_IMAGE_TAG: "latest"
   GITHUB_REGISTRY_WAIT_FOR_IMAGE: "false"
-  BUILD_IMAGES: ${{ secrets.AIRFLOW_GITHUB_REGISTRY_WAIT_FOR_IMAGE != 'false' }}
   INSTALL_PROVIDERS_FROM_SOURCES: "true"
 
 jobs:
@@ -60,7 +59,6 @@ jobs:
       targetBranch: ${{ steps.source-run-info.outputs.targetBranch }}
       sourceEvent: ${{ steps.source-run-info.outputs.sourceEvent }}
       cacheDirective: ${{ steps.cache-directive.outputs.docker-cache }}
-      buildImages: ${{ steps.build-images.outputs.buildImages }}
       runsOn: ${{ github.repository == 'apache/airflow' && '["self-hosted"]' || '["ubuntu-20.04"]' }}
     steps:
       - name: "Checkout ${{ github.ref }} ( ${{ github.sha }} )"
@@ -80,12 +78,6 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           cancelMode: allDuplicates
           sourceRunId: ${{ github.event.workflow_run.id }}
-      - name: "Output BUILD_IMAGES"
-        id: build-images
-        run: |
-          # Workaround - jobs cannot access env variable in "ifs"
-          # https://github.community/t/how-to-set-and-access-a-workflow-variable/17335/16
-          echo "::set-output name=buildImages::${BUILD_IMAGES}"
       - name: "Cancel duplicated 'Build Image' runs"
         # We find duplicates of our own "Build Image" runs - due to a missing feature
         # in GitHub Actions, we have to use Job names to match Event/Repo/Branch matching
@@ -101,7 +93,6 @@ jobs:
             [".*Event: ${{ steps.source-run-info.outputs.sourceEvent }}
             Repo: ${{ steps.source-run-info.outputs.sourceHeadRepo }}
             Branch: ${{ steps.source-run-info.outputs.sourceHeadBranch }}.*"]
-        if: env.BUILD_IMAGES == 'true'
       - name: "Cancel all 'CI Build' runs where some jobs failed"
         # We find any of the "CI Build" workflow runs, where any of the important jobs
         # failed. The important jobs are selected by the regexp array below.
@@ -140,7 +131,7 @@ jobs:
         # We take the extracted regexp array prepared in the previous step and we use
         # it to cancel any jobs that have matching names containing Source Run Id:
         # followed by one of the run ids. Yes I know it's super complex ¯\_(ツ)_/¯.
-        if: env.BUILD_IMAGES == 'true' && steps.cancel-failed.outputs.cancelledRuns != '[]'
+        if: steps.cancel-failed.outputs.cancelledRuns != '[]'
         uses: ./.github/actions/cancel-workflow-runs
         with:
           cancelMode: namedJobs
@@ -204,8 +195,6 @@ jobs:
       run-tests: ${{ steps.selective-checks.outputs.run-tests }}
       run-kubernetes-tests: ${{ steps.selective-checks.outputs.run-kubernetes-tests }}
       image-build: ${{ steps.selective-checks.outputs.image-build }}
-    if: >
-      needs.cancel-workflow-runs.outputs.buildImages == 'true'
     steps:
       - name: "Checkout ${{ github.ref }} ( ${{ github.sha }} )"
         uses: actions/checkout@v2
@@ -264,9 +253,7 @@ jobs:
         # event is run from master for both master and v1-10-tests
         python-version: ${{ fromJson(needs.build-info.outputs.allPythonVersions) }}
       fail-fast: true
-    if: >
-      needs.build-info.outputs.image-build == 'true' &&
-      needs.cancel-workflow-runs.outputs.buildImages == 'true'
+    if: needs.build-info.outputs.image-build == 'true'
     env:
       BACKEND: postgres
       PYTHON_MAJOR_MINOR_VERSION: ${{ matrix.python-version }}
@@ -391,9 +378,7 @@ jobs:
         # event is run from master for both master and v1-10-tests
         python-version: ${{ fromJson(needs.build-info.outputs.allPythonVersions) }}
       fail-fast: true
-    if: >
-      needs.build-info.outputs.image-build == 'true' &&
-      needs.cancel-workflow-runs.outputs.buildImages == 'true'
+    if: needs.build-info.outputs.image-build == 'true'
     env:
       BACKEND: postgres
       PYTHON_MAJOR_MINOR_VERSION: ${{ matrix.python-version }}

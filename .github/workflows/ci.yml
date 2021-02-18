@@ -49,22 +49,35 @@ env:
   GITHUB_REGISTRY_PUSH_IMAGE_TAG: "latest"
   INSTALL_PROVIDERS_FROM_SOURCES: "true"
 
-  # You can switch between building the image in "Build Images" workflow or building them in CI workflow
-  # Separately for each job.
+  # There are two modes of the CI flow:
   #
-  # a) Using images build in the separate "Build Image" workflow:
+  # a) Building image in "Build Images" workflow (they are shared in one of the two GitHub registries)
   #
-  #  GITHUB_REGISTRY_WAIT_FOR_IMAGE: "true"
+  #  GITHUB_REGISTRY_WAIT_FOR_IMAGE: ${{ secret.OVERRIDE_GITHUB_REGISTRY_WAIT_FOR_IMAGE || 'true' }}
   #
-  # b) Building images in CI workflow - separately for each job:
+  # If you want to build in your fork without using package registry you can also set a secret
+  # OVERRIDE_GITHUB_REGISTRY_WAIT_FOR_IMAGE to 'false' and disable "Build Images" workflow without
+  # modifying the .yml file.
   #
-  #  GITHUB_REGISTRY_WAIT_FOR_IMAGE: "false"
+  # b) Building images inline - in CI workflow - separately for each job:
   #
-  # You can also switch back to building images locally and disabling the "Build Images" workflow
-  # by defining AIRFLOW_GITHUB_REGISTRY_WAIT_FOR_IMAGE secret with value set to "false"
+  #  GITHUB_REGISTRY_WAIT_FOR_IMAGE: false
+  #
+  # You should also disable "Build Images" workflow in this case.
+  #
+  # The a) case is faster as it requires image to be built only once but it requires WRITE GITHUB_TOKEN to be
+  # assigned by GitHub Actions in the "workflow_run" event. Sometimes GA fails to do so (there are random
+  # periods when it happens)
+  #
+  # The b) case is slower but it does not require write token nor registries. If you use it, you can disable
+  # the "Build Images" workflow.
+  #
 
-  GITHUB_REGISTRY_WAIT_FOR_IMAGE: ${{ secrets.AIRFLOW_GITHUB_REGISTRY_WAIT_FOR_IMAGE != 'false' }}
+  GITHUB_REGISTRY_WAIT_FOR_IMAGE: ${{ secret.OVERRIDE_GITHUB_REGISTRY_WAIT_FOR_IMAGE || 'true' }}
 
+  # For all the builds in CI use "dev" suffix for versions when "WAIT_FOR_IMAGE" is set to false
+  VERSION_SUFFIX_FOR_PYPI: “dev”
+  VERSION_SUFFIX_FOR_SVN: “dev”
 jobs:
 
   build-info:
@@ -420,6 +433,8 @@ jobs:
       # all provider packages are installed from wheels or .tar.gz files
       INSTALL_AIRFLOW_VERSION: "1.10.14"
       AIRFLOW_EXTRAS: "all"
+      # Until apache.beam fixes dependencies, we need to succeed even if pip check fails for "all" extras
+      CONTINUE_ON_PIP_CHECK_FAILURE: "true"
       PYTHON_MAJOR_MINOR_VERSION: ${{needs.build-info.outputs.defaultPythonVersion}}
       BACKPORT_PACKAGES: "true"
       VERSION_SUFFIX_FOR_PYPI: "dev"
@@ -471,6 +486,8 @@ jobs:
     env:
       INSTALL_AIRFLOW_VERSION: "${{ matrix.package-format }}"
       AIRFLOW_EXTRAS: "all"
+      # Until apache.beam fixes dependencies, we need to succeed even if pip check fails for "all" extras
+      CONTINUE_ON_PIP_CHECK_FAILURE: "true"
       PYTHON_MAJOR_MINOR_VERSION: ${{needs.build-info.outputs.defaultPythonVersion}}
       VERSION_SUFFIX_FOR_PYPI: "dev"
       VERSION_SUFFIX_FOR_SVN: "dev"
@@ -517,6 +534,8 @@ jobs:
     env:
       INSTALL_AIRFLOW_VERSION: "2.0.0"
       AIRFLOW_EXTRAS: "all"
+      # Until apache.beam fixes dependencies, we need to succeed even if pip check fails for "all" extras
+      CONTINUE_ON_PIP_CHECK_FAILURE: "true"
       PYTHON_MAJOR_MINOR_VERSION: ${{needs.build-info.outputs.defaultPythonVersion}}
       VERSION_SUFFIX_FOR_PYPI: "dev"
       VERSION_SUFFIX_FOR_SVN: "dev"
