@@ -15,7 +15,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-"""Hook for SSH connections."""
+"""Hook for SSH connection."""
 import os
 import warnings
 from base64 import decodebytes
