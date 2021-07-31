@@ -15,30 +15,13 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
-#
-# Fixes ownership for files created inside container (files owned by root will be owned by host user)
-#
 # shellcheck source=scripts/ci/libraries/_script_init.sh
 . "$( dirname "${BASH_SOURCE[0]}" )/../libraries/_script_init.sh"
 
-if [[ ${OSTYPE} == "darwin"* ]]; then
-    # No need to fix ownership on MacOS - the filesystem there takes care about ownership mapping
-    exit
-fi
+# This script pushes legacy images to old-naming-convention images
+# It should be removed ~ 7th of August, giving users time to rebase their old pull requests
+build_images::prepare_ci_build
 
-declare -a EXTRA_DOCKER_FLAGS
-
-sanity_checks::sanitize_mounted_files
-
-read -r -a EXTRA_DOCKER_FLAGS <<<"$(local_mounts::convert_local_mounts_to_docker_params)"
-
-if docker image inspect "${AIRFLOW_CI_IMAGE}" >/dev/null 2>&1; then
-    docker_v run --entrypoint /bin/bash "${EXTRA_DOCKER_FLAGS[@]}" \
-        --rm \
-        --env-file "${AIRFLOW_SOURCES}/scripts/ci/docker-compose/_docker.env" \
-        "${AIRFLOW_CI_IMAGE}" \
-        -c /opt/airflow/scripts/in_container/run_fix_ownership.sh || true
-else
-    echo "Skip fixing ownership as seems that you do not have the ${AIRFLOW_CI_IMAGE} image yet"
-fi
+legacy_ci_image="ghcr.io/${GITHUB_REPOSITORY}-${BRANCH_NAME}-python${PYTHON_MAJOR_MINOR_VERSION}-ci-v2:${GITHUB_REGISTRY_PUSH_IMAGE_TAG}"
+docker tag "${AIRFLOW_CI_IMAGE}" "${legacy_ci_image}"
+docker push "${legacy_ci_image}"
