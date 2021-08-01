@@ -405,4 +405,5 @@ LABEL org.apache.airflow.distro="debian" \
 
 EXPOSE 8080
 
+
 ENTRYPOINT ["/usr/bin/dumb-init", "--", "/entrypoint"]
