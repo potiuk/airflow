@@ -116,7 +116,7 @@ Difference between local runs and GitHub Action workflows
 Depending whether the scripts are run locally (most often via `Breeze <BREEZE.rst>`_) or whether they
 are run in ``Build Images`` or ``Tests`` workflows they can take different values.
 
-You can use those variables when you try to reproduce the build locally.
+You can use those variables when you try to reproduce the build locally. 
 
 +-----------------------------------------+-------------+--------------+------------+-------------------------------------------------+
 | Variable                                | Local       | Build Images | Tests      | Comment                                         |
