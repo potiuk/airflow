@@ -31,6 +31,7 @@ from typing import Any, Iterable, NamedTuple
 import click
 
 from airflow_breeze.global_constants import (
+    COMMITTERS,
     DEFAULT_PYTHON_MAJOR_MINOR_VERSION,
     RUNS_ON_PUBLIC_RUNNER,
     RUNS_ON_SELF_HOSTED_RUNNER,
@@ -42,11 +43,12 @@ from airflow_breeze.utils.click_utils import BreezeGroup
 from airflow_breeze.utils.common_options import (
     option_answer,
     option_dry_run,
+    option_github_repository,
     option_verbose,
 )
 from airflow_breeze.utils.confirm import Answer, user_confirm
 from airflow_breeze.utils.console import get_console
-from airflow_breeze.utils.custom_param_types import BetterChoice
+from airflow_breeze.utils.custom_param_types import BetterChoice, NotVerifiedBetterChoice
 from airflow_breeze.utils.docker_command_utils import (
     check_docker_resources,
     fix_ownership_using_docker,
@@ -220,6 +222,14 @@ def get_changed_files(commit_ref: str | None) -> tuple[str, ...]:
     envvar="GITHUB_EVENT_NAME",
     show_default=True,
 )
+@option_github_repository
+@click.option(
+    "--github-actor",
+    help="Actor that triggered the event",
+    envvar="GITHUB_ACTOR",
+    type=NotVerifiedBetterChoice(COMMITTERS),
+    default="",
+)
 @option_verbose
 @option_dry_run
 def selective_check(
@@ -228,6 +238,8 @@ def selective_check(
     default_branch: str,
     default_constraints_branch: str,
     github_event_name: str,
+    github_repository: str,
+    github_actor: str,
 ):
     from airflow_breeze.utils.selective_checks import SelectiveChecks
 
@@ -243,6 +255,8 @@ def selective_check(
         default_constraints_branch=default_constraints_branch,
         pr_labels=tuple(ast.literal_eval(pr_labels)) if pr_labels else (),
         github_event=github_event,
+        github_repository=github_repository,
+        github_actor=github_actor,
     )
     print(str(sc), file=sys.stderr)
 

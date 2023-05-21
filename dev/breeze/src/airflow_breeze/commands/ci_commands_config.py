@@ -45,6 +45,8 @@ CI_PARAMETERS: dict[str, list[dict[str, str | list[str]]]] = {
                 "--default-branch",
                 "--default-constraints-branch",
                 "--github-event-name",
+                "--github-repository",
+                "--github-actor",
             ],
         }
     ],
