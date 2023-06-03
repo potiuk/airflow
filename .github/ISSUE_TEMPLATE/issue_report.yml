@@ -1,0 +1,54 @@
+---
+name: Airflow Security Issue
+description: Security issues of Airflow
+body:
+  - type: textarea
+    attributes:
+      label: The issue description
+      description: Description of the security issue copied from the original report
+      placeholder: >
+        Please provide the content of the original report of the security issue 
+        from the `security@airflow.apache.org` mailing list
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Security mailing list thread
+      description: >
+        Type in the link to the 
+        [thread in the security mailing list](https://lists.apache.org/list.html?security@airflow.apache.org)
+      placeholder: "Please paste the link to the discussion in the security@airlfow.apache.org mailing list"
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Proposed remediation
+      description: "Proposed remediation of the issue"
+      placeholder: "Please describe what you think should be done to remediate the issue"
+    validations:
+      required: false
+  - type: input
+    attributes:
+      label: Reporter credited as
+      description: How reporter should be credited
+      placeholder: "Type in the reporter name as it should be credited in the announcement"
+    validations:
+      required: false
+  - type: input
+    attributes:
+      label: PR with the fix
+      description: >
+          Proposed PR with the fix in the [Airflow repository](https://github.com/apache/airflow)
+      placeholder: "When we have the PR to fix the issue we should link it here"
+    validations:
+      required: false
+  - type: input
+    attributes:
+      label: CVE tool link
+      description: Link to [the CVE tool](https://cveprocess.apache.org/allocatecve) entry
+      placeholder: "When we request the CVE number we should link it here"
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: "Please attach any files that were received with the report!"
