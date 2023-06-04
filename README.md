@@ -35,7 +35,7 @@ The process of handling issue looks as follows
 5) If the issue is straightforward it might be followed with direct PR in Airflow repository.
    In case more complex discussion is needed and PR needs input and review before it gets merged, we can
    create a PR in the `airflow-s/airflow-s` repository with "Closes: #issue". The PR should be raised
-   against the `main` branch of `airflow-s/airflow-s` repository (not the default `airflow-s`.
+   against the `main` branch of `airflow-s/airflow-s` repository (not the default `airflow-s`).
    Once the PR is approved and ready-to-merge, the branch with the fix should be pushed to airflow repository
    and PR should be re-opened in the Airflow repository by pushing the branch to public `apache/airflow` and
    merged there. Once PR is created in the Airflow repository, link to the PR in the Airflow
