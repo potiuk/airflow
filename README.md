@@ -37,7 +37,7 @@ The process of handling issue looks as follows
    create a PR in the `airflow-s/airflow-s` repository with "Closes: #issue". The PR should be raised
    against the `main` branch of `airflow-s/airflow-s` repository (not the default `airflow-s`.
    Once the PR is approved and ready-to-merge, the branch with the fix should be pushed to airflow repository
-   and PR should be re-opened in the Airflow repository (by pushing the branch to public `apache/airflow` and
+   and PR should be re-opened in the Airflow repository by pushing the branch to public `apache/airflow` and
    merged there. Once PR is created in the Airflow repository, link to the PR in the Airflow
    repository should be updated in the description of the issue. In some cases there might be a doubt
    whether the fix should be applied in the next patch-level release (for example because of
@@ -46,7 +46,7 @@ The process of handling issue looks as follows
 
 6) The issue should be manually closed when the `apache/airflow` PR is merged. If there
    is the private variant of the PR in the `airflow-s/airflow-s` repository, it should be closed as well.
-   The milestone oif the issue should be set to milestone when it is planned to be released.
+   The milestone of the issue should be set to milestone when it is planned to be released.
    The milestones are in the format `Airlfow-2.6.2` or `Providers-June-2023-1`
    (first June providers batch) or `Chart-1.9.0`. New milestones are created when needed.
 
