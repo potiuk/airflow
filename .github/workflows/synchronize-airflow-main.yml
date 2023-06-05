@@ -24,7 +24,6 @@ on:  # yamllint disable-line rule:truthy
     - cron: '0,15,30,45 * * * *'
 permissions:
   contents: write
-  workflows: write
 jobs:
   synchronize-repo:
     runs-on: ubuntu-latest
