@@ -62,8 +62,7 @@ The process of handling issue looks as follows
 
 11) During the releases, the release manager will look through closed issues in the "airflow-s"
     with the corresponding milestones, updates the [ASF CVE tool](https://cveprocess.apache.org) and
-    sends the announcements when the release is published. The following fields should be updated from the
-    issue:
+    Updates the following fields taking it from the issue:
 
     * CWE (Common Weakness Enumeration) - Possible CWEs available [here](https://cwe.mitre.org/data/index.html)
     * Product name (Airflow, affected Airflow Provider or Airflow Helm Chart)
@@ -74,3 +73,8 @@ The process of handling issue looks as follows
     * Credits:
         * `reporter` - reporter(s) of the issue
         * `remediation developer` - PR author(s)
+    The release manager generate the CVE description, set it to READY and sends the announcement emails.
+
+12) After emails get delivered, the release manager updates the issue with the information about the
+    announcement with `vendor-advisory` tag with link to the `users@airlfow.apache.org` mailing list retrieved
+    via [user list archive](https://lists.apache.org/list.html?users@airflow.apache.org)
