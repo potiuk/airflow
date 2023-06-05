@@ -32,24 +32,33 @@ The process of handling issue looks as follows
 4) One of the team members self-assigns to the issue (not necessarily the person who originally started
    the discussion) and implements the fix.
 
-5) If the issue is straightforward it might be followed with direct PR in Airflow repository.
-   In case more complex discussion is needed and PR needs input and review before it gets merged, we can
-   create a PR in the `airflow-s/airflow-s` repository with "Closes: #issue". The PR should be raised
-   against the `main` branch of `airflow-s/airflow-s` repository (not the default `airflow-s`).
-   Once the PR is approved and ready-to-merge, the branch with the fix should be pushed to airflow repository
-   and PR should be re-opened in the Airflow repository by pushing the branch to public `apache/airflow` and
-   merged there. Once PR is created in the Airflow repository, link to the PR in the Airflow
-   repository should be updated in the description of the issue. In some cases there might be a doubt
-   whether the fix should be applied in the next patch-level release (for example because of
-   high risk involved or need to be correlated with other changes). In such cases the issue should contain
-   recommendation from the person who implemented the fix on how to proceed.
+5) If the issue is straightforward it might be followed with direct PR in Airflow repository. The description
+   in the PR should not reveal the CVE or security nature of it.
 
-6) The issue should be manually closed when the `apache/airflow` PR is merged. If there
+6) In exceptional cases: when highly critical issue or when code discussion is needed and PR needs input and
+   review before it gets merged, the person solving it can create a PR in the `airflow-s/airflow-s`
+   repository with "Closes: #issue". The PR should be raised against the `main` branch of `airflow-s/airflow-s`
+   repository (not the default `airflow-s`). This allows for detailed code change discussion in private.
+   For now CI is not run for the PRs in the `airflow-s/airflow-s` repository (for now so static checks
+   and tests should be run manually by the person creating the PR). We might improve it in the future. 
+   Once the PR gets reviewed/approved and ready-to-merge, the branch with the fix should be pushed to the 
+   airflow repository and PR should be re-opened in the Airflow repository by pushing the branch to 
+   public `apache/airflow` and merged there.
+
+7) Once PR is created in the Airflow repository, the team member who creates it should link to the PR
+   in the Airflow repository in the description of the issue.
+
+8) In cases there is a doubt whether the fix should be applied in the next patch-level release,
+   for example because of high risk involved or need to be correlated with other changes. In such cases the
+   `apache/airflow` PR should contain recommendation from the person who implemented the fix on how to
+   proceed. Milestone in the `apache/airflow` PR should be set as usual for regular PRs.
+
+9) The security team member merging the `apache/airflow` PR, should close the issue in `airflow-s`. If there
    is the private variant of the PR in the `airflow-s/airflow-s` repository, it should be closed as well.
    The milestone of the issue should be set to milestone when it is planned to be released.
    The milestones are in the format `Airlfow-2.6.2` or `Providers-June-2023-1`
    (first June providers batch) or `Chart-1.9.0`. New milestones are created when needed.
 
-7) During the releases, the release manager will look through closed issues in the "airflow-s"
-   with the corresponding milestones, updates the [ASF CVE tool](https://cveprocess.apache.org) and
-   sends the announcements when the release is published.
+10) During the releases, the release manager will look through closed issues in the "airflow-s"
+    with the corresponding milestones, updates the [ASF CVE tool](https://cveprocess.apache.org) and
+    sends the announcements when the release is published.
