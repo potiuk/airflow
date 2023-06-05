@@ -73,8 +73,10 @@ The process of handling issue looks as follows
     * Credits:
         * `reporter` - reporter(s) of the issue
         * `remediation developer` - PR author(s)
-    The release manager generate the CVE description, set it to READY and sends the announcement emails.
+
+    The release manager also generates the CVE description, set the CVE to READY and
+    sends the announcement emails from the ASF CVE tool.
 
 12) After emails get delivered, the release manager updates the issue with the information about the
-    announcement with `vendor-advisory` tag with link to the `users@airlfow.apache.org` mailing list retrieved
+    announcement with `vendor-advisory` tag with link to the `users@airflow.apache.org` mailing list retrieved
     via [user list archive](https://lists.apache.org/list.html?users@airflow.apache.org)
