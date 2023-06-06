@@ -44,11 +44,34 @@ body:
       required: false
   - type: input
     attributes:
+      label: CWE
+      description: CWE (Common Weakness Enumeration) number [from the CWE list](https://cwe.mitre.org/data/index.html)
+      placeholder: "We should add CWE number here"
+    validations:
+      required: false
+  - type: dropdown
+    attributes:
+      label: Severity
+      description: >
+        What is the initial severity you think should be applied (we can change it later - pick Unknown if unsure).
+        The criteria to assess the severity are described in the
+        [Severity Rating blog post](https://security.apache.org/blog/severityrating)
+      multiple: false
+      options:
+        - "Critical"
+        - "Important"
+        - "Moderate"
+        - "Low"
+        - "Unknown"
+    validations:
+      required: true
+  - type: input
+    attributes:
       label: CVE tool link
       description: Link to [the CVE tool](https://cveprocess.apache.org/allocatecve) entry
       placeholder: "When we request the CVE number we should link it here"
     validations:
-      required: true
+      required: false
   - type: markdown
     attributes:
       value: "Please attach any files that were received with the report!"
