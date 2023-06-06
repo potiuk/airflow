@@ -3,7 +3,7 @@
 We keep all the security issues reported for Apache Airflow in this separate repository. This repository is
 private, and only members of the security team have access to it.
 
-The issues created here are created from the reports raised via the `security@apache.org` mailing list
+The issues created here are created from the reports raised via the `security@airflow.apache.org` mailing list
 and copied here by the security team members.
 
 The process of handling issue looks as follows
@@ -49,18 +49,17 @@ The process of handling issue looks as follows
 8) Once PR is created in the Airflow repository, the team member who creates it should link to the PR
    in the Airflow repository in the description of the issue.
 
-9) Sometimes there is a doubt whether the fix should be applied in the next patch-level release,
-   for example because of high risk involved or need to be correlated with other changes. In such cases the
-   `apache/airflow` PR should contain recommendation from the person who implemented the fix on how to
-   proceed. Milestone in the `apache/airflow` PR should be set as usual for regular PRs.
+9) The security team member merging the `apache/airflow` PR, should close the issue in `airflow-s`. If there
+   is the private variant of the PR in the `airflow-s/airflow-s` repository, it should be closed as well.
+   The milestone of the issue should be set to milestone when it is planned to be released.
+   The milestones are in the format `Airlfow-2.6.2` or `Providers-June-2023-1`
+   (first June providers batch) or `Chart-1.9.0`. New milestones are created when needed.
+   Sometimes, (as result of the triage discussions) the fix should not be applied in the next patch-level
+   release, for example because of high risk involved or need to be correlated with other changes.
+   In such cases, the milestone in the issue and the corresponding PR should be set to the next minor release
+   rather than the next patch-level release.
 
-10) The security team member merging the `apache/airflow` PR, should close the issue in `airflow-s`. If there
-    is the private variant of the PR in the `airflow-s/airflow-s` repository, it should be closed as well.
-    The milestone of the issue should be set to milestone when it is planned to be released.
-    The milestones are in the format `Airlfow-2.6.2` or `Providers-June-2023-1`
-    (first June providers batch) or `Chart-1.9.0`. New milestones are created when needed.
-
-11) During the releases, the release manager will look through closed issues in the "airflow-s"
+10) During the releases, the release manager will look through closed issues in the "airflow-s"
     with the corresponding milestones, updates the [ASF CVE tool](https://cveprocess.apache.org) and
     Updates the following fields taking it from the issue:
 
