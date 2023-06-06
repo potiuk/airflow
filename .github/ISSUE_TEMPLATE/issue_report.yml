@@ -49,6 +49,22 @@ body:
       placeholder: "We should add CWE number here"
     validations:
       required: false
+  - type: dropdown
+    attributes:
+      label: Severity
+      description: >
+        What is the initial severity you think should be applied (we can change it later - pick Unknown if unsure).
+        The criteria to assess the severity are described in the
+        [Severity Rating blog post](https://security.apache.org/blog/severityrating)
+      multiple: false
+      options:
+        - "Critical"
+        - "Important"
+        - "Moderate"
+        - "Low"
+        - "Unknown"
+    validations:
+      required: true
   - type: input
     attributes:
       label: CVE tool link
