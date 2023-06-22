@@ -33,6 +33,14 @@ The process of handling issue looks as follows
 5) One of the team members self-assigns to the issue (not necessarily the person who originally started
    the discussion) and implements the fix.
 
+   NOTE: In some cases it is possible to delegate the fix to a trusted 3rd party individual. For example, if
+   the security team member assigned to the issue has access to developers willing or otherwise dedicated to
+   Airflow development, they may delegate to one such individual, providing that: 1) the individual is trusted,
+   2) the individual only receives the requisite information to implement a fix (no wholesale sharing of
+   security team emails, GitHub issues, etc) and 3) that a LAZY CONSENSUS vote is conducted in either the
+   email thread or GitHub Issue associated to the security issue (GitHub communications are sycned to the
+   email group for posterity).
+
 6) If the issue is straightforward it might be followed with direct PR in Airflow repository. The description
    in the PR should not reveal the CVE or security nature of it.
 
