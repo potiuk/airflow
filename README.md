@@ -38,7 +38,7 @@ The process of handling issue looks as follows
    Airflow development, they may delegate to one such individual, providing that: 1) the individual is trusted,
    2) the individual only receives the requisite information to implement a fix (no wholesale sharing of
    security team emails, GitHub issues, etc) and 3) that a LAZY CONSENSUS vote is conducted in either the
-   email thread or GitHub Issue associated to the security issue (GitHub communications are sycned to the
+   email thread or GitHub Issue associated to the security issue (GitHub communications are synced to the
    email group for posterity).
 
 6) If the issue is straightforward it might be followed with direct PR in Airflow repository. The description
