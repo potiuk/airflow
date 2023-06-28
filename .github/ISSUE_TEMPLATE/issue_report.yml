@@ -20,13 +20,6 @@ body:
       placeholder: "Please paste the link to the discussion in the security@airlfow.apache.org mailing list"
     validations:
       required: true
-  - type: textarea
-    attributes:
-      label: Proposed remediation
-      description: "Proposed remediation of the issue"
-      placeholder: "Please describe what you think should be done to remediate the issue"
-    validations:
-      required: false
   - type: input
     attributes:
       label: Reporter credited as
