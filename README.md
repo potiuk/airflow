@@ -76,6 +76,9 @@ The process of handling issue looks as follows
     * Product name (Airflow, affected Airflow Provider or Airflow Helm Chart)
     * Version affected (0, < Version released)
     * Severity score - based on [Severity Rating blog post](https://security.apache.org/blog/severityrating)
+      if the severity has not been decided/consensus reached during earlier discussion, the Release Manager
+      has the final say on the severity score (but should take into account the opinions of the security team)
+      this is in order to prioritize getting the issue announcement out in a timely manner.
     * References:
         * `patch` - PR to the fix in the Apache Airflow repository
     * Credits:
@@ -85,6 +88,6 @@ The process of handling issue looks as follows
     The release manager also generates the CVE description, set the CVE to READY and
     sends the announcement emails from the ASF CVE tool.
 
-12) After emails get delivered, the release manager updates the issue with the information about the
+11) After emails get delivered, the release manager updates the issue with the information about the
     announcement with `vendor-advisory` tag with link to the `users@airflow.apache.org` mailing list retrieved
     via [user list archive](https://lists.apache.org/list.html?users@airflow.apache.org)
