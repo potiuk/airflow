@@ -1,6 +1,7 @@
 ---
 name: Airflow Security Issue
 description: Security issues of Airflow
+labels: ["needs triage"]
 body:
   - type: textarea
     attributes:

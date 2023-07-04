@@ -14,14 +14,15 @@ The process of handling issue looks as follows
 
 2) A security team member picks it up and [creates an issue](https://github.com/airflow-s/airflow-s/issues/new/choose).
    The issue should have a label set - one of `airflow` or `providers` or `chart`. The team member responds
-   in the email thread with the link to the issue just created.
+   in the email thread with the link to the issue just created. The issue gets "needs triage" label.
 
 3) In the issue we discuss and agree if it is worth to have a CVE for it. If we cannot reach consensus we follow
    [voting](https://www.apache.org/foundation/voting.html#apache-voting-process). Vote on code modification
    is used, which means that committers have binding votes, whereas everyone else have advisory votes - and
    are encouraged to vote and express their opinion. If there is no major disagreement during discussion,
    there is no need to formally vote with mailing list thread - the voting is done in the PR. However, if
-   there are various opinions, voting is done at the `security@airflow.apache.org` list.
+   there are various opinions, voting is done at the `security@airflow.apache.org` list. The "needs triage"
+   label should be removed.
 
 4) In case we agree the issue is invalid, a team member closes the issue and responds to the reporter with
    the information. In case the issue is valid, the team member creates CVE via
