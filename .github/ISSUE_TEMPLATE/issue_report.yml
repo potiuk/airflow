@@ -12,6 +12,17 @@ body:
         from the `security@airflow.apache.org` mailing list
     validations:
       required: true
+  - type: textarea
+    attributes:
+      label: Short public summary for publish
+      description: Description of the security issue as to be displayed for Airflow users
+      placeholder: >
+        Please provide short description of how the issue can be exploited.
+        For example: does it require an authenticated user account, and allow remote code execution?
+        It should be no longer than 2-3 sentences to give a better understanding for the users.
+        Try to avoid using technical terminology in this explanation.
+    validations:
+      required: false
   - type: input
     attributes:
       label: Security mailing list thread
