@@ -98,7 +98,7 @@ The process of handling issue looks as follows
 
 12) In case we need to add missing credits (which sometimes happens due to copy&paste and brittleness of
     the process, the release manager:
-    * responds to the announce emails add also mentions the missing credits
+    * responds to the announce emails and also mentions the missing credits
     * updates the [ASF CVE tool](https://cveprocess.apache.org) with the missing credits
     * asks the security team of ASF to push the information to [cve.org](cve.org)
 
