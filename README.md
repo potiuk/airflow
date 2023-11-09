@@ -22,7 +22,7 @@ The process of handling issue looks as follows
 3) In the issue we discuss and agree if it is worth to have a CVE for it. 
 
 4) In case the discussion is stalled and we cannot make a decision in about 30 days, the next step
-   iis to seek assistance in making a decision from a broader audience:
+   is to seek assistance in making a decision from a broader audience:
    * private@airflow.apache.org
    * security@apache.org
    * reporter(s) who raised the issue asking them for opinion and additional context
