@@ -3226,7 +3226,6 @@ class Airflow(AirflowBaseView):
         """Return cluster activity historical metrics."""
         start_date = _safe_parse_datetime(request.args.get("start_date"))
         end_date = _safe_parse_datetime(request.args.get("end_date"))
-
         with create_session() as session:
             # DagRuns
             dag_run_types = session.execute(
@@ -3578,8 +3577,19 @@ class RedocView(AirflowBaseView):
     @expose("/redoc")
     def redoc(self):
         """Redoc API documentation."""
-        openapi_spec_url = url_for("/api/v1./api/v1_openapi_yaml")
+        openapi_spec_url = "api/v1/openapi.yaml"
         return self.render_template("airflow/redoc.html", openapi_spec_url=openapi_spec_url)
+
+
+class SwaggerView(AirflowBaseView):
+    """Swagger UI View."""
+
+    default_view = "swagger"
+
+    @expose("/swagger")
+    def swagger(self):
+        """Redoc API documentation."""
+        return redirect("api/v1/ui/")
 
 
 ######################################################################################

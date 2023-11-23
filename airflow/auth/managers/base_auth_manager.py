@@ -34,6 +34,7 @@ from airflow.utils.log.logging_mixin import LoggingMixin
 from airflow.utils.session import NEW_SESSION, provide_session
 
 if TYPE_CHECKING:
+    import connexion
     from flask import Blueprint
     from sqlalchemy.orm import Session
 
@@ -81,8 +82,8 @@ class BaseAuthManager(LoggingMixin):
         """
         return []
 
-    def get_api_endpoints(self) -> None | Blueprint:
-        """Return API endpoint(s) definition for the auth manager."""
+    def set_api_endpoints(self, connexion_app: connexion.FlaskApp) -> None:
+        """Set API endpoint(s) definition for the auth manager."""
         return None
 
     def get_user_name(self) -> str:

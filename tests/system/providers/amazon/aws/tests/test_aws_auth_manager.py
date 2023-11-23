@@ -147,7 +147,7 @@ def client_no_permissions(base_app):
         "email": ["email"],
     }
     base_app.return_value = auth
-    return application.create_app(testing=True)
+    return application.create_connexion_app(testing=True)
 
 
 @pytest.fixture
@@ -160,7 +160,7 @@ def client_admin_permissions(base_app):
         "groups": ["Admin"],
     }
     base_app.return_value = auth
-    return application.create_app(testing=True)
+    return application.create_connexion_app(testing=True)
 
 
 @pytest.mark.system("amazon")
