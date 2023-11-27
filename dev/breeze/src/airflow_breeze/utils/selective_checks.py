@@ -1019,3 +1019,13 @@ class SelectiveChecks:
     @cached_property
     def has_migrations(self) -> bool:
         return any([file.startswith("airflow/migrations/") for file in self._files])
+
+    @cached_property
+    def chicken_egg_providers(self) -> str:
+        """Space separated list of providers with chicken-egg problem and should be built from sources."""
+        if self._default_branch != "main":
+            # TODO: This is temporary only - until we have packages that have >= UPCOMING_VERSION of Airflow
+            # Because packages released in PyPI have >= UPCOMING_VERSION rather than >= UPCOMING_VERSION.dev0
+            # Once the release is done, we should remove this and build package from PyPI
+            return "common.io"
+        return ""
