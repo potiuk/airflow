@@ -121,6 +121,7 @@ from airflow_breeze.utils.path_utils import (
     AIRFLOW_WWW_DIR,
     CONSTRAINTS_CACHE_DIR,
     DIST_DIR,
+    DOCKER_CONTEXT_DIR,
     PROVIDER_METADATA_JSON_FILE_PATH,
     cleanup_python_generated_files,
 )
@@ -1167,6 +1168,29 @@ def publish_docs(
             )
 
 
+def _prepare_chicken_egg_packages(chicken_egg_packages):
+    get_console().print("[warning]Building chicken-egg packages")
+    get_console().print("[info]Cleaning dist and docker-context-files folder")
+    for file in DIST_DIR.glob("*"):
+        file.unlink()
+    for file in DOCKER_CONTEXT_DIR.glob("*"):
+        file.unlink()
+    command = [
+        "breeze",
+        "release-management",
+        "prepare-providers",
+        "--package-format",
+        "wheel",
+        "--version-suffix-for-pypi",
+        "dev0",
+        *chicken_egg_packages.split(" "),
+    ]
+    run_command(command)
+    for file in DIST_DIR.glob("*"):
+        file.chmod(0o644)
+        shutil.copy(file, DOCKER_CONTEXT_DIR / file.name)
+
+
 @release_management.command(
     name="add-back-references",
     help="Command to add back references for documentation to make it backward compatible.",
@@ -1231,6 +1255,13 @@ def add_back_references(
     "rc/alpha/beta images are built.",
 )
 @option_commit_sha
+@click.option(
+    "--chicken-egg-packages",
+    type=str,
+    default="",
+    help="Comma separated list of packages that should be build from sources because there is a "
+    "chicken-egg problem with installing them on pre-release version of airflow.",
+)
 @option_verbose
 @option_dry_run
 def release_prod_images(
@@ -1241,10 +1272,12 @@ def release_prod_images(
     limit_python: str | None,
     commit_sha: str | None,
     skip_latest: bool,
+    chicken_egg_packages: str,
 ):
     perform_environment_checks()
     check_remote_ghcr_io_commands()
-    if not re.match(r"^\d*\.\d*\.\d*$", airflow_version):
+    is_pre_release = not re.match(r"^\d*\.\d*\.\d*$", airflow_version)
+    if is_pre_release:
         get_console().print(
             f"[warning]Skipping latest image tagging as this is a pre-release version: {airflow_version}"
         )
@@ -1256,6 +1289,9 @@ def release_prod_images(
             get_console().print(
                 "[info]Also tagging the images with latest tags as this is release version.[/]"
             )
+    if is_pre_release and chicken_egg_packages:
+        _prepare_chicken_egg_packages(chicken_egg_packages)
+
     result_docker_buildx = run_command(
         ["docker", "buildx", "version"],
         check=False,
