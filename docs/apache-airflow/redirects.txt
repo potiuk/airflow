@@ -129,6 +129,7 @@ concepts/cluster-policies.rst administration-and-deployment/cluster-policies.rst
 concepts/dags.rst core-concepts/dags.rst
 executor/local_kubernetes.rst core-concepts/executor/local_kubernetes.rst
 executor/celery_kubernetes.rst core-concepts/executor/celery_kubernetes.rst
+core-concepts/executor/dask.rst core-concepts/executor/index.rst
 executor/dask.rst core-concepts/executor/dask.rst
 executor/debug.rst core-concepts/executor/debug.rst
 executor/celery.rst core-concepts/executor/celery.rst
