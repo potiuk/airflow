@@ -25,6 +25,14 @@ body:
       required: false
   - type: input
     attributes:
+      label: Affected versions
+      description: >
+        Versions affected by the issue. Please specify it with >=, < operators.
+      placeholder: "Please specify which versions of Airflow (or providers) are affected by the issue"
+    validations:
+      required: false
+  - type: input
+    attributes:
       label: Security mailing list thread
       description: >
         Type in the link to the 
