@@ -1,25 +1,25 @@
 # Confirmation of receiving the report
 
-Thanks for the report and trying to make Airflow secure.
+Thanks for the report and for trying to make Airflow secure.
 
-We registered the issue. You can expect that we will come back to you with result of our assessment
+We registered the issue. You can expect that we will come back to you with the result of our assessment
 according to our security policy https://github.com/apache/airflow/security/policy#what-happens-after-you-report-the-issue-
 
 # Immediate response for DOS issues triggered by Authenticated users
 
 Thanks for keeping Airflow secure.
 
-We have discussed similar concerns in the past - and we consider such generic reports concerning those
-kinds of issues as invalid. Unless you can provide a specific scenario where it can be exploited and
-Confidentiality, Availability and Integrity of Airflow deployment are breached in a meaningful way,
-we consider that as a regular issue and we encourage people like you to submit fixes via PR using our
+We have discussed similar concerns in the past and consider such generic reports concerning those
+kinds of issues invalid. Unless you can provide a specific scenario where it can be exploited and
+Confidentiality, Availability, and Integrity of Airflow deployment are breached in a meaningful way,
+we consider that as a regular issue, and we encourage people like you to submit fixes via PR using our
 regular GitHub contribution process. That's an easy way to become one of more than 2700
-contributors and we encourage directly fixing such issues in PRs without even creating GitHub Issues for them.
+contributors, and we encourage directly fixing such issues in PRs without even creating GitHub Issues for them.
 
 The reason for that is that Airflow is not publicly available software. When you run Airflow in an
-internal network, the users of Airflow are known once authenticated and the most harm that can be
-done is to crash a particular process or make internal Denial Of Service but we do not consider that
-as CVE worthy and generally advisory worthy.
+internal network, the users of Airflow are known once authenticated, and the most harm that can be
+done is to crash a particular process or make an internal Denial Of Service, but we do not consider that
+as CVE-worthy and generally advisory-worthy.
 
 More details about it in our policy: https://github.com/apache/airflow/security/policy#is-this-really-a-security-vulnerability-
 
@@ -27,17 +27,17 @@ More details about it in our policy: https://github.com/apache/airflow/security/
 
 Thanks for keeping Airflow secure.
 
-We have discussed similar concerns in the past - and we consider such reports concerning those
+We have discussed similar concerns in the past and consider such reports concerning those
 kinds of issues as invalid. Unless you can provide a specific scenario where it can be exploited
-and Confidentiality, Availability and Integrity of Airflow deployment are breached in a meaningful way,
-we consider that as a regular issue and we encourage people like you to submit fixes via PR using
+and Confidentiality, Availability, and Integrity of Airflow deployment are breached in a meaningful way,
+we consider that as a regular issue, and we encourage people like you to submit fixes via PR using
 our regular GitHub contribution process. That's an easy way to become one of more than 2700
-contributors and we encourage directly fixing such issues in PRs without even creating
+contributors, and we encourage directly fixing such issues in PRs without even creating
 GitHub Issues for them.
 
 The reason for that is that Airflow is not publicly available software. When you run Airflow in an internal
-network, the users of Airflow are known once authenticated and the most harm that can be done is to make
-internal XSS to themselves, but we do not consider that as CVE worthy and generally advisory worthy.
+network, the users of Airflow are known once authenticated, and the most harm that can be done is to make
+internal XSS to themselves, but we do not consider it CVE-worthy and generally advisory-worthy.
 
 More details about it in our policy: https://github.com/apache/airflow/security/policy#is-this-really-a-security-vulnerability-
 
@@ -47,13 +47,13 @@ Thanks again for keeping Airflow secure. We assessed your request
 and we decided that this is a SEVERITY severity issue.
 
 We followed https://github.com/apache/airflow/security/policy#how-do-we-assess-severity-of-the-issue- to
-assess the severity). The CVE for this issue is CVE_ID and we expect it to be solved in next Airflow release.
+assess the severity). The CVE for this issue is CVE_ID, and we expect it to be solved in the next Airflow release.
 Please monitor our announcements as explained in https://github.com/apache/airflow/security/policy#what-happens-after-you-report-the-issue-
 
 # Negative Assessment response
 
-Thanks again for keeping Airflow secure. We assessed your request and we decided that this is not a
-CVE worthy issue.
+Thanks again for keeping Airflow secure. We assessed your request, and we decided that this is not a
+CVE-worthy issue.
 
 HERE DETAILED EXPLANATION FOLLOWS
 
@@ -61,12 +61,12 @@ HERE DETAILED EXPLANATION FOLLOWS
 
 Thanks for keeping things secure for airflow, but this request is invalid.
 
-It is described in our model and the issue has been already addressed https://nvd.nist.gov/vuln/detail/CVE-2023-37379
+It is described in our model, and the issue has already been addressed https://nvd.nist.gov/vuln/detail/CVE-2023-37379
 
-We identified that test connection feature opens up various ways how users who have access to it could abuse
-various kind of capabilities given by a various kinds of connections: RCE, arbitrary file read,
-Denial of service and likely all kinds of capabilities that are often (in systems that are open-up to public
-use, given to users who have no high privileges can be considered as a vulnerability).
+We identified that the test connection feature opens up various ways for how users who have access to it could abuse
+various kinds of capabilities given by various kinds of connections: RCE, arbitrary file read,
+Denial of service and likely all kinds of capabilities that are often (in systems that are open up to public
+use, given to users with no high privileges, can be considered a vulnerability).
 
 We addressed it in Airflow 2.7.0 by:
 
@@ -88,25 +88,25 @@ sending yet-another-similar-report.
 
 You can read more about it in Airflow's security model https://airflow.apache.org/docs/apache-airflow/stable/security/security_model.html
 
-Connection editing users have such capabilities. Our users are aware of that, and this is intended and we are not planning to do anything about it.
+Connection editing users have such capabilities. Our users are aware of that, and this is intended. We are not planning to do anything about it.
 
-Actually the approach which we took where we make sure it's clear such capabilities are
-available for "Connection Editing" user - is far more secure and safe than trying to address all
+Actually, the approach we took where we make sure it's clear such capabilities are
+available for "Connection Editing" users - is far more secure and safe than trying to address all
 kinds of connections - because our users might have their own providers and connections, and fixing
-"one" of the connections is not approaching the problem in a "systematic" way and gives false sense
+"one" of the connections is not approaching the problem in a "systematic" way and gives a false sense
 of security - which is often worse than being aware that certain features are generally dangerous
 when enabled, or that certain roles - when granted - give the users some insecure capabilities.
-We chose the - far better in our opinion - approach where we not only disabled the test connection
+We chose the - far better, in our opinion - approach where we not only disabled the test connection
 by default but also clearly informed our users - specifically deployment managers, that the
-"Connection Editing" role has potentially dangerous capabilities and users who have this role
-should be highly trusted that they won't abuse it. This is both - more fair to our users and more
-secure in general, because otherwise our users would not be aware of that and could give access to
+"Connection Editing" role has potentially dangerous capabilities, and users who have this role
+should be highly trusted that they won't abuse it. This is both - fairer to our users and more
+secure in general because otherwise, our users would not be aware of that and could give access to
 the role to people who are not highly trusted (and they could abuse similar capabilities coming
-from 100s of other connections - that are even not controlled by us, nor we could provide
+from 100s of other connections - that are not even controlled by us, nor could we provide
 any kinds of advisories for those.
 
 Please consider a "Connection Editing" user similar to a "root" user having access to all the systems and
-highly privileged, capable to perform RCE and similar with any of the systems, especially
+highly privileged, capable of performing RCE and similar with any of the systems, especially
 when test connection is enabled.
 
 Kindly ask you to consider that in your future research.
@@ -120,7 +120,7 @@ on the other hand, involve extra steps for extraction or transcription, which ca
 
 By providing your report in plain text, you're not only simplifying its accessibility but also
 contributing to quicker data processing. This streamlined approach enhances efficiency and
-productivity in working with the information you've shared. Your cooperation in re-submitting
+productivity in working with your shared information. Your cooperation in re-submitting
 the report in plain text format would be greatly appreciated and will significantly expedite
 our review process. Thank you for your understanding!
 
@@ -130,7 +130,7 @@ While including a video or image might offer supplementary information, it's imp
 all the content within these visuals is also provided in plain text. This allows for comprehensive
 accessibility and easy referencing to the information presented in the multimedia content.
 
-In instances where a video or image is attached, it's incredibly helpful if the details, data, or any
+When a video or image is attached, it's incredibly helpful if the details, data, or any
 pertinent information shared within these files are also provided in plain text format. This enables
 a seamless review and extraction of key points, guaranteeing that all information is readily
 accessible and available for analysis.
@@ -138,6 +138,6 @@ accessible and available for analysis.
 Therefore, in addition to any multimedia files submitted, kindly ensure that all contained information
 is also presented in plain text. This practice ensures that nothing crucial is missed and enables
 a quicker and more efficient review process. Your cooperation in providing comprehensive
-plain text details will be greatly appreciated. 
+plain-text details will be greatly appreciated. 
 
 Thank you!
