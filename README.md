@@ -6,7 +6,11 @@ private, and only members of the security team have access to it.
 The issues created here are created from the reports raised via the `security@airflow.apache.org` mailing list
 and copied here by the security team members.
 
-The process of handling issue looks as follows
+Note that at various points we are responding to the reporter with the information about our assessment
+of the issue. We are using [canned responses](canned-responses.md) to handle some common cases, so
+consult the responses if you want to send a response.
+
+The process of handling issue looks as follows:
 
 1) The reporter reports the issue to `security@airflow.apache.org` or `security@apache.org` (in the latter
    case the security team of the Apache Software Foundation will forward the issue to the Airflow security
