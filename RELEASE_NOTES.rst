@@ -8279,7 +8279,7 @@ Doc only changes
 - [AIRFLOW-XXXX] Add Updating.md section for 1.10.9 (#7385)
 - [AIRFLOW-XXXX] Remove duplication in BaseOperator docstring (#7321)
 - [AIRFLOW-XXXX] Update tests info in CONTRIBUTING.rst (#7466)
-- [AIRFLOW-XXXX] Small BREEZE.rst update (#7487)
+- [AIRFLOW-XXXX] Small README.rst update (#7487)
 - [AIRFLOW-XXXX] Add instructions for logging to localstack S3 (#7461)
 - [AIRFLOW-XXXX] Remove travis config warnings (#7467)
 - [AIRFLOW-XXXX] Add communication chapter to contributing (#7204)
