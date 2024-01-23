@@ -47,7 +47,7 @@ There are two kinds of activities you can take part in:
 * reacting to issues raised by the security researchers/reporters of pen tests etc.
 * proactively looking for improvements in the security of Airflow
 
-Handling issues is described in detail uin [Handling security issues](README.md). Read the
+Handling issues is described in detail in [Handling security issues](README.md). Read the
 process to familiarize yourself with it, but probably best is to observe what happens and
 then read in detail why we are doing what we are doing, it will be easier to understand
 the process then.
