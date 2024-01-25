@@ -118,4 +118,4 @@ The process of handling issue looks as follows:
     the process, the release manager:
     * responds to the announce emails and also mentions the missing credits
     * updates the [ASF CVE tool](https://cveprocess.apache.org) with the missing credits
-    * asks the security team of ASF to push the information to [cve.org](cve.org)
+    * asks the security team of ASF to push the information to [cve.org](https://cve.org)
