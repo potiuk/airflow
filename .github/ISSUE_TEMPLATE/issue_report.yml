@@ -8,7 +8,7 @@ body:
       label: The issue description
       description: Description of the security issue copied from the original report
       placeholder: >
-        Please provide the content of the original report of the security issue 
+        Please provide the content of the original report of the security issue
         from the `security@airflow.apache.org` mailing list
     validations:
       required: true
@@ -35,7 +35,7 @@ body:
     attributes:
       label: Security mailing list thread
       description: >
-        Type in the link to the 
+        Type in the link to the
         [thread in the security mailing list](https://lists.apache.org/list.html?security@airflow.apache.org)
       placeholder: "Please paste the link to the discussion in the security@airlfow.apache.org mailing list"
     validations:

@@ -1,3 +1,11 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Handling security issues for Apache Airflow.](#handling-security-issues-for-apache-airflow)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 ## Handling security issues for Apache Airflow.
 
 We keep all the security issues reported for Apache Airflow in this separate repository. This repository is
@@ -23,14 +31,14 @@ The process of handling issue looks as follows:
    to them), the response might be the explanation why and clear statement that the issue is invalid and
    this step (and all the following steps) might be skipped. No issue needs to be created in such case.
 
-3) In the issue we discuss and agree if it is worth to have a CVE for it. 
+3) In the issue we discuss and agree if it is worth to have a CVE for it.
 
 4) In case the discussion is stalled and we cannot make a decision in about 30 days, the next step
    is to seek assistance in making a decision from a broader audience:
    * private@airflow.apache.org
    * security@apache.org
    * reporter(s) who raised the issue asking them for opinion and additional context
-   
+
    Such discussion should have additional context - digest from the discussion so far, considered options,
    impact, pros/cons etc. This might help to get additional perspective and possibly better ideas.
 
@@ -84,7 +92,7 @@ The process of handling issue looks as follows:
     Sometimes, (as result of the triage discussions) the fix should not be applied in the next patch-level
     release, for example because of high risk involved or need to be correlated with other changes.
     In such cases, the milestone in the issue and the corresponding PR should be set to the next minor release
-    rather than the next patch-level release. 
+    rather than the next patch-level release.
 
 11) During the releases, the release manager will look through "Not yet announced" issues in the "airflow-s"
     with the corresponding milestones, updates the [ASF CVE tool](https://cveprocess.apache.org) and
@@ -93,7 +101,7 @@ The process of handling issue looks as follows:
     * CWE (Common Weakness Enumeration) - Possible CWEs available [here](https://cwe.mitre.org/data/index.html)
     * Product name (Airflow, affected Airflow Provider or Airflow Helm Chart)
     * Version affected (0, < Version released)
-    * Short public summary 
+    * Short public summary
     * Severity score - based on [Severity Rating blog post](https://security.apache.org/blog/severityrating)
       The issue owner should - during discussion on the issue - propose the score and update the ticket.
       In obvious cases no objections, this should work in lazy-consensus mode, if there are different opinions
