@@ -1,3 +1,14 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Welcome](#welcome)
+- [How the team is composed ?](#how-the-team-is-composed-)
+- [Where things happen ?](#where-things-happen-)
+- [What are you expected to do?](#what-are-you-expected-to-do)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Welcome
 
 Hello, new Member of the security team of Airflow. Here are a few helpful tips to get you started:
@@ -32,7 +43,7 @@ when affected software gets release where the issues are fixed.
 * we have security@airflow.apache.org mailing list to which you are subscribed. For now
   all the reports raised to us from outside come to that security list, we are however
   discussing to improve it using [Github Private Issue reporting feature](https://github.com/airflow-s/airflow-s/discussions/70)
-  
+
 * we handle all issues and discussions in a more "organized way" in the `airflow-s/airflow-s` (this
   project). Everything that happens in that project is automatically forwarded to the
   security mailing list. Some discussions when they have obvious answer can be handled
@@ -52,14 +63,14 @@ process to familiarize yourself with it, but probably best is to observe what ha
 then read in detail why we are doing what we are doing, it will be easier to understand
 the process then.
 
-Initially - simply take part in the discussions and follow them. 
+Initially - simply take part in the discussions and follow them.
 
 You can also volunteer to provide a fix for an issue, or ask if you can involve someone
 else to provide a fix.
 
-For proactively working on security improvements, you can look at the 
+For proactively working on security improvements, you can look at the
 [Discussions](https://github.com/airflow-s/airflow-s/discussions) we have - we occasionally
-start a discussion there, when we see we can improve something - process wise, or 
+start a discussion there, when we see we can improve something - process wise, or
 tools wise - you are absolutely welcome to join the discussion and provide your input or
 even start new discussions if you see we can improve something.
 
@@ -70,4 +81,3 @@ Feel free also to create PR-s to any part of our process:
 * [New members onboarding](new-members-onboarding.md) - this document
 
 **That's about it. Welcome to the team!**
-

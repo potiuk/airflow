@@ -1,2 +1,4 @@
 /.idea/
 /airflow-s.iml
+logs
+.build

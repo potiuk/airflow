@@ -1,3 +1,19 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Confirmation of receiving the report](#confirmation-of-receiving-the-report)
+- [Immediate response for DOS issues triggered by Authenticated users](#immediate-response-for-dos-issues-triggered-by-authenticated-users)
+- [Immediate response for self-XSS issues triggered by Authenticated users](#immediate-response-for-self-xss-issues-triggered-by-authenticated-users)
+- [Positive Assessment response](#positive-assessment-response)
+- [Negative Assessment response](#negative-assessment-response)
+- [Automated scanning results](#automated-scanning-results)
+- [DOS/RCE/Arbitrary read via Test Connection](#dosrcearbitrary-read-via-test-connection)
+- [When someone submits a media report](#when-someone-submits-a-media-report)
+- [Or an alternative response](#or-an-alternative-response)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Confirmation of receiving the report
 
 Thanks for the report and for trying to make Airflow secure.
@@ -56,6 +72,31 @@ Thanks again for keeping Airflow secure. We assessed your request, and we decide
 CVE-worthy issue.
 
 HERE DETAILED EXPLANATION FOLLOWS
+
+# Automated scanning results
+
+Thanks for that (undoubtedly coming from automated scanning) question. While we appreciate your attempts to
+make the world a more secure place, you should not use such emails to send us automated scanning results
+like this. This is against our policy and clearly explained there: https://github.com/apache/airflow/security/policy
+
+We are using our own automated tooling to detect and prevent issues, and we have a security team that
+manages such issues.
+
+Automated emails like that without human reviewing the report and assessing if it is a danger or not
+and without providing a reproducible scenario where Availability, Confidentiality or Integrity are affected
+and where our Security Model (https://airflow.apache.org/docs/apache-airflow/stable/security/security_model.html)
+is compromised are causing us significant overhead. We would appreciate if you stop sending those emails. Unless
+someone from your security team will assess them, provide a reproducible scenario and assess that yes,
+such an issue actually compromises our model.
+
+If you commit to doing this, and add those reproducible scenarios, then yes we will gladly receive such
+reports as they will follow our policy https://github.com/apache/airflow/security/policy.
+
+Can you please confirm that you understand that and you will follow the policy in the future?
+
+Also, the Apache Software Foundation runs their own disclosure and publishing of CVEs, so you should get
+it from there if we decide it is CVE worthy (and we do follow and review all such changes).
+
 
 # DOS/RCE/Arbitrary read via Test Connection
 
@@ -138,6 +179,6 @@ accessible and available for analysis.
 Therefore, in addition to any multimedia files submitted, kindly ensure that all contained information
 is also presented in plain text. This practice ensures that nothing crucial is missed and enables
 a quicker and more efficient review process. Your cooperation in providing comprehensive
-plain-text details will be greatly appreciated. 
+plain-text details will be greatly appreciated.
 
 Thank you!
