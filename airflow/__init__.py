@@ -19,7 +19,7 @@
 Init setup.
 
 Authentication is implemented using flask_login and different environments can
-implement their own login mechanisms by providing an `airflow_login` module
+implement their own login mechanisms by providing an `airflow_login` module 2
 in their PYTHONPATH. airflow_login should be based off the `airflow.www.login`
 
 isort:skip_file
