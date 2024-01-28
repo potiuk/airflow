@@ -195,13 +195,14 @@ jobs:
           path: "target-airflow"
           ref: ${{ github.base_ref }}
           persist-credentials: false
+        if: needs.build-info.outputs.is-committer-build != 'true'
       - name: >
-          Override "scripts/ci", "dev" and ".github/actions" with the target branch
-          so that the PR does not override them
+          Replace "scripts/ci", "dev" and ".github/actions" with the target branch
+          so that the those directories are not coming from the PR
         shell: bash
         run: |
           echo
-          echo -e "\033[33m Override scripts and dev with target branch ones for non-committer builds!\033[0m"
+          echo -e "\033[33m Replace scripts, dev, actions with target branch for non-committer builds!\033[0m"
           echo
           rm -rfv "scripts/ci"
           mv -v "target-airflow/scripts/ci" "scripts"
@@ -269,13 +270,14 @@ jobs:
           path: "target-airflow"
           ref: ${{ github.base_ref }}
           persist-credentials: false
+        if: needs.build-info.outputs.is-committer-build != 'true'
       - name: >
-          Override "scripts/ci", "dev" and ".github/actions" with the target branch
-          so that the PR does not override them
+          Replace "scripts/ci", "dev" and ".github/actions" with the target branch
+          so that the those directories are not coming from the PR
         shell: bash
         run: |
           echo
-          echo -e "\033[33m Override scripts and dev with target branch ones for non-committer builds!\033[0m"
+          echo -e "\033[33m Replace scripts, dev, actions with target branch for non-committer builds!\033[0m"
           echo
           rm -rfv "scripts/ci"
           mv -v "target-airflow/scripts/ci" "scripts"
@@ -347,11 +349,15 @@ jobs:
           path: "target-airflow"
           ref: ${{ github.base_ref }}
           persist-credentials: false
+        if: needs.build-info.outputs.is-committer-build != 'true'
       - name: >
-          Override "scripts/ci", "dev" and ".github/actions" with the target branch
-          so that the PR does not override them
+          Replace "scripts/ci", "dev" and ".github/actions" with the target branch
+          so that the those directories are not coming from the PR
         shell: bash
         run: |
+          echo
+          echo -e "\033[33m Replace scripts, dev, actions with target branch for non-committer builds!\033[0m"
+          echo
           rm -rfv "scripts/ci"
           mv -v "target-airflow/scripts/ci" "scripts"
           rm -rfv "dev"
