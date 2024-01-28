@@ -29,10 +29,6 @@ from in_container_utils import click, console, run_command
 AIRFLOW_SOURCE_DIR = Path(__file__).resolve().parents[1]
 DIST_FOLDER = Path("/dist")
 
-# Make sure to add breeze to PYTHONPATH to be able to import breeze's code
-sys.path.insert(0, str(AIRFLOW_SOURCE_DIR / "dev" / "breeze" / "src"))
-from airflow_breeze.branch_defaults import DEFAULT_AIRFLOW_CONSTRAINTS_BRANCH  # noqa E402
-
 
 def get_provider_name(package_name: str) -> str:
     return ".".join(package_name.split("-")[0].replace("apache_airflow_providers_", "").split("_"))
@@ -339,8 +335,7 @@ ALLOWED_CONSTRAINTS_MODE = ["constraints-source-providers", "constraints", "cons
 )
 @click.option(
     "--default-constraints-branch",
-    default=DEFAULT_AIRFLOW_CONSTRAINTS_BRANCH,
-    show_default=True,
+    required=True,
     envvar="DEFAULT_CONSTRAINTS_BRANCH",
     help="Default constraints branch to use",
 )

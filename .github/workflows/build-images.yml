@@ -80,7 +80,8 @@ jobs:
           github.event.pull_request.head.sha ||
           github.sha
         }}"
-    if: github.repository == 'apache/airflow'
+    # TODO: restore me for final merge
+    # if: github.repository == 'apache/airflow'
     steps:
       - name: Discover PR merge commit
         id: discover-pr-merge-commit
@@ -165,8 +166,7 @@ jobs:
     needs: [build-info]
     if: |
       needs.build-info.outputs.ci-image-build == 'true' &&
-      github.event.pull_request.head.repo.full_name != 'apache/airflow' &&
-      github.repository == 'apache/airflow'
+      github.event.pull_request.head.repo.full_name != 'apache/airflow'
     env:
       DEFAULT_BRANCH: ${{ needs.build-info.outputs.default-branch }}
       DEFAULT_CONSTRAINTS_BRANCH: ${{ needs.build-info.outputs.default-constraints-branch }}
@@ -239,8 +239,7 @@ jobs:
     needs: [build-info, build-ci-images]
     if: |
       needs.build-info.outputs.prod-image-build == 'true' &&
-      github.event.pull_request.head.repo.full_name != 'apache/airflow' &&
-      github.repository == 'apache/airflow'
+      github.event.pull_request.head.repo.full_name != 'apache/airflow'
     env:
       DEFAULT_BRANCH: ${{ needs.build-info.outputs.default-branch }}
       DEFAULT_CONSTRAINTS_BRANCH: ${{ needs.build-info.outputs.default-constraints-branch }}
@@ -318,8 +317,7 @@ jobs:
       needs.build-info.outputs.upgrade-to-newer-dependencies != 'false' &&
       github.event.pull_request.head.repo.full_name != 'apache/airflow' &&
       needs.build-info.outputs.is-self-hosted-runner == 'true' &&
-      needs.build-info.outputs.is-airflow-runner == 'true' &&
-      github.repository == 'apache/airflow'
+      needs.build-info.outputs.is-airflow-runner == 'true'
     env:
       DEFAULT_BRANCH: ${{ needs.build-info.outputs.default-branch }}
       DEFAULT_CONSTRAINTS_BRANCH: ${{ needs.build-info.outputs.default-constraints-branch }}
