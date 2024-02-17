@@ -5,7 +5,7 @@ dbinit.py
 initdb.py
 secrets.py
 
-# Airflow sqlite databases
+# Airflow sqlite databases   #
 airflow.db
 
 # Airflow temporary artifacts
