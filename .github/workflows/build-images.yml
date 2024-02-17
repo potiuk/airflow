@@ -85,7 +85,6 @@ jobs:
           github.event.pull_request.head.sha ||
           github.sha
         }}"
-    if: github.repository == 'apache/airflow'
     steps:
       - name: Discover PR merge commit
         id: discover-pr-merge-commit
