@@ -4,6 +4,7 @@
 
 - [Confirmation of receiving the report](#confirmation-of-receiving-the-report)
 - [Immediate response for DOS issues triggered by Authenticated users](#immediate-response-for-dos-issues-triggered-by-authenticated-users)
+- [Image scan results](#image-scan-results)
 - [Immediate response for self-XSS issues triggered by Authenticated users](#immediate-response-for-self-xss-issues-triggered-by-authenticated-users)
 - [Positive Assessment response](#positive-assessment-response)
 - [Negative Assessment response](#negative-assessment-response)
@@ -41,19 +42,14 @@ More details about it in our policy: https://github.com/apache/airflow/security/
 
 # Image scan results
 
-
-Jarek Potiuk
-8:56 PM (0 minutes ago)
-to loga0060, security
-
-As explained in our security policy https://github.com/apache/airflow/security/policy#what-should-be-and-should-not-be-reported- 
+As explained in our security policy https://github.com/apache/airflow/security/policy#what-should-be-and-should-not-be-reported-
 you should not use that email for such requests. Please do not use it in the future for such requests:
 
 > Specifically, we will ignore results of security scans that contain a list of dependencies of Airflow with dependencies
 > in Airflow Docker reference image - there is a page that describes how the Airflow reference Image is fixed at release
 > time and providing helpful instructions explaining how you can build your own image and manage dependencies of Airflow in your own image.
 
-If you want to deal with security issues reported by your scanners https://airflow.apache.org/docs/docker-stack/index.html#fixing-images-at-release-time 
+If you want to deal with security issues reported by your scanners https://airflow.apache.org/docs/docker-stack/index.html#fixing-images-at-release-time
 describes what to do in this case. Generally you have three options:
 
 1) Build your own custom image following the examples we share there - using the latest base
