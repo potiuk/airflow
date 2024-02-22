@@ -39,6 +39,46 @@ as CVE-worthy and generally advisory-worthy.
 
 More details about it in our policy: https://github.com/apache/airflow/security/policy#is-this-really-a-security-vulnerability-
 
+# Image scan results
+
+
+Jarek Potiuk
+8:56 PM (0 minutes ago)
+to loga0060, security
+
+As explained in our security policy https://github.com/apache/airflow/security/policy#what-should-be-and-should-not-be-reported- 
+you should not use that email for such requests. Please do not use it in the future for such requests:
+
+> Specifically, we will ignore results of security scans that contain a list of dependencies of Airflow with dependencies
+> in Airflow Docker reference image - there is a page that describes how the Airflow reference Image is fixed at release
+> time and providing helpful instructions explaining how you can build your own image and manage dependencies of Airflow in your own image.
+
+If you want to deal with security issues reported by your scanners https://airflow.apache.org/docs/docker-stack/index.html#fixing-images-at-release-time 
+describes what to do in this case. Generally you have three options:
+
+1) Build your own custom image following the examples we share there - using the latest base
+   image and possibly bumping dependencies you want to bump. There are quite a few examples there when you follow the links.
+
+2) wait for a new version of Airflow and upgrade to it. Airflow images are updated to latest "non-conflicting" dependencies and
+   use latest "base" image at release time, so what you have in the reference images at the moment we publish the image / release
+   the version is what is "latest and greatest" available at the moment with the base platform we use (debian bookworm is the reference image we use).
+
+3) If the base platform we use (currently debian-bookworm) does not contain the latest versions you want and you want to use other base images,
+   you can take a look at what system dependencies are installed in the latest Dockerfile of airflow and take inspiration from it and build your
+   own image (or copy the dockerfile and modify it as you see fit) https://github.com/apache/airflow/blob/main/Dockerfile
+
+This gives you all the flexibility you need. You can rely on Airlow bumping to latest, non-conflicting 3rd-party dependency versions regularly -
+with every release, so one of the strategies you can take to keep your Airflow secure is to engage in early testing of RC candidates and
+upgrading to newer airlfow releases as soon as they happen.
+
+Also if you think that something is not false positive - we encourage you to contribute back by analysing such  scan reports and trying
+to come up with exploitation scenarios - and report it here for other people who might be looking at it. If you have an exploitation
+scenario you can report it privately following our security policy https://github.com/apache/airflow/security/policy - this email is
+there if you will find a way how to exploit third-party dependency vulnerability in airflow, and all the volunteer maintainers highly
+appreciate efforts of our commercial users to report such exploitable vulnerabilities (after analysing them) as a way to contribute
+back for the community that makes the free software available for you at no charge.
+
+
 # Immediate response for self-XSS issues triggered by Authenticated users
 
 Thanks for keeping Airflow secure.
