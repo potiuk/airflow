@@ -55,7 +55,7 @@ describes what to do in this case. Generally you have three options:
 1) Build your own custom image following the examples we share there - using the latest base
    image and possibly bumping dependencies you want to bump. There are quite a few examples there when you follow the links.
 
-2) wait for a new version of Airflow and upgrade to it. Airflow images are updated to latest "non-conflicting" dependencies and
+2) Wait for a new version of Airflow and upgrade to it. Airflow images are updated to latest "non-conflicting" dependencies and
    use latest "base" image at release time, so what you have in the reference images at the moment we publish the image / release
    the version is what is "latest and greatest" available at the moment with the base platform we use (debian bookworm is the reference image we use).
 
