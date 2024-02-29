@@ -45,13 +45,25 @@ Airflow 2.9
      ``apache/airflow:slim-2.9.0-python-3.8`` images respectively so while the change is potentially
      breaking, it is very easy to switch to the previous behaviour.
 
-Airflow 2.9
-~~~~~~~~~~~
+   * The ``PIP_USER`` flag is removed and replaced by ``VIRTUAL_ENV`` pointing to ``~/.local`` where Airflow
+     is installed. This has the effect that Airflow installation is treated as regular virtual environment,
+     but unlike a regular virtualenv, the ``~/.local`` directory is seen as ``system level`` and when
+     worker creates dynamically virtualenv with ``--system-site-packages`` flag, Airflow installation and all
+     packages there are also present in the new virtualenv - but when you do not use the flag, they are not
+     copied there which is backwards-compatible behaviour with having ``PIP_USER`` set.
 
-The ``gosu`` binary was removed from the image. This is a potentially breaking change for users who relied on
-``gosu`` to change the user in the container. The ``gosu`` binary was removed because it was a source of
-security vulnerabilities as it was linked against older go standard libraries.
+   * The image contains latest ``uv`` binary (latest at the moment of release) - which is a new faster
+     replacement for ``pip``. While the image is still using ``pip`` by default, you can use ``uv`` by default
+     to install packages and - experimentally - you can also build custom images with
+     ``--arg AIRFLOW_USE_UV=true`` which will us ``uv`` to perform the installation. This is an experimental
+     support, as ``uv`` is very fast but also very new feature in Python ecosystem.
 
+   * Constraints used to install the image are available in "${HOME}/constraints.txt" now - you can use them
+     to install additional packages in the image without having to find out which constraints you should use.
+
+   * The ``gosu`` binary was removed from the image. This is a potentially breaking change for users who relied on
+     ``gosu`` to change the user in the container. The ``gosu`` binary was removed because it was a source of
+     security vulnerabilities as it was linked against older go standard libraries.
 
 Airflow 2.8
 ~~~~~~~~~~~
