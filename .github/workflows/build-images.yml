@@ -81,7 +81,7 @@ jobs:
           github.event.pull_request.head.sha ||
           github.sha
         }}"
-    if: github.repository == 'apache/airflow'
+    # if: github.repository == 'apache/airflow'
     steps:
       - name: "Cleanup repo"
         shell: bash
