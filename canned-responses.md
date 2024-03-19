@@ -102,6 +102,8 @@ We followed https://github.com/apache/airflow/security/policy#how-do-we-assess-s
 assess the severity). The CVE for this issue is CVE_ID, and we expect it to be solved in the next Airflow release.
 Please monitor our announcements as explained in https://github.com/apache/airflow/security/policy#what-happens-after-you-report-the-issue-
 
+Thank you for your contribution to the CVE assessment. Could you please let us know how you would like to be credited for your work?
+
 # Negative Assessment response
 
 Thanks again for keeping Airflow secure. We assessed your request, and we decided that this is not a
