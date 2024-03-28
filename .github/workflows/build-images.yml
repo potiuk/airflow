@@ -80,7 +80,6 @@ jobs:
           github.event.pull_request.head.sha ||
           github.sha
         }}"
-    if: github.repository == 'apache/airflow'
     steps:
       - name: "Cleanup repo"
         shell: bash
@@ -166,10 +165,6 @@ jobs:
     secrets: inherit
     needs: [build-info]
     uses: ./.github/workflows/ci-image-build.yml
-    # Only run this it if the PR comes from fork, otherwise build will be done "in-PR-workflow"
-    if: |
-      needs.build-info.outputs.ci-image-build == 'true' &&
-      github.event.pull_request.head.repo.full_name != 'apache/airflow'
     with:
       runs-on: '["ubuntu-22.04"]'
       do-build: ${{ needs.build-info.outputs.ci-image-build }}
@@ -206,10 +201,6 @@ jobs:
     secrets: inherit
     needs: [build-info, generate-constraints]
     uses: ./.github/workflows/prod-image-build.yml
-    # Only run this it if the PR comes from fork, otherwise build will be done "in-PR-workflow"
-    if: |
-      needs.build-info.outputs.prod-image-build == 'true' &&
-      github.event.pull_request.head.repo.full_name != 'apache/airflow'
     with:
       runs-on: '["ubuntu-22.04"]'
       build-type: "Regular"
