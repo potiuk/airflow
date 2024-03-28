@@ -14,7 +14,6 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
 [build-system]
 # build dependencies should be fixed - including all transitive dependencies. This way we can ensure
 # reproducibility of the build and make sure that any future releases of any dependencies will not
