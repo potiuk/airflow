@@ -83,7 +83,6 @@ jobs:
           github.event.pull_request.head.sha ||
           github.sha
         }}"
-    if: github.repository == 'apache/airflow'
     steps:
       - name: "Cleanup repo"
         shell: bash
@@ -170,9 +169,6 @@ jobs:
     needs: [build-info]
     uses: ./.github/workflows/ci-image-build.yml
     # Only run this it if the PR comes from fork, otherwise build will be done "in-PR-workflow"
-    if: |
-      needs.build-info.outputs.ci-image-build == 'true' &&
-      github.event.pull_request.head.repo.full_name != 'apache/airflow'
     with:
       runs-on-as-json-public: ${{ needs.build-info.outputs.runs-on-as-json-public }}
       runs-on-as-json-self-hosted: ${{ needs.build-info.outputs.runs-on-as-json-self-hosted }}
@@ -212,9 +208,6 @@ jobs:
     needs: [build-info, generate-constraints]
     uses: ./.github/workflows/prod-image-build.yml
     # Only run this it if the PR comes from fork, otherwise build will be done "in-PR-workflow"
-    if: |
-      needs.build-info.outputs.prod-image-build == 'true' &&
-      github.event.pull_request.head.repo.full_name != 'apache/airflow'
     with:
       runs-on-as-json-public: ${{ needs.build-info.outputs.runs-on-as-json-public }}
       build-type: "Regular"
