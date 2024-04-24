@@ -18,19 +18,24 @@ from __future__ import annotations
 
 import logging
 import warnings
-from functools import cached_property
+from enum import Enum
+from functools import cached_property, lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable
+from urllib.parse import urlsplit
 
 import connexion
 import starlette.exceptions
 from connexion import ProblemException, Resolver
 from connexion.options import SwaggerUIOptions
 from connexion.problem import problem
+from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
+from starlette.middleware.trustedhost import TrustedHostMiddleware
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from airflow.api_connexion.exceptions import problem_error_handler
 from airflow.configuration import conf
-from airflow.exceptions import RemovedInAirflow3Warning
+from airflow.exceptions import AirflowConfigException, RemovedInAirflow3Warning
 from airflow.security import permissions
 from airflow.utils.yaml import safe_load
 from airflow.www.constants import SWAGGER_BUNDLE, SWAGGER_ENABLED
@@ -205,7 +210,49 @@ class _LazyResolver(Resolver):
         return _LazyResolution(self.resolve_function_from_operation_id, operation_id)
 
 
-base_paths: list[str] = ["/auth/fab/v1"]  # contains the list of base paths that have api endpoints
+# contains map of base paths that have api endpoints
+
+
+class BaseAPIPaths(Enum):
+    """Known Airflow API paths."""
+
+    REST_API = "/api/v1"
+    INTERNAL_API = "/internal_api/v1"
+    EXPERIMENTAL_API = "/api/experimental"
+
+
+def get_base_url() -> str:
+    """Return base url to prepend to all API routes."""
+    webserver_base_url = conf.get_mandatory_value("webserver", "BASE_URL", fallback="")
+    if webserver_base_url.endswith("/"):
+        raise AirflowConfigException("webserver.base_url conf cannot have a trailing slash.")
+    base_url = urlsplit(webserver_base_url)[2]
+    if not base_url or base_url == "/":
+        base_url = ""
+    return base_url
+
+
+BASE_URL = get_base_url()
+
+
+@lru_cache(maxsize=1)
+def get_enabled_api_paths() -> list[str]:
+    enabled_apis = []
+    enabled_apis.append(BaseAPIPaths.REST_API.value)
+    if conf.getboolean("webserver", "run_internal_api", fallback=False):
+        enabled_apis.append(BaseAPIPaths.INTERNAL_API.value)
+    if conf.getboolean("api", "enable_experimental_api", fallback=False):
+        enabled_apis.append(BaseAPIPaths.EXPERIMENTAL_API.value)
+    auth_mgr_mount_point = get_auth_manager().get_auth_manager_mount_point()
+    if auth_mgr_mount_point:
+        enabled_apis.append(auth_mgr_mount_point)
+    return enabled_apis
+
+
+def is_current_request_on_api_path() -> bool:
+    from flask.globals import request
+
+    return any([request.path.startswith(BASE_URL + p) for p in get_enabled_api_paths()])
 
 
 def init_api_error_handlers(connexion_app: connexion.FlaskApp) -> None:
@@ -213,9 +260,7 @@ def init_api_error_handlers(connexion_app: connexion.FlaskApp) -> None:
     from airflow.www import views
 
     def _handle_api_not_found(error) -> ConnexionResponse | str:
-        from flask.globals import request
-
-        if any([request.path.startswith(p) for p in base_paths]):
+        if is_current_request_on_api_path():
             # 404 errors are never handled on the blueprint level
             # unless raised from a view func so actual 404 errors,
             # i.e. "no route for it" defined, need to be handled
@@ -224,9 +269,7 @@ def init_api_error_handlers(connexion_app: connexion.FlaskApp) -> None:
         return views.not_found(error)
 
     def _handle_api_method_not_allowed(error) -> ConnexionResponse | str:
-        from flask.globals import request
-
-        if any([request.path.startswith(p) for p in base_paths]):
+        if is_current_request_on_api_path():
             return connexion_app._http_exception(error)
         return views.method_not_allowed(error)
 
@@ -259,9 +302,6 @@ def init_api_error_handlers(connexion_app: connexion.FlaskApp) -> None:
 
 def init_api_connexion(connexion_app: connexion.FlaskApp) -> None:
     """Initialize Stable API."""
-    base_path = "/api/v1"
-    base_paths.append(base_path)
-
     with ROOT_APP_DIR.joinpath("api_connexion", "openapi", "v1.yaml").open() as f:
         specification = safe_load(f)
     swagger_ui_options = SwaggerUIOptions(
@@ -272,7 +312,7 @@ def init_api_connexion(connexion_app: connexion.FlaskApp) -> None:
     connexion_app.add_api(
         specification=specification,
         resolver=_LazyResolver(),
-        base_path=base_path,
+        base_path=BASE_URL + BaseAPIPaths.REST_API.value,
         swagger_ui_options=swagger_ui_options,
         strict_validation=True,
         validate_responses=True,
@@ -284,7 +324,6 @@ def init_api_internal(connexion_app: connexion.FlaskApp, standalone_api: bool = 
     if not standalone_api and not conf.getboolean("webserver", "run_internal_api", fallback=False):
         return
 
-    base_paths.append("/internal_api/v1")
     with ROOT_APP_DIR.joinpath("api_internal", "openapi", "internal_api_v1.yaml").open() as f:
         specification = safe_load(f)
     swagger_ui_options = SwaggerUIOptions(
@@ -294,7 +333,7 @@ def init_api_internal(connexion_app: connexion.FlaskApp, standalone_api: bool = 
 
     connexion_app.add_api(
         specification=specification,
-        base_path="/internal_api/v1",
+        base_path=BASE_URL + BaseAPIPaths.INTERNAL_API.value,
         swagger_ui_options=swagger_ui_options,
         strict_validation=True,
         validate_responses=True,
@@ -314,8 +353,9 @@ def init_api_experimental(app):
         RemovedInAirflow3Warning,
         stacklevel=2,
     )
-    base_paths.append("/api/experimental")
-    app.register_blueprint(endpoints.api_experimental, url_prefix="/api/experimental")
+    app.register_blueprint(
+        endpoints.api_experimental, url_prefix=BASE_URL + BaseAPIPaths.EXPERIMENTAL_API.value
+    )
     app.extensions["csrf"].exempt(endpoints.api_experimental)
 
 
@@ -336,3 +376,26 @@ def init_cors_middleware(connexion_app: connexion.FlaskApp):
         allow_methods=conf.get("api", "access_control_allow_methods"),
         allow_headers=conf.get("api", "access_control_allow_headers"),
     )
+
+
+def _root_app(env, resp) -> Iterable[bytes]:
+    resp("404 Not Found", [("Content-Type", "text/plain")])
+    return [b"Apache Airflow is not at this location"]
+
+
+def init_proxy_headers_middleware(connexion_app: connexion.FlaskApp):
+    # TODO: find a way to replace WSGI dispatcher with ASGI middleware or connexion way of redirecting
+    # flask_app = connexion_app.app
+    # wsgi_app = DispatcherMiddleware(_root_app, mounts={BASE_URL: flask_app.wsgi_app})
+    # flask_app.wsgi_app = wsgi_app  # type: ignore[assignment]
+
+    if conf.getboolean("webserver", "ENABLE_PROXY_FIX"):
+        allowed_proxy_fix_hosts = conf.get("webserver", "ALLOWED_PROXY_FIX_HOSTS", fallback="")
+        if allowed_proxy_fix_hosts:
+            connexion_app.add_middleware(
+                TrustedHostMiddleware, allowed_hosts=allowed_proxy_fix_hosts.split(",")
+            )
+        https_redirect = conf.getboolean("webserver", "ENABLE_HTTPS_REDIRECT", fallback=False)
+        if https_redirect:
+            connexion_app.add_middleware(HTTPSRedirectMiddleware)
+        connexion_app.add_middleware(ProxyHeadersMiddleware)

@@ -60,8 +60,8 @@ from airflow.www.extensions.init_views import (
     init_error_handlers,
     init_flash_views,
     init_plugins,
+    init_proxy_headers_middleware,
 )
-from airflow.www.extensions.init_wsgi_middlewares import init_wsgi_middleware
 
 app: Flask | None = None
 connexion_app: connexion.FlaskApp | None = None
@@ -84,6 +84,7 @@ def create_connexion_app(config=None, testing=False):
                 conn_app.app.extensions["csrf"].exempt(view_function)
 
     init_cors_middleware(conn_app)
+    init_proxy_headers_middleware(conn_app)
 
     flask_app = conn_app.app
     flask_app.secret_key = conf.get("webserver", "SECRET_KEY")
@@ -150,8 +151,6 @@ def create_connexion_app(config=None, testing=False):
     InternalApiConfig.force_database_direct_access()
 
     csrf.init_app(flask_app)
-
-    init_wsgi_middleware(flask_app)
 
     db = SQLA()
     db.session = settings.Session

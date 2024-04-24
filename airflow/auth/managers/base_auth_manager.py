@@ -82,8 +82,8 @@ class BaseAuthManager(LoggingMixin):
         """
         return []
 
-    def set_api_endpoints(self, connexion_app: connexion.FlaskApp) -> None:
-        """Set API endpoint(s) definition for the auth manager."""
+    def get_api_endpoints(self) -> None | Blueprint:
+        """Return API endpoint(s) definition for the auth manager for Airflow 2.9."""
         return None
 
     def get_user_name(self) -> str:
@@ -445,3 +445,15 @@ class BaseAuthManager(LoggingMixin):
         from airflow.www.security_manager import AirflowSecurityManagerV2
 
         return AirflowSecurityManagerV2(self.appbuilder)
+
+    def get_auth_manager_mount_point(self) -> str | None:
+        """
+        Return the mount point for the auth manager for Airflow 2.10.
+
+        By default, returns None.
+        """
+        return None
+
+    @abstractmethod
+    def set_api_endpoints(self, connexion_app: connexion.FlaskApp) -> None:
+        """Set API endpoint(s) definition for the auth manager in Airflow 2.10+."""

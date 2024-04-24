@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Container
 
 from connexion.options import SwaggerUIOptions
-from flask import url_for
+from flask import Blueprint, url_for
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
@@ -82,8 +82,9 @@ from airflow.security.permissions import (
 )
 from airflow.utils.session import NEW_SESSION, provide_session
 from airflow.utils.yaml import safe_load
-from airflow.www.constants import SWAGGER_BUNDLE
-from airflow.www.extensions.init_views import _LazyResolver
+from airflow.www.constants import SWAGGER_BUNDLE, SWAGGER_ENABLED
+
+FAB_API_MOUNT_POINT = "/auth/fab/v1"
 
 if TYPE_CHECKING:
     import connexion
@@ -149,6 +150,32 @@ class FabAuthManager(BaseAuthManager):
             SYNC_PERM_COMMAND,  # not in a command group
         ]
 
+    def get_api_endpoints(self) -> None | Blueprint:
+        # Legacy endpoint for Airflow 2.9
+        folder = Path(__file__).parents[0].resolve()  # this is airflow/auth/managers/fab/
+        with folder.joinpath("openapi", "v1.yaml").open() as f:
+            specification = safe_load(f)
+        from connexion import FlaskApi
+
+        # This import is only available in Airflow 2.9
+        from airflow.www.extensions.init_views import (  # type: ignore[attr-defined]
+            _CustomErrorRequestBodyValidator,
+            _LazyResolver,
+        )
+
+        return FlaskApi(
+            specification=specification,
+            resolver=_LazyResolver(),
+            base_path="/auth/fab/v1",
+            options={"swagger_ui": SWAGGER_ENABLED, "swagger_path": SWAGGER_BUNDLE.__fspath__()},
+            strict_validation=True,
+            validate_responses=True,
+            validator_map={"body": _CustomErrorRequestBodyValidator},
+        ).blueprint
+
+    def get_auth_manager_mount_point(self) -> str:
+        return FAB_API_MOUNT_POINT
+
     def set_api_endpoints(self, connexion_app: connexion.FlaskApp) -> None:
         folder = Path(__file__).parents[0].resolve()  # this is airflow/auth/managers/fab/
         with folder.joinpath("openapi", "v1.yaml").open() as f:
@@ -159,10 +186,12 @@ class FabAuthManager(BaseAuthManager):
             swagger_ui_template_dir=SWAGGER_BUNDLE,
         )
 
+        from airflow.www.extensions.init_views import BASE_URL, _LazyResolver
+
         connexion_app.add_api(
             specification=specification,
             resolver=_LazyResolver(),
-            base_path="/auth/fab/v1",
+            base_path=BASE_URL + FAB_API_MOUNT_POINT,
             swagger_ui_options=swagger_ui_options,
             strict_validation=True,
             validate_responses=True,
