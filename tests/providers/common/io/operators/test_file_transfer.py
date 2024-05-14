@@ -19,9 +19,11 @@ from __future__ import annotations
 
 from unittest import mock
 
+import pytest
 from openlineage.client.run import Dataset
 
 from airflow.providers.common.io.operators.file_transfer import FileTransferOperator
+from tests.test_utils.compat import AIRFLOW_V_2_9_PLUS
 
 
 def test_file_transfer_copy():
@@ -49,6 +51,11 @@ def test_file_transfer_copy():
         target_path.copy.assert_not_called()
 
 
+@pytest.mark.skipif(
+    not AIRFLOW_V_2_9_PLUS,
+    reason="Open lineage integration for FileTransferOperator requires Airflow 2.9+ because of "
+    "its reliance on universal_pathlib >= 0.2.2",
+)
 def test_get_openlineage_facets_on_start():
     src_bucket = "src-bucket"
     src_key = "src-key"

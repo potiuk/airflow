@@ -19,6 +19,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Sequence
 
+import airflow
 from airflow.io.path import ObjectStoragePath
 from airflow.models import BaseOperator
 
@@ -38,6 +39,9 @@ class FileTransferOperator(BaseOperator):
     :param dst: The destination file path or ObjectStoragePath object.
     :param source_conn_id: The optional source connection id.
     :param dest_conn_id: The optional destination connection id.
+
+    Note that open-lineage integration for FileTransferOperator requires Airflow 2.9+ even if file
+    transfer operator should work with Airflow 2.8+, due to its reliance on universal_pathlib >= 0.2.2
 
     .. seealso::
         For more information on how to use this operator, take a look at the guide:
@@ -76,8 +80,15 @@ class FileTransferOperator(BaseOperator):
 
     def get_openlineage_facets_on_start(self) -> OperatorLineage:
         from openlineage.client.run import Dataset
+        from packaging.version import Version
 
         from airflow.providers.openlineage.extractors import OperatorLineage
+
+        if Version(airflow.__version__) < Version("2.9.0"):
+            raise NotImplementedError(
+                "File Transfer OpenLineage integration requires Airflow "
+                "2.9.0 or higher (because universal_pathlib must be > 0.2.2)"
+            )
 
         src: ObjectStoragePath = self._get_path(self.src, self.source_conn_id)
         dst: ObjectStoragePath = self._get_path(self.dst, self.dst_conn_id)
