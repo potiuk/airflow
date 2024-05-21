@@ -29,6 +29,7 @@ from typing import Any, Callable, Iterable
 from hatchling.builders.config import BuilderConfig
 from hatchling.builders.hooks.plugin.interface import BuildHookInterface
 from hatchling.builders.plugin.interface import BuilderInterface
+from hatchling.metadata.plugin.interface import MetadataHookInterface
 from hatchling.plugin.manager import PluginManager
 
 log = logging.getLogger(__name__)
@@ -770,26 +771,10 @@ def skip_for_editable_build(excluded_python_versions: list[str]) -> bool:
     return False
 
 
-class CustomBuildHook(BuildHookInterface[BuilderConfig]):
-    """
-    Custom build hook for Airflow.
+class CustomAirflowMetadata:
+    """Custom metadata storage for Airflow."""
 
-    Generates required and optional dependencies depends on the build `version`.
-
-    - standard: Generates all dependencies for the standard (.whl) package:
-       * devel and doc extras not included
-       * core extras and "production" bundle extras included
-       * provider optional dependencies resolve to "apache-airflow-providers-{provider}"
-       * pre-installed providers added as required dependencies
-
-    - editable: Generates all dependencies for the editable installation:
-       * devel and doc extras (including devel bundle extras are included)
-       * core extras and "production" bundles included
-       * provider optional dependencies resolve to provider dependencies including devel dependencies
-       * pre-installed providers not included - their dependencies included in devel extras
-    """
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, version: str):
         # Stores all dependencies that that any of the airflow extras (including devel) use
         self.all_devel_ci_dependencies: set[str] = set()
         # All extras that should be included in the wheel package
@@ -797,18 +782,8 @@ class CustomBuildHook(BuildHookInterface[BuilderConfig]):
         # All extras that should be available in the editable install
         self.all_devel_extras: set[str] = set()
         self.optional_dependencies: dict[str, list[str]] = {}
-        self._dependencies: list[str] = []
-        super().__init__(*args, **kwargs)
+        self.dependencies: list[str] = []
 
-    def initialize(self, version: str, build_data: dict[str, Any]) -> None:
-        """
-        Initialize hook immediately before each build.
-
-        Any modifications to the build data will be seen by the build target.
-
-        :param version: "standard" or "editable" build.
-        :param build_data: build data dictionary.
-        """
         self._process_all_built_in_extras(version)
         self._process_all_provider_extras(version)
 
@@ -829,34 +804,14 @@ class CustomBuildHook(BuildHookInterface[BuilderConfig]):
         # 3rd-party dependencies for airflow for the CI image. It is exposed in the wheel package
         # because we want to use for building the image cache from GitHub URL.
         self.optional_dependencies["devel-ci"] = sorted(self.all_devel_ci_dependencies)
-        self._dependencies = DEPENDENCIES
+        self.dependencies = DEPENDENCIES
 
         if version == "standard":
             # Inject preinstalled providers into the dependencies for standard packages
-            self._dependencies.extend(PREINSTALLED_PROVIDER_REQUIREMENTS)
-            self._dependencies.extend(PREINSTALLED_NOT_READY_PROVIDER_DEPS)
+            self.dependencies.extend(PREINSTALLED_PROVIDER_REQUIREMENTS)
+            self.dependencies.extend(PREINSTALLED_NOT_READY_PROVIDER_DEPS)
         else:
-            self._dependencies.extend(ALL_PREINSTALLED_PROVIDER_DEPS)
-
-        # with hatchling, we can modify dependencies dynamically by modifying the build_data
-        build_data["dependencies"] = self._dependencies
-
-        # unfortunately hatchling currently does not have a way to override optional_dependencies
-        # via build_data (or so it seem) so we need to modify internal _optional_dependencies
-        # field in core.metadata until this is possible
-        self.metadata.core._optional_dependencies = self.optional_dependencies
-
-        # Add entrypoints dynamically for all provider packages, in editable build
-        # else they will not be found by plugin manager
-        if version != "standard":
-            entry_points = self.metadata.core._entry_points or {}
-            plugins = entry_points.get("airflow.plugins") or {}
-            for provider in PROVIDER_DEPENDENCIES.values():
-                for plugin in provider["plugins"]:
-                    plugin_class: str = plugin["plugin-class"]
-                    plugins[plugin["name"]] = plugin_class[::-1].replace(".", ":", 1)[::-1]
-            entry_points["airflow.plugins"] = plugins
-            self.metadata.core._entry_points = entry_points
+            self.dependencies.extend(ALL_PREINSTALLED_PROVIDER_DEPS)
 
     def _add_devel_ci_dependencies(self, deps: list[str], python_exclusion: str) -> None:
         """
@@ -938,3 +893,67 @@ class CustomBuildHook(BuildHookInterface[BuilderConfig]):
                 else:
                     # for editable builds we add all extras
                     self.optional_dependencies[extra] = deps
+
+
+class CustomBuildHook(BuildHookInterface[BuilderConfig]):
+    """
+    Custom build hook for Airflow.
+
+    Generates required and optional dependencies depends on the build `version`.
+
+    - standard: Generates all dependencies for the standard (.whl) package:
+       * devel and doc extras not included
+       * core extras and "production" bundle extras included
+       * provider optional dependencies resolve to "apache-airflow-providers-{provider}"
+       * pre-installed providers added as required dependencies
+
+    - editable: Generates all dependencies for the editable installation:
+       * devel and doc extras (including devel bundle extras are included)
+       * core extras and "production" bundles included
+       * provider optional dependencies resolve to provider dependencies including devel dependencies
+       * pre-installed providers not included - their dependencies included in devel extras
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
+    def initialize(self, version: str, build_data: dict[str, Any]) -> None:
+        """
+        Initialize hook immediately before each build.
+
+        Any modifications to the build data will be seen by the build target.
+
+        :param version: "standard" or "editable" build.
+        :param build_data: build data dictionary.
+        """
+        custom_metadata = CustomAirflowMetadata(version)
+
+        # with hatchling, we can modify dependencies dynamically by modifying the build_data
+        build_data["dependencies"] = custom_metadata.dependencies
+
+        # unfortunately hatchling currently does not have a way to override optional_dependencies
+        # via build_data (or so it seem) so we need to modify internal _optional_dependencies
+        # field in core.metadata until this is possible. The dependencies here should be the
+        # same as provided by the custom metadata hook
+        self.metadata.core._optional_dependencies = custom_metadata.optional_dependencies
+
+        # Add entrypoints dynamically for all provider packages, in editable build
+        # else they will not be found by plugin manager
+        if version != "standard":
+            entry_points = self.metadata.core._entry_points or {}
+            plugins = entry_points.get("airflow.plugins") or {}
+            for provider in PROVIDER_DEPENDENCIES.values():
+                for plugin in provider["plugins"]:
+                    plugin_class: str = plugin["plugin-class"]
+                    plugins[plugin["name"]] = plugin_class[::-1].replace(".", ":", 1)[::-1]
+            entry_points["airflow.plugins"] = plugins
+            self.metadata.core._entry_points = entry_points
+
+
+class CustomMetadataHook(MetadataHookInterface):
+    """Custom metadata hook for Airflow."""
+
+    def update(self, metadata: dict) -> None:
+        custom_airflow_metadata = CustomAirflowMetadata(version=self.version if self.version else "standard")
+        metadata["dependencies"] = custom_airflow_metadata.dependencies
+        metadata["optional-dependencies"] = custom_airflow_metadata.optional_dependencies

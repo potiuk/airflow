@@ -24,7 +24,7 @@
 requires = [
     "GitPython==3.1.43",
     "gitdb==4.0.11",
-    "hatchling==1.24.2",
+    "hatchling @ file:///Users/jarek/code/hatch/backend",
     "packaging==24.0",
     "pathspec==0.12.1",
     "pluggy==1.5.0",
@@ -161,44 +161,47 @@ YouTube = "https://www.youtube.com/channel/UCSXwxpWZQ7XZ1WL3wqevChA/"
 python = "3.8"
 platforms = ["linux", "macos"]
 description = "Default environment with Python 3.8 for maximum compatibility"
-features = []
+features = ["devel"]
 
 [tool.hatch.envs.airflow-38]
 python = "3.8"
 platforms = ["linux", "macos"]
 description = "Environment with Python 3.8. No devel installed."
-features = []
+features = ["devel"]
 
 [tool.hatch.envs.airflow-39]
 python = "3.9"
 platforms = ["linux", "macos"]
 description = "Environment with Python 3.9. No devel installed."
-features = []
+features = ["devel"]
 
 [tool.hatch.envs.airflow-310]
 python = "3.10"
 platforms = ["linux", "macos"]
 description = "Environment with Python 3.10. No devel installed."
-features = []
+features = ["devel"]
 
 [tool.hatch.envs.airflow-311]
 python = "3.11"
 platforms = ["linux", "macos"]
 description = "Environment with Python 3.11. No devel installed"
-features = []
+features = ["devel"]
 
 [tool.hatch.envs.airflow-312]
 python = "3.12"
 platforms = ["linux", "macos"]
 description = "Environment with Python 3.12. No devel installed"
-features = []
-
+features = ["devel"]
 
 [tool.hatch.version]
 path = "airflow/__init__.py"
 
 [tool.hatch.build.targets.wheel.hooks.custom]
 path = "./hatch_build.py"
+
+[tool.hatch.metadata.hooks.custom]
+path = "./hatch_build.py"
+
 
 [tool.hatch.build.hooks.custom]
 path = "./hatch_build.py"
