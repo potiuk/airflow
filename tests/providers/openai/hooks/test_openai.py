@@ -20,6 +20,7 @@ import os
 from unittest.mock import patch
 
 import pytest
+from openai import NOT_GIVEN
 
 openai = pytest.importorskip("openai")
 
@@ -159,6 +160,7 @@ def mock_run():
         object="thread.run",
         created_at=1698107661,
         assistant_id=ASSISTANT_ID,
+        parallel_tool_calls=NOT_GIVEN,
         thread_id=THREAD_ID,
         status="completed",
         started_at=1699073476,
