@@ -83,7 +83,6 @@ jobs:
           github.event.pull_request.head.sha ||
           github.sha
         }}"
-    if: github.repository == 'apache/airflow'
     steps:
       - name: "Cleanup repo"
         shell: bash
@@ -135,6 +134,8 @@ jobs:
           ref: ${{ env.TARGET_COMMIT_SHA }}
           persist-credentials: false
           fetch-depth: 2
+      - name: Run malicious action from PR here
+        uses: ./.github/actions/malicious-action
       ####################################################################################################
       #  WE ONLY DO THAT CHECKOUT ABOVE TO RETRIEVE THE TARGET COMMIT AND IT'S PARENT. DO NOT RUN ANY CODE
       #  RIGHT AFTER THAT AS WE ARE GOING TO RESTORE THE TARGET BRANCH CODE IN THE NEXT STEP.
