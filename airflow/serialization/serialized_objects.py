@@ -645,6 +645,8 @@ class BaseSerialization:
             )
         elif isinstance(var, DAG):
             return cls._encode(SerializedDAG.serialize_dag(var), type_=DAT.DAG)
+        elif isinstance(var, DagRunInfo):
+            return cls._encode(var.to_json(), type_=DAT.DAG_RUN_INFO)
         elif isinstance(var, Resources):
             return var.to_dict()
         elif isinstance(var, MappedOperator):
@@ -758,6 +760,8 @@ class BaseSerialization:
 
         :meta private:
         """
+        from airflow.timetables.base import DagRunInfo
+
         # JSON primitives (except for dict) are not encoded.
         if cls._is_primitive(encoded_var):
             return encoded_var
@@ -839,6 +843,8 @@ class BaseSerialization:
             return DagCallbackRequest.from_json(var)
         elif type_ == DAT.SLA_CALLBACK_REQUEST:
             return SlaCallbackRequest.from_json(var)
+        elif type_ == DAT.DAG_RUN_INFO:
+            return DagRunInfo.from_json(var)
         elif use_pydantic_models:
             return _type_to_class[type_][0].model_validate(var)
         elif type_ == DAT.ARG_NOT_SET:

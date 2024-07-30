@@ -85,6 +85,7 @@ class TestCore:
                 python_callable=sleep_and_catch_other_exceptions,
             )
         dag_maker.create_dagrun()
+        dag_maker.session.commit()
         with pytest.raises(AirflowTaskTimeout):
             op.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE, ignore_ti_state=True)
 

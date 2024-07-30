@@ -91,6 +91,7 @@ from airflow.ti_deps.deps.not_in_retry_period_dep import NotInRetryPeriodDep
 from airflow.ti_deps.deps.not_previously_skipped_dep import NotPreviouslySkippedDep
 from airflow.ti_deps.deps.prev_dagrun_dep import PrevDagrunDep
 from airflow.ti_deps.deps.trigger_rule_dep import TriggerRuleDep
+from airflow.timetables.base import DagRunInfo
 from airflow.utils import timezone
 from airflow.utils.context import Context, context_get_outlet_events
 from airflow.utils.decorators import fixup_decorator_warning_stack
@@ -101,7 +102,7 @@ from airflow.utils.operator_resources import Resources
 from airflow.utils.session import NEW_SESSION, provide_session
 from airflow.utils.setup_teardown import SetupTeardownContext
 from airflow.utils.trigger_rule import TriggerRule
-from airflow.utils.types import NOTSET, AttributeRemoved
+from airflow.utils.types import NOTSET, AttributeRemoved, DagRunType
 from airflow.utils.xcom import XCOM_RETURN_KEY
 
 if TYPE_CHECKING:
@@ -1481,9 +1482,6 @@ class BaseOperator(AbstractOperator, metaclass=BaseOperatorMeta):
         session: Session = NEW_SESSION,
     ) -> None:
         """Run a set of task instances for a date range."""
-        from airflow.models import DagRun
-        from airflow.utils.types import DagRunType
-
         # Assertions for typing -- we need a dag, for this function, and when we have a DAG we are
         # _guaranteed_ to have start_date (else we couldn't have been added to a DAG)
         if TYPE_CHECKING:
@@ -1495,27 +1493,12 @@ class BaseOperator(AbstractOperator, metaclass=BaseOperatorMeta):
         for info in self.dag.iter_dagrun_infos_between(start_date, end_date, align=False):
             ignore_depends_on_past = info.logical_date == start_date and ignore_first_depends_on_past
             try:
-                dag_run = session.scalars(
-                    select(DagRun).where(
-                        DagRun.dag_id == self.dag_id,
-                        DagRun.execution_date == info.logical_date,
-                    )
-                ).one()
-                ti = TaskInstance(self, run_id=dag_run.run_id)
+                ti = _get_task_instance_for_execution_date(self, info, session)
+                ti.task = self
             except NoResultFound:
                 # This is _mostly_ only used in tests
-                dr = DagRun(
-                    dag_id=self.dag_id,
-                    run_id=DagRun.generate_run_id(DagRunType.MANUAL, info.logical_date),
-                    run_type=DagRunType.MANUAL,
-                    execution_date=info.logical_date,
-                    data_interval=info.data_interval,
-                )
-                ti = TaskInstance(self, run_id=dr.run_id)
-                ti.dag_run = dr
-                session.add(dr)
-                session.flush()
-
+                ti = _create_dag_run_if_missing(self, info, session)
+                ti.task = self
             ti.run(
                 mark_success=mark_success,
                 ignore_depends_on_past=ignore_depends_on_past,
@@ -2109,6 +2092,52 @@ def __getattr__(name):
     # Store for next time
     globals()[name] = val
     return val
+
+
+"fa"
+
+
+@internal_api_call
+@provide_session
+def _create_dag_run_if_missing(task: Operator, info: DagRunInfo, session=NEW_SESSION):
+    """
+    This method is used in tests where we pass in a TaskInstance that has a DagRun
+    that doesn't exist in the database. This method creates the DagRun in the database
+    so that the TaskInstance can be used to run the task.
+
+    :meta private:
+    """
+    from airflow.models import DagRun
+
+    dr = DagRun(
+        dag_id=task.dag_id,
+        run_id=DagRun.generate_run_id(DagRunType.MANUAL, info.logical_date),
+        run_type=DagRunType.MANUAL,
+        execution_date=info.logical_date,
+        data_interval=info.data_interval,
+    )
+    ti = TaskInstance(task, run_id=dr.run_id)
+    ti.dag_run = dr
+    session.add(dr)
+    session.flush()
+    return ti
+
+
+@internal_api_call
+@provide_session
+def _get_task_instance_for_execution_date(
+    task: Operator, info: DagRunInfo, session=NEW_SESSION
+) -> TaskInstance:
+    from airflow.models import DagRun
+
+    dag_run = session.scalars(
+        select(DagRun).where(
+            DagRun.dag_id == task.dag_id,
+            DagRun.execution_date == info.logical_date,
+        )
+    ).one()
+
+    return TaskInstance(task, run_id=dag_run.run_id)
 
 
 __deprecated_imports = {

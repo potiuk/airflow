@@ -71,3 +71,4 @@ class DagAttributeTypes(str, Enum):
     TASK_CALLBACK_REQUEST = "task_callback_request"
     DAG_CALLBACK_REQUEST = "dag_callback_request"
     SLA_CALLBACK_REQUEST = "sla_callback_request"
+    DAG_RUN_INFO = "dag_run_info"
