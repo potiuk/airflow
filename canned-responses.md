@@ -9,7 +9,7 @@
 - [Positive Assessment response](#positive-assessment-response)
 - [Negative Assessment response](#negative-assessment-response)
 - [Automated scanning results](#automated-scanning-results)
-- [DOS/RCE/Arbitrary read via Test Connection](#dosrcearbitrary-read-via-test-connection)
+- [DOS/RCE/Arbitrary read via Provider's Connection configuration](#dosrcearbitrary-read-via-providers-connection-configuration)
 - [When someone submits a media report](#when-someone-submits-a-media-report)
 - [Or an alternative response](#or-an-alternative-response)
 
@@ -136,11 +136,15 @@ Also, the Apache Software Foundation runs their own disclosure and publishing of
 it from there if we decide it is CVE worthy (and we do follow and review all such changes).
 
 
-# DOS/RCE/Arbitrary read via Test Connection
+# DOS/RCE/Arbitrary read via Provider's Connection configuration
 
 Thanks for keeping things secure for airflow, but this request is invalid.
 
-It is described in our model, and the issue has already been addressed https://nvd.nist.gov/vuln/detail/CVE-2023-37379
+We no longer consider those kinds of issues as security issues - feel free to create an issue to change the behaviour of
+the connection or - even better - make a PR to change it. We will be happy to review and merge it.
+
+It is described in our model, and the general issue which was actually even more exploitable with
+"test connection" feature) has already been addressed in https://nvd.nist.gov/vuln/detail/CVE-2023-37379
 
 We identified that the test connection feature opens up various ways for how users who have access to it could abuse
 various kinds of capabilities given by various kinds of connections: RCE, arbitrary file read,
@@ -149,10 +153,10 @@ use, given to users with no high privileges, can be considered a vulnerability).
 
 We addressed it in Airflow 2.7.0 by:
 
-* disabling test connection by default
-* informing our users that enabling test connection is dangerous and you should only do it when you know about
-  all those capabilities you implicitly give those users who have connection editing capabilities
-* clarifying in our security model
+  * disabling test connection by default
+  * informing our users that enabling test connection is dangerous and you should only do it when you know about
+    all those capabilities you implicitly give those users who have connection editing capabilities
+  * clarifying in our security model
 
 We explained in release notes and communication when we released
 Airflow 2.7 that users who have connection editing capabilities are highly privileged and that they
