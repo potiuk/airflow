@@ -138,13 +138,13 @@ it from there if we decide it is CVE worthy (and we do follow and review all suc
 
 # DOS/RCE/Arbitrary read via Provider's Connection configuration
 
-Thanks for keeping things secure for airflow, but this request is invalid.
+Thanks for keeping things secure for Airflow, but this request is invalid.
 
 We no longer consider those kinds of issues as security issues - feel free to create an issue to change the behaviour of
 the connection or - even better - make a PR to change it. We will be happy to review and merge it.
 
-It is described in our model, and the general issue which was actually even more exploitable with
-"test connection" feature) has already been addressed in https://nvd.nist.gov/vuln/detail/CVE-2023-37379
+It is described in our model, and the general issue which was actually even more exploitable with the
+"test connection" feature has already been addressed in https://nvd.nist.gov/vuln/detail/CVE-2023-37379
 
 We identified that the test connection feature opens up various ways for how users who have access to it could abuse
 various kinds of capabilities given by various kinds of connections: RCE, arbitrary file read,
