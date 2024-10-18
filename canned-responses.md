@@ -19,8 +19,8 @@
 
 Thanks for the report and for trying to make Airflow secure.
 
-We registered the issue. You can expect that we will come back to you with the result of our assessment
-according to our security policy https://github.com/apache/airflow/security/policy#what-happens-after-you-report-the-issue-
+We registered the issue. This is our initial response, you can expect that we will come back to you with the result of our assessment
+according to our security policy: https://github.com/apache/airflow/security/policy#what-happens-after-you-report-the-issue-
 
 # Immediate response for DOS issues triggered by Authenticated users
 
