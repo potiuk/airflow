@@ -28,8 +28,12 @@ on:  # yamllint disable-line rule:truthy
         description: "Tag to set for the image"
         required: true
         type: string
-      testable-integrations:
-        description: "The list of testable integrations as JSON array."
+      testable-core-integrations:
+        description: "The list of testable core integrations as JSON array."
+        required: true
+        type: string
+      testable-providers-integrations:
+        description: "The list of testable providers integrations as JSON array."
         required: true
         type: string
       default-postgres-version:
@@ -40,7 +44,7 @@ on:  # yamllint disable-line rule:truthy
         description: "Default version of MySQL to use"
         required: true
         type: string
-      skip-provider-tests:
+      skip-providers-tests:
         description: "Skip provider tests (true/false)"
         required: true
         type: string
@@ -57,22 +61,22 @@ on:  # yamllint disable-line rule:truthy
         required: true
         type: string
 jobs:
-  tests-integration:
+  tests-core-integration:
     timeout-minutes: 130
-    if: inputs.testable-integrations != '[]'
-    name: "Integration Tests: ${{ matrix.integration }}"
+    if: inputs.testable-core-integrations != '[]'
+    name: "Integration Tests: core ${{ matrix.integration }}"
     runs-on: ${{ fromJSON(inputs.runs-on-as-json-public) }}
     strategy:
       fail-fast: false
       matrix:
-        integration: ${{ fromJSON(inputs.testable-integrations) }}
+        integration: ${{ fromJSON(inputs.testable-core-integrations) }}
     env:
       IMAGE_TAG: "${{ inputs.image-tag }}"
       BACKEND: "postgres"
       BACKEND_VERSION: ${{ inputs.default-postgres-version }}"
       PYTHON_MAJOR_MINOR_VERSION: "${{ inputs.default-python-version }}"
-      JOB_ID: "integration-${{ matrix.integration }}"
-      SKIP_PROVIDER_TESTS: "${{ inputs.skip-provider-tests }}"
+      JOB_ID: "integration-core-${{ matrix.integration }}"
+      SKIP_PROVIDERS_TESTS: "${{ inputs.skip-providers-tests }}"
       ENABLE_COVERAGE: "${{ inputs.run-coverage}}"
       DEBUG_RESOURCES: "${{ inputs.debug-resources }}"
       GITHUB_REPOSITORY: ${{ github.repository }}
@@ -91,13 +95,60 @@ jobs:
         run: ./scripts/ci/cleanup_docker.sh
       - name: "Prepare breeze & CI image: ${{ inputs.default-python-version }}:${{ inputs.image-tag }}"
         uses: ./.github/actions/prepare_breeze_and_image
-      - name: "Integration Tests: ${{ matrix.integration }}"
-        run: ./scripts/ci/testing/run_integration_tests_with_retry.sh ${{ matrix.integration }}
-      - name: "Post Tests success: Integration Tests ${{ matrix.integration }}"
+      - name: "Integration Tests: core ${{ matrix.integration }}"
+        # yamllint disable rule:line-length
+        run: ./scripts/ci/testing/run_integration_tests_with_retry.sh core "${{ matrix.integration }}"
+      - name: "Post Tests success"
         uses: ./.github/actions/post_tests_success
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           python-version: ${{ inputs.default-python-version }}
-      - name: "Post Tests failure: Integration Tests ${{ matrix.integration }}"
+      - name: "Post Tests failure"
+        uses: ./.github/actions/post_tests_failure
+        if: failure()
+
+  tests-providers-integration:
+    timeout-minutes: 130
+    if: inputs.testable-providers-integrations != '[]'
+    name: "Integration Tests: providers ${{ matrix.integration }}"
+    runs-on: ${{ fromJSON(inputs.runs-on-as-json-public) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        integration: ${{ fromJSON(inputs.testable-providers-integrations) }}
+    env:
+      IMAGE_TAG: "${{ inputs.image-tag }}"
+      BACKEND: "postgres"
+      BACKEND_VERSION: ${{ inputs.default-postgres-version }}"
+      PYTHON_MAJOR_MINOR_VERSION: "${{ inputs.default-python-version }}"
+      JOB_ID: "integration-providers-${{ matrix.integration }}"
+      SKIP_PROVIDERS_TESTS: "${{ inputs.skip-providers-tests }}"
+      ENABLE_COVERAGE: "${{ inputs.run-coverage}}"
+      DEBUG_RESOURCES: "${{ inputs.debug-resources }}"
+      GITHUB_REPOSITORY: ${{ github.repository }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_USERNAME: ${{ github.actor }}
+      VERBOSE: "true"
+    steps:
+      - name: "Cleanup repo"
+        shell: bash
+        run: docker run -v "${GITHUB_WORKSPACE}:/workspace" -u 0:0 bash -c "rm -rf /workspace/*"
+      - name: "Checkout ${{ github.ref }} ( ${{ github.sha }} )"
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: "Cleanup docker"
+        run: ./scripts/ci/cleanup_docker.sh
+      - name: "Prepare breeze & CI image: ${{ inputs.default-python-version }}:${{ inputs.image-tag }}"
+        uses: ./.github/actions/prepare_breeze_and_image
+      - name: "Integration Tests: providers ${{ matrix.integration }}"
+        # yamllint disable rule:line-length
+        run: ./scripts/ci/testing/run_integration_tests_with_retry.sh providers "${{ matrix.integration }}"
+      - name: "Post Tests success"
+        uses: ./.github/actions/post_tests_success
+        with:
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
+          python-version: ${{ inputs.default-python-version }}
+      - name: "Post Tests failure"
         uses: ./.github/actions/post_tests_failure
         if: failure()

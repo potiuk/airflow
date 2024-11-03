@@ -20,16 +20,17 @@ export COLOR_RED=$'\e[31m'
 export COLOR_YELLOW=$'\e[33m'
 export COLOR_RESET=$'\e[0m'
 
-if [[ ! "$#" -eq 1 ]]; then
-    echo "${COLOR_RED}You must provide exactly one argument!.${COLOR_RESET}"
+if [[ ! "$#" -eq 2 ]]; then
+    echo "${COLOR_RED}You must provide 2 arguments. Test group and integration!.${COLOR_RESET}"
     exit 1
 fi
 
-INTEGRATION=${1}
+TEST_GROUP=${1}
+INTEGRATION=${2}
 
 breeze down
 set +e
-breeze testing integration-tests --integration "${INTEGRATION}"
+breeze testing "integration-${TEST_GROUP}-tests" --integration "${INTEGRATION}"
 RESULT=$?
 set -e
 if [[ ${RESULT} != "0" ]]; then
@@ -41,7 +42,7 @@ if [[ ${RESULT} != "0" ]]; then
     sudo service docker restart
     breeze down
     set +e
-    breeze testing integration-tests --integration "${INTEGRATION}"
+    breeze testing "integration-${TEST_GROUP}-tests" --integration "${INTEGRATION}"
     RESULT=$?
     set -e
     if [[ ${RESULT} != "0" ]]; then
