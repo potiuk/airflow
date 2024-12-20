@@ -16,23 +16,17 @@
 # under the License.
 from __future__ import annotations
 
-import os
-
-from black import Mode, TargetVersion, format_str, parse_pyproject_toml
-
-from airflow_breeze.utils.functools_cache import clearable_cache
-from airflow_breeze.utils.path_utils import AIRFLOW_SOURCES_ROOT
+cached_functions = []
 
 
-@clearable_cache
-def _black_mode() -> Mode:
-    config = parse_pyproject_toml(os.path.join(AIRFLOW_SOURCES_ROOT, "pyproject.toml"))
-    target_versions = {TargetVersion[val.upper()] for val in config.get("target_version", ())}
-    return Mode(
-        target_versions=target_versions,
-        line_length=config.get("line_length", Mode.line_length),
-    )
+def clearable_cache(func):
+    from functools import cache
+
+    cached_function = cache(func)
+    cached_functions.append(cached_function)
+    return cached_function
 
 
-def black_format(content) -> str:
-    return format_str(content, mode=_black_mode())
+def clear_all_cached_functions():
+    for func in cached_functions:
+        func.cache_clear()

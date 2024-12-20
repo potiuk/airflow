@@ -16,23 +16,17 @@
 # under the License.
 from __future__ import annotations
 
-import os
+import pathlib
 
-from black import Mode, TargetVersion, format_str, parse_pyproject_toml
+import pytest
 
-from airflow_breeze.utils.functools_cache import clearable_cache
-from airflow_breeze.utils.path_utils import AIRFLOW_SOURCES_ROOT
+pytest_plugins = "tests_common.pytest_plugin"
 
 
-@clearable_cache
-def _black_mode() -> Mode:
-    config = parse_pyproject_toml(os.path.join(AIRFLOW_SOURCES_ROOT, "pyproject.toml"))
-    target_versions = {TargetVersion[val.upper()] for val in config.get("target_version", ())}
-    return Mode(
-        target_versions=target_versions,
-        line_length=config.get("line_length", Mode.line_length),
+@pytest.hookimpl(tryfirst=True)
+def pytest_configure(config: pytest.Config) -> None:
+    deprecations_ignore_path = pathlib.Path(__file__).parent.joinpath("deprecations_ignore.yml")
+    dep_path = [deprecations_ignore_path] if deprecations_ignore_path.exists() else []
+    config.inicfg["airflow_deprecations_ignore"] = (
+        config.inicfg.get("airflow_deprecations_ignore", []) + dep_path  # type: ignore[assignment,operator]
     )
-
-
-def black_format(content) -> str:
-    return format_str(content, mode=_black_mode())

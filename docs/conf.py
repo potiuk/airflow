@@ -79,9 +79,18 @@ elif PACKAGE_NAME.startswith("apache-airflow-providers-"):
     # Oddity: since we set autoapi_python_use_implicit_namespaces for provider packages, it does a "../"on the
     # dir we give it. So we want to set the package dir to be airflow so it goes up to src, else we end up
     # with "src" in the output paths of modules which we don't want
-    PACKAGE_DIR = ROOT_DIR / "providers" / "src" / "airflow"
-    PACKAGE_VERSION = CURRENT_PROVIDER["versions"][0]
-    SYSTEM_TESTS_DIR = ROOT_DIR / "providers" / "tests" / "system"
+
+    package_id = PACKAGE_NAME[len("apache-airflow-providers-") :]
+    base_provider_dir = ROOT_DIR / "providers".join(package_id.split("-"))
+    if CURRENT_PROVIDER["is_new_provider"]:
+        PACKAGE_DIR = ROOT_DIR / "providers" / base_provider_dir / "src" / "airflow"
+        PACKAGE_VERSION = CURRENT_PROVIDER["versions"][0]
+        SYSTEM_TESTS_DIR = base_provider_dir / "tests" / "system"
+    else:
+        # TODO(potiuk) remove this when we move all providers from the old structure
+        PACKAGE_DIR = ROOT_DIR / "providers" / "src" / "airflow"
+        PACKAGE_VERSION = CURRENT_PROVIDER["versions"][0]
+        SYSTEM_TESTS_DIR = ROOT_DIR / "providers" / "tests" / "system"
 elif PACKAGE_NAME == "apache-airflow-providers":
     from provider_yaml_utils import load_package_data
 
@@ -805,7 +814,7 @@ if PACKAGE_NAME.startswith("apache-airflow-providers-"):
     autoapi_ignore.extend(
         (
             "*/airflow/__init__.py",
-            "*/airflow/providiers/__init__.py",
+            "*/airflow/providers/__init__.py",
             "*/example_dags/*",
             "*/airflow/providers/cncf/kubernetes/backcompat/*",
         )

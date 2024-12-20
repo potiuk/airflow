@@ -30,14 +30,15 @@ import os
 import sys
 from collections import defaultdict
 from collections.abc import Iterable
+from pathlib import Path
 from typing import Any, Callable, NamedTuple, TypeVar
 
 from rich.console import Console
 from tabulate import tabulate
 
 from docs.exts.docs_build import dev_index_generator, lint_checks
-from docs.exts.docs_build.code_utils import CONSOLE_WIDTH
-from docs.exts.docs_build.docs_builder import DOCS_DIR, AirflowDocsBuilder, get_available_packages
+from docs.exts.docs_build.code_utils import CONSOLE_WIDTH, DOCS_DIR, ROOT_PROJECT_DIR
+from docs.exts.docs_build.docs_builder import AirflowDocsBuilder, get_available_packages
 from docs.exts.docs_build.errors import DocBuildError, display_errors_summary
 from docs.exts.docs_build.fetch_inventories import fetch_inventories
 from docs.exts.docs_build.github_action_utils import with_group
@@ -452,11 +453,21 @@ def main():
             console.print(f" - {pkg}")
 
     for package in available_packages:
-        api_dir = os.path.join(DOCS_DIR, package, "_api")
+        if package.startswith("apache-airflow-providers-"):
+            package_id = package.replace("apache-airflow-providers-", "").replace("-", ".")
+            if not (Path(ROOT_PROJECT_DIR) / "providers").joinpath(*package_id.split(".")).exists():
+                # TODO(potiuk) - remove this when all packages are moved to the new structure
+                api_dir = os.path.join(DOCS_DIR, package, "_api")
+            else:
+                api_dir = os.path.join(ROOT_PROJECT_DIR, "providers", *package_id.split("."), "docs", "_api")
+        else:
+            api_dir = os.path.join(DOCS_DIR, package, "_api")
         if os.path.exists(api_dir):
             if not os.listdir(api_dir):
                 console.print(
-                    f"[red]The toctree already contains a reference to a non-existing document for provider [green]'{package}'[/green]. Use the --clean-build option while building docs"
+                    "[red]The toctree already contains a reference to a non-existing document "
+                    f"for provider [green]'{package}'[/green]: {api_dir}. "
+                    f"Use the --clean-build option while building docs"
                 )
                 sys.exit(1)
 
