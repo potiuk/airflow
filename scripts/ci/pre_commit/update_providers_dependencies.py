@@ -96,13 +96,19 @@ class ImportFinder(NodeVisitor):
 
 
 def find_all_providers_and_provider_files():
-    for root, _, filenames in os.walk(AIRFLOW_PROVIDERS_SRC_DIR):
+    for root, _, filenames in os.walk(AIRFLOW_PROVIDERS_DIR):
         for filename in filenames:
             if filename == "provider.yaml":
                 provider_file = Path(root, filename)
-                provider_name = str(provider_file.parent.relative_to(AIRFLOW_PROVIDERS_SRC_DIR)).replace(
-                    os.sep, "."
-                )
+                if provider_file.relative_to(AIRFLOW_PROVIDERS_SRC_DIR):
+                    # TODO(potiuk) - remove this when we move all providers to the new structure
+                    provider_name = str(provider_file.parent.relative_to(AIRFLOW_PROVIDERS_SRC_DIR)).replace(
+                        os.sep, "."
+                    )
+                else:
+                    provider_name = str(provider_file.parent.relative_to(AIRFLOW_PROVIDERS_DIR)).replace(
+                        os.sep, "."
+                    )
                 provider_info = yaml.safe_load(provider_file.read_text())
                 if provider_info["state"] == "suspended":
                     suspended_paths.append(

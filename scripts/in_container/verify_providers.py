@@ -72,9 +72,10 @@ class VerifiedEntities(NamedTuple):
 
 class ProviderPackageDetails(NamedTuple):
     provider_package_id: str
+    provider_yaml_path: Path
     full_package_name: str
     pypi_package_name: str
-    source_provider_package_path: str
+    base_provider_package_path: str
     documentation_provider_package_path: str
     provider_description: str
     versions: list[str]

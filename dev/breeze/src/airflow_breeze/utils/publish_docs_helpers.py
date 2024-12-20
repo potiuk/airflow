@@ -17,10 +17,8 @@
 
 from __future__ import annotations
 
-import json
 import os
 from pathlib import Path
-from typing import Any
 
 from airflow_breeze.utils.path_utils import (
     AIRFLOW_PROVIDERS_NS_PACKAGE,
@@ -30,14 +28,9 @@ from airflow_breeze.utils.path_utils import (
 
 CONSOLE_WIDTH = 180
 
-
-PROVIDER_DATA_SCHEMA_PATH = AIRFLOW_SOURCES_ROOT / "airflow" / "provider.yaml.schema.json"
-
-
-def _load_schema() -> dict[str, Any]:
-    with open(PROVIDER_DATA_SCHEMA_PATH) as schema_file:
-        content = json.load(schema_file)
-    return content
+# TODO(potiuk): remove it when we move all providers to the new structure
+OLD_PROVIDER_DATA_SCHEMA_PATH = AIRFLOW_SOURCES_ROOT / "airflow" / "provider.yaml.schema.json"
+NEW_PROVIDER_DATA_SCHEMA_PATH = AIRFLOW_SOURCES_ROOT / "airflow" / "new_provider.yaml.schema.json"
 
 
 def _filepath_to_module(filepath: str):
@@ -47,11 +40,6 @@ def _filepath_to_module(filepath: str):
 
 def _filepath_to_system_tests(filepath: str):
     return str(SYSTEM_TESTS_PROVIDERS_ROOT / Path(filepath).relative_to(AIRFLOW_PROVIDERS_NS_PACKAGE))
-
-
-def get_provider_yaml_paths():
-    """Returns list of provider.yaml files"""
-    return sorted(AIRFLOW_PROVIDERS_NS_PACKAGE.glob("**/provider.yaml"))
 
 
 def pretty_format_path(path: str, start: str) -> str:

@@ -177,7 +177,7 @@ or dependencies that are necessary to enable the feature in editable build.
 
   .. START PROVIDER EXTRAS HERE
 
-airbyte, alibaba, amazon, apache.beam, apache.cassandra, apache.drill, apache.druid, apache.flink,
+alibaba, amazon, apache.beam, apache.cassandra, apache.drill, apache.druid, apache.flink,
 apache.hdfs, apache.hive, apache.iceberg, apache.impala, apache.kafka, apache.kylin, apache.livy,
 apache.pig, apache.pinot, apache.spark, apprise, arangodb, asana, atlassian.jira, celery, cloudant,
 cncf.kubernetes, cohere, common.compat, common.io, common.sql, databricks, datadog, dbt.cloud,

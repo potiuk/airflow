@@ -1,15 +1,4 @@
 {
-  "airbyte": {
-    "deps": [
-      "airbyte-api>=0.52.0",
-      "apache-airflow>=2.9.0"
-    ],
-    "devel-deps": [],
-    "plugins": [],
-    "cross-providers-deps": [],
-    "excluded-python-versions": [],
-    "state": "ready"
-  },
   "alibaba": {
     "deps": [
       "alibabacloud_adb20211201>=1.0.0",
