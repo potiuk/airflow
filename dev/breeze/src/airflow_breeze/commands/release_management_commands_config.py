@@ -52,6 +52,12 @@ RELEASE_PROVIDERS_COMMANDS: dict[str, str | list[str]] = {
     ],
 }
 
+RELEASE_AIRFLOW_TASK_SDK_COMMANDS: dict[str, str | list[str]] = {
+    "name": "Airflow Task SDK release commands",
+    "commands": [
+        "prepare-task-sdk-package",
+    ],
+}
 
 RELEASE_OTHER_COMMANDS: dict[str, str | list[str]] = {
     "name": "Other release commands",
@@ -80,6 +86,15 @@ RELEASE_MANAGEMENT_PARAMETERS: dict[str, list[dict[str, str | list[str]]]] = {
             "name": "Package flags",
             "options": [
                 "--version",
+            ],
+        }
+    ],
+    "breeze release-management prepare-task-sdk-package": [
+        {
+            "name": "Package flags",
+            "options": [
+                "--package-format",
+                "--use-local-hatch",
             ],
         }
     ],
@@ -134,6 +149,7 @@ RELEASE_MANAGEMENT_PARAMETERS: dict[str, list[dict[str, str | list[str]]]] = {
                 "--airflow-constraints-reference",
                 "--airflow-extras",
                 "--airflow-skip-constraints",
+                "--clean-airflow-installation",
                 "--install-airflow-with-constraints",
                 "--install-selected-providers",
                 "--package-format",
@@ -163,6 +179,7 @@ RELEASE_MANAGEMENT_PARAMETERS: dict[str, list[dict[str, str | list[str]]]] = {
                 "--airflow-constraints-reference",
                 "--airflow-extras",
                 "--airflow-skip-constraints",
+                "--clean-airflow-installation",
                 "--install-selected-providers",
                 "--package-format",
                 "--providers-constraints-location",
@@ -197,6 +214,7 @@ RELEASE_MANAGEMENT_PARAMETERS: dict[str, list[dict[str, str | list[str]]]] = {
                 "--skip-deleting-generated-files",
                 "--skip-tag-check",
                 "--version-suffix-for-pypi",
+                "--version-suffix-for-local",
                 "--package-list",
             ],
         }
@@ -244,7 +262,6 @@ RELEASE_MANAGEMENT_PARAMETERS: dict[str, list[dict[str, str | list[str]]]] = {
                 "--airflow-constraints-mode",
                 "--chicken-egg-providers",
                 "--github-repository",
-                "--image-tag",
                 "--python",
                 "--use-uv",
             ],
@@ -348,7 +365,6 @@ RELEASE_MANAGEMENT_PARAMETERS: dict[str, list[dict[str, str | list[str]]]] = {
                 "--version",
                 "--previous-version",
                 "--github-token",
-                "--sync-branch",
             ],
         }
     ],
