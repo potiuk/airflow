@@ -36,7 +36,10 @@ jobs:
           # `towncrier check` runs `git diff --name-only origin/main...`, which
           # needs a non-shallow clone.
           fetch-depth: 0
-
+      - name: "Setup python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.9
       - name: Check news fragment existence
         env:
           BASE_REF: ${{ github.base_ref }}

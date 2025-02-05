@@ -17,10 +17,11 @@
 # under the License.
 # /// script
 # dependencies = [
-#   "docutils>=0.20.0",
+#   "docutils>=0.21.2",
 #   "Pygments>=2.19.1",
 #   "Jinja2>=3.1.5"
 # ]
+# requires-python = "~3.9"
 # ///
 
 from __future__ import annotations
