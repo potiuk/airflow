@@ -495,6 +495,7 @@ class TestDmsDescribeReplicationConfigsOperator:
             run_id="test",
             run_type=DagRunType.MANUAL,
             state=DagRunState.RUNNING,
+            logical_date=execution_date,
         )
         ti = TaskInstance(task=op)
         ti.dag_run = dag_run
