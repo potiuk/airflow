@@ -76,7 +76,10 @@ class TestGetEksToken:
             os.chdir(providers_src_folder)
             # We are not using run_module because of https://github.com/pytest-dev/pytest/issues/9007
             if AIRFLOW_V_3_0_PLUS:
-                runpy.run_path("src/airflow/providers/amazon/aws/utils/eks_get_token.py", run_name="__main__")
+                runpy.run_path(
+                    "providers/amazon/src/airflow/providers/amazon/aws/utils/eks_get_token.py",
+                    run_name="__main__",
+                )
             else:
                 runpy.run_path("airflow/providers/amazon/aws/utils/eks_get_token.py", run_name="__main__")
         output = temp_stdout.getvalue()

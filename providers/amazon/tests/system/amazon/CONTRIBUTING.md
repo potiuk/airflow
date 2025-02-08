@@ -144,7 +144,7 @@ Some examples of when this should be used are:
 
 ## Location and Naming
 
-All system tests for the Amazon provider package should be in `tests/system/providers/amazon/aws/`.
+All system tests for the Amazon provider package should be in `amazon/tests/system/amazon/aws/`.
 If there is only one system test for a given service, the module name should be `example_{service}`.
 For example, `example_athena.py`.  If more than one module is required, the names should be
 descriptive.  For example, `example_redshift_cluster.py` and `example_redshift_sql.py`.
