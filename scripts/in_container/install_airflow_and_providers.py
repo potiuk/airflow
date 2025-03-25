@@ -230,9 +230,9 @@ def find_installation_spec(
         airflow_extras = f"[{airflow_extras}]"
     else:
         console.print("[bright_blue]No airflow extras specified.")
-    if use_airflow_version and (AIRFLOW_CORE_SOURCES_PATH / "airflow").exists():
+    if use_airflow_version and (AIRFLOW_CORE_SOURCES_PATH / "airflow" / "__main__.py").exists():
         console.print(
-            f"[red]The airflow source folder exists in {AIRFLOW_CORE_SOURCES_PATH}, but you are "
+            f"[red]The complete airflow source folder exists in {AIRFLOW_CORE_SOURCES_PATH}, but you are "
             f"removing it and installing airflow from {use_airflow_version}."
         )
         console.print("[red]This is not supported. Please use --mount-sources=remove flag in breeze.")
@@ -701,11 +701,15 @@ def install_airflow_and_providers(
         airflow_path = Path(spec.origin).parent
         # Make sure old Airflow will include providers including common subfolder allow to extend loading
         # providers from the installed separate source packages
-        airflow_providers_init_py = airflow_path / "providers" / "__init__.py"
-        airflow_providers_common_init_py = airflow_path / "providers" / "common" / "__init__.py"
-        init_content = '__path__ = __import__("pkgutil").extend_path(__path__, __name__) # type: ignore'
-        airflow_providers_init_py.write_text(init_content)
-        airflow_providers_common_init_py.write_text(init_content)
+        airflow_providers_path = airflow_path / "providers"
+        if airflow_providers_path.exists():
+            init_content = '__path__ = __import__("pkgutil").extend_path(__path__, __name__) # type: ignore'
+            airflow_providers_init_py = airflow_providers_path / "__init__.py"
+            airflow_providers_init_py.write_text(init_content)
+            airflow_providers_common_path = airflow_providers_path / "common"
+            if airflow_providers_common_path.exists():
+                airflow_providers_common_init_py = airflow_providers_common_path / "__init__.py"
+                airflow_providers_common_init_py.write_text(init_content)
 
     console.print("\n[green]Done!")
 
