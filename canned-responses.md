@@ -31,7 +31,7 @@ If not, we consider this report as invalid and not a security vulnerability. If 
 
 **More explanation**
 
-When you write Airflow DAG you use Python. And you can pass any input parameter to any of the underlying code. Airflow Hooks are a low-level
+When you write Airflow DAGs, you use Python and you can pass any input parameter to any of the underlying code. Airflow Hooks are a low-level
 interface to the integration Airflow exposes and in order to connect the low-level interface with the UI input, DAG authors need to write DAGs,
 tasks, operators to pass those values. DAG authors - according to the security model
 https://airflow.apache.org/docs/apache-airflow/stable/security/security_model.html can execute arbitrary code and connect with arbitrary
