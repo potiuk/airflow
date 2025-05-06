@@ -40,8 +40,7 @@ credentials to any of the systems that Airflow interacs with.
 In order to exploit the low level interface that you pointed out with the UI / parameter entry by the users, DAG needs to be written in a
 specific way. Similarly as you can pass "input parameter" to Bash operator - and execute arbitrary code - you can pass any other
 parameters to any other inputs of any other hooks, and it's up to the DAG author to make sure the parameters are passed in a safe way.
-The only reason (low) severity for CVE-2025-27018 has been issued was because we had an example explaining to the users that they can
-do it. Do you find such examples and suggestions in this case?
+The only reason CVE-2025-27018 was assigned a (low) severity was due to official documentation that suggested a pattern that could lead to misuse. If no such guidance or documentation exists in this case, there’s no vulnerability.
 
 # Immediate response for DOS issues triggered by Authenticated users
 
