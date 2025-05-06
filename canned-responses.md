@@ -27,8 +27,7 @@ according to our security policy: https://github.com/apache/airflow/security/pol
 
 Do you have any example where we _explicitly_ recommend using this feature in the way described—i.e., by passing table names or similar parameters from the UI directly into a hook?
 
-If not, we consider this report as invalid - as we do not treat it as a vulnerability. And if you care about improving security,
-you are free to make a public PR improving it. we will greatly appreciate it.
+If not, we consider this report as invalid and not a security vulnerability. If you are about improving the security posture of Airflow, feel free to create a public PR improving it. We will greatly appreciate it.
 
 **More explanation**
 
