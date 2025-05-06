@@ -25,7 +25,7 @@ according to our security policy: https://github.com/apache/airflow/security/pol
 
 # Parameter injection in low-level hook
 
-Do you see any example, of where we suggest people use this feature this way (I.e passing table from UI parameter directly to the hook ?
+Do you have any example where we _explicitly_ recommend using this feature in the way described—i.e., by passing table names or similar parameters from the UI directly into a hook?
 
 If not, we consider this report as invalid - as we do not treat it as a vulnerability. And if you care about improving security,
 you are free to make a public PR improving it. we will greatly appreciate it.
