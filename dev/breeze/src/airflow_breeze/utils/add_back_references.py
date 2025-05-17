@@ -85,15 +85,11 @@ def create_back_reference_html(back_ref_url: str, target_path: Path):
     version_match = re.compile(r"[0-9]+.[0-9]+.[0-9]+")
     target_path_as_posix = target_path.as_posix()
     if "/stable/" in target_path_as_posix:
-        try:
-            prefix, postfix = target_path_as_posix.split("/stable/")
-            base_folder = Path(prefix)
-            for folder in base_folder.iterdir():
-                if folder.is_dir() and version_match.match(folder.name):
-                    crete_redirect_html_if_not_exist(folder / postfix, content)
-        except Exception as e:
-            get_console().print(f"[red]Error while creating back reference for {target_path}: ", e)
-            return
+        prefix, postfix = target_path_as_posix.split("/stable/", maxsplit=1)
+        base_folder = Path(prefix)
+        for folder in base_folder.iterdir():
+            if folder.is_dir() and version_match.match(folder.name):
+                crete_redirect_html_if_not_exist(folder / postfix, content)
     else:
         crete_redirect_html_if_not_exist(Path(target_path), content)
 
