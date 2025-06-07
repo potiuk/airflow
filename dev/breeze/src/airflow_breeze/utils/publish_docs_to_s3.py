@@ -24,7 +24,6 @@ from functools import cached_property
 
 import awswrangler as wr
 import boto3
-import semver
 
 from airflow_breeze.utils.console import get_console
 from airflow_breeze.utils.parallel import check_async_run_results, run_with_pool
@@ -36,6 +35,15 @@ NON_SHORT_NAME_PACKAGES = ["docker-stack", "helm-chart", "apache-airflow"]
 PACKAGES_METADATA_EXCLUDE_NAMES = ["docker-stack", "apache-airflow-providers"]
 
 s3_client = boto3.client("s3")
+cloudfront_client = boto3.client("cloudfront")
+
+version_error = False
+
+
+def get_cloudfront_distribution(destination_location):
+    if "live-docs" in destination_location:
+        return "E26P75MP9PMULE"
+    return "E1X6Z2Q8V5W3K0"
 
 
 class S3DocsPublish:
@@ -267,12 +275,23 @@ class S3DocsPublish:
             Body=json.dumps(all_packages_infos, indent=2),
             ContentType="application/json",
         )
+        # We invalidate all CloudFront caches so that all uploaded files are available immediately
+        cloudfront_client.create_invalidation(
+            DistributionId=get_cloudfront_distribution(self.destination_location),
+            InvalidationBatch={
+                "Paths": {
+                    "Quantity": 1,
+                    "Items": ["/*"],
+                },
+                "CallerReference": str(int(os.environ.get("GITHUB_RUN_ID", 0))),
+            },
+        )
 
     def dump_docs_package_metadata(self, package_versions: dict[str, list[str]]):
         all_packages_infos = [
             {
                 "package-name": package_name,
-                "all-versions": (all_versions := self.get_all_versions(versions)),
+                "all-versions": (all_versions := self.get_all_versions(package_name, versions)),
                 "stable-version": all_versions[-1],
             }
             for package_name, versions in package_versions.items()
@@ -281,10 +300,21 @@ class S3DocsPublish:
         return all_packages_infos
 
     @staticmethod
-    def get_all_versions(versions: list[str]) -> list[str]:
+    def get_all_versions(package_name: str, versions: list[str]) -> list[str]:
+        from packaging.version import Version
+
+        good_versions = []
+        for version in versions:
+            try:
+                Version(version)
+                good_versions.append(version)
+            except ValueError as e:
+                get_console().print(f"[error]Invalid version {version}: {e}\n")
+                global version_error
+                version_error = True
         return sorted(
-            versions,
-            key=lambda d: semver.VersionInfo.parse(d),
+            good_versions,
+            key=lambda d: Version(d),
         )
 
     @staticmethod
