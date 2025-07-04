@@ -50,8 +50,8 @@ on:  # yamllint disable-line rule:truthy
       build-sboms:
         description: "Build SBOMs"
         required: false
-        default: 'false'
-        type: string
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -168,17 +168,22 @@ jobs:
           INCLUDE_COMMITS: ${{ startsWith(inputs.ref, 'providers') && 'true' || 'false' }}
         run: >
           breeze build-docs ${INCLUDE_DOCS} --docs-only
-      - name: "Build SBOMS"
+      - name: "Reinstall breeze from the current version"
+        run:
+          breeze setup self-upgrade --use-current-airflow-sources
+        working-directory: current-version
+      - name: "Build SBOMs using current version of Breeze"
         env:
           AIRFLOW_VERSION: ${{ needs.build-info.outputs.airflow-version }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PYTHON_VERSION: ${{ needs.build-info.outputs.default-python-version }}
           FORCE: "true"
         run: >
-          breeze sbom update-sbom-information --airflow-version ${AIRFLOW_VERSION}
+          breeze sbom update-sbom-information
+          --airflow-version ${AIRFLOW_VERSION} --remote-name origin
           --all-combinations --run-in-parallel --airflow-root-path "${GITHUB_WORKSPACE}"
-        if: inputs.build-sboms == 'true'
-
+        working-directory: current-version
+        if: inputs.build-sboms
       - name: Check disk space available
         run: df -H
       # Here we will create temp airflow-site dir to publish docs
@@ -186,6 +191,9 @@ jobs:
         run: |
           sudo mkdir -p /mnt/airflow-site && sudo chown -R "${USER}" /mnt/airflow-site
           echo "AIRFLOW_SITE_DIRECTORY=/mnt/airflow-site/" >> "$GITHUB_ENV"
+      - name: "Reinstall breeze from ${inputs.ref} version"
+        run:
+          breeze setup self-upgrade --use-current-airflow-sources
       - name: "Publish docs to /mnt/airflow-site directory"
         env:
           INCLUDE_DOCS: ${{ needs.build-info.outputs.include-docs }}
