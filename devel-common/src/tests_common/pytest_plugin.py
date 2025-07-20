@@ -216,8 +216,10 @@ IS_MOCK_PLUGINS_MANAGER = bool(
 )
 
 
-@pytest.fixture(scope="session", autouse=IS_MOCK_PLUGINS_MANAGER)
+@pytest.fixture(scope="session", autouse=True)
 def mock_plugins_manager_for_all_non_db_tests():
+    if not IS_MOCK_PLUGINS_MANAGER:
+        return
     from tests_common.test_utils.mock_plugins import mock_plugin_manager
 
     with mock_plugin_manager() as _fixture:
