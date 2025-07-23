@@ -60,6 +60,10 @@ on:  # yamllint disable-line rule:truthy
         required: false
         description: "Override the Airflow Version to use for the docs build"
         type: string
+      apply-commit:
+        required: false
+        description: "Optionally apply commit hash before building - to patch the docs"
+        type: string
 permissions:
   contents: read
 jobs:
@@ -162,6 +166,7 @@ jobs:
       INCLUDE_SUCCESS_OUTPUTS: false
       VERBOSE: "true"
       EXTRA_BUILD_OPTIONS: ${{ needs.build-info.outputs.extra-build-options }}
+      APPLY_COMMIT: ${{ inputs.apply-commit || '' }}
     steps:
       - name: "Cleanup repo"
         shell: bash
@@ -184,6 +189,14 @@ jobs:
           ref: ${{ inputs.ref }}
           fetch-depth: 0
           fetch-tags: true
+      - name: "Apply patch commit if provided"
+        run: |
+          if [[ "${APPLY_COMMIT}" != "" ]]; then
+            echo "Applying commit ${GITHUB_SHA} to the docs"
+            git apply "${APPLY_COMMIT}"
+          else
+            echo "No commit to apply provided, skipping."
+          fi
       - name: "Install Breeze from the ${{ inputs.ref }} reference"
         uses: ./.github/actions/breeze
         with:

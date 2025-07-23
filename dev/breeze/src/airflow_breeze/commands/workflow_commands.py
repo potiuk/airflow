@@ -89,6 +89,12 @@ def workflow_run():
     default=None,
     type=str,
 )
+@click.option(
+    "--apply-commit",
+    help="Apply commit before building the docs - for example to patch fixes to the docs.",
+    default=None,
+    type=str,
+)
 @argument_doc_packages
 def workflow_run_publish(
     ref: str,
@@ -99,6 +105,7 @@ def workflow_run_publish(
     skip_write_to_stable_folder: bool = False,
     airflow_version: str | None = None,
     airflow_base_version: str | None = None,
+    apply_commit: str | None = None,
 ):
     if os.environ.get("GITHUB_TOKEN", ""):
         get_console().print("\n[warning]Your authentication will use GITHUB_TOKEN environment variable.")
@@ -165,6 +172,7 @@ def workflow_run_publish(
         "exclude-docs": exclude_docs,
         "skip-write-to-stable-folder": skip_write_to_stable_folder,
         "build-sboms": "true" if "apache-airflow" in doc_packages else "false",
+        "apply-commit": apply_commit if apply_commit else "",
     }
 
     if airflow_version:
