@@ -19,11 +19,13 @@
   "requiredActionCount_other": "Wymagane akcje ({{count}})",
   "requiredActionState": "Stan wymaganej akcji",
   "response": {
+    "created": "Odpowiedź utworzona o ",
     "error": "Nie udało się uzyskać odpowiedzi",
     "optionsDescription": "Wybierz opcje dla tej instancji zadania",
     "optionsLabel": "Opcje",
     "received": "Odpowiedź otrzymana o ",
     "respond": "Odpowiedz",
+    "responded_by_user_name": "Odpowiedział (Nazwa użytkownika)",
     "success": "Odpowiedź dla {{taskId}} została pomyślnie wysłana",
     "title": "Instancja zadania wymagająca interwencji człowieka - {{taskId}}"
   },
