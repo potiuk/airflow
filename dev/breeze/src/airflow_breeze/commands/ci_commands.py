@@ -544,7 +544,7 @@ def upgrade(target_branch: str):
             f"This will lose not committed code.[/]\n\n"
             "NO will continue to get changes on top of current branch, QUIT will exit."
         )
-        if response := user_confirm("Do you want to continue") == Answer.YES:
+        if response := user_confirm("Do you want to switch") == Answer.YES:
             user_switched_to_target = True
             get_console().print(f"[info]Resetting to apache/airflow {target_branch}...[/]")
             if current_branch != target_branch:
