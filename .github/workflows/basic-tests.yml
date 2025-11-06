@@ -289,7 +289,11 @@ jobs:
       - name: "Autoupdate Octopin to bleeding edge"
         run: prek autoupdate --bleeding-edge --freeze --repo https://github.com/eclipse-csi/octopin
       - name: "Check if there are any changes in pre-commit hooks"
-        run: git diff --exit-code
+        # yamllint disable rule:line-length
+        run: >
+          git diff --exit-code ||
+          (echo -e "\n\033[0;31mThere are changes in pre-commit hooks after autoupdate.\033[0m\n\nRun \`breeze ci upgrade\` locally to fix it!.\n" && exit 1)
+        # yamllint enable rule:line-length
       - name: "Run automated upgrade for chart dependencies"
         run: >
           prek
@@ -321,11 +325,15 @@ jobs:
           UPGRADE_MYPY: "false"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: "Run automated upgrade for important versions minus uv(failing if needed)"
+        # yamllint disable rule:line-length
         run: >
           prek
           --all-files --show-diff-on-failure --color always --verbose
-          --hook-stage manual upgrade-important-versions
+          --hook-stage manual upgrade-important-versions ||
+          (echo -e "\n\033[0;31mThere are changes in pre-commit hooks after autoupdate.\033[0m\n\nRun \`breeze ci upgrade\` locally to fix it!.\n" && exit 1)
+          - name: "Run automated upgrade for chart dependencies"
         if: always()
+        # yamllint enable rule:line-length
         env:
           UPGRADE_UV: "false"
           UPGRADE_PIP: "true"
@@ -393,6 +401,7 @@ jobs:
         run: |
           breeze release-management generate-issue-content-core \
             --limit-pr-count 2 --previous-release 3.0.1 --current-release 3.0.2 --verbose
+
 
   test-airflow-standalone:
     timeout-minutes: 30

@@ -423,3 +423,246 @@ def get_workflow_info(github_context: str, github_context_input: StringIO):
         sys.exit(1)
     wi = workflow_info(context=context)
     wi.print_all_ga_outputs()
+
+
+@ci_group.command(
+    name="upgrade",
+    help="Perform important upgrade steps of the CI environment. And create a PR",
+)
+@click.option(
+    "--target-branch",
+    default="main",
+    help="Branch to work on and make PR against (e.g., 'main' or 'vX-Y-test')",
+    show_default=True,
+)
+@option_answer
+@option_verbose
+@option_dry_run
+def upgrade(target_branch: str):
+    # Validate target_branch pattern
+    target_branch_pattern = re.compile(r"^(main|v\d+-\d+-test)$")
+    if not target_branch_pattern.match(target_branch):
+        get_console().print(
+            f"[error]Invalid target branch: '{target_branch}'. "
+            "Must be 'main' or follow pattern 'vX-Y-test' where X and Y are numbers (e.g., 'v2-10-test').[/]"
+        )
+        sys.exit(1)
+
+    # Check if we're on the main branch
+    branch_result = run_command(
+        ["git", "rev-parse", "--abbrev-ref", "HEAD"], capture_output=True, text=True, check=False
+    )
+    current_branch = branch_result.stdout.strip() if branch_result.returncode == 0 else ""
+
+    # Store the original branch/commit to restore later if needed
+    original_branch = current_branch
+    original_commit_result = run_command(
+        ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=False
+    )
+    original_commit = original_commit_result.stdout.strip() if original_commit_result.returncode == 0 else ""
+
+    # Check if the working directory is clean
+    status_result = run_command(["git", "status", "--porcelain"], capture_output=True, text=True, check=False)
+    is_clean = status_result.returncode == 0 and not status_result.stdout.strip()
+
+    # Check if we have the apache remote
+    remote_result = run_command(["git", "remote", "-v"], capture_output=True, text=True, check=False)
+    has_apache_remote = "apache/airflow" in remote_result.stdout if remote_result.returncode == 0 else False
+
+    # Check if we're up to date with apache/airflow on the specified branch
+    if has_apache_remote:
+        # Fetch apache remote to get latest info
+        run_command(["git", "fetch", "apache"], check=False)
+
+        # Check if current HEAD matches apache/<branch>
+        local_head = run_command(["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=False)
+        remote_head = run_command(
+            ["git", "rev-parse", f"apache/{target_branch}"], capture_output=True, text=True, check=False
+        )
+
+        at_apache_branch = (
+            current_branch == target_branch
+            and local_head.returncode == 0
+            and remote_head.returncode == 0
+            and local_head.stdout.strip() == remote_head.stdout.strip()
+        )
+    else:
+        at_apache_branch = False
+        get_console().print("[warning]No apache remote found. Expected remote pointing to apache/airflow.[/]")
+
+    # Track whether user chose to reset to target branch
+    user_switched_to_target = False
+
+    if not at_apache_branch or not is_clean:
+        get_console().print()
+        if not at_apache_branch:
+            get_console().print(
+                f"[warning]You are not at the top of apache/airflow {target_branch} branch.[/]"
+            )
+            get_console().print(f"[info]Current branch: {current_branch}[/]")
+        if not is_clean:
+            get_console().print("[warning]Your repository has uncommitted changes.[/]")
+        get_console().print()
+
+        if (
+            response := user_confirm(
+                f"Do you want to reset to latest apache/airflow {target_branch} and clean up everything? "
+                "This will discard all local changes! No will continue anyway, quit will exit."
+            )
+            == Answer.YES
+        ):
+            user_switched_to_target = True
+            get_console().print(f"[info]Resetting to apache/airflow {target_branch}...[/]")
+            if current_branch != target_branch:
+                run_command(["git", "checkout", target_branch])
+            run_command(["git", "fetch", "apache"])
+            run_command(["git", "reset", "--hard", f"apache/{target_branch}"])
+            run_command(["git", "clean", "-fdx"])
+            get_console().print(
+                f"[success]Successfully reset to apache/airflow {target_branch} and cleaned repository.[/]"
+            )
+        elif response == Answer.QUIT:
+            get_console().print(
+                f"[error]Upgrade cancelled. Please ensure you are on apache/airflow {target_branch} with a clean repository.[/]"
+            )
+            sys.exit(1)
+
+    get_console().print("[info]Running upgrade of important CI environment.[/]")
+    run_command(["prek", "autoupdate", "--freeze"])
+    run_command(
+        [
+            "prek",
+            "autoupdate",
+            "--bleeding-edge",
+            "--freeze",
+            "--repo",
+            "https://github.com/Lucas-C/pre-commit-hooks",
+        ]
+    )
+    run_command(
+        [
+            "prek",
+            "autoupdate",
+            "--bleeding-edge",
+            "--freeze",
+            "--repo",
+            "https://github.com/eclipse-csi/octopin",
+        ]
+    )
+    run_command(
+        [
+            "prek",
+            "--all-files",
+            "--show-diff-on-failure",
+            "--color",
+            "always",
+            "--verbose",
+            "--hook-stage",
+            "manual",
+            "update-chart-dependencies",
+        ],
+        check=False,
+    )
+    run_command(
+        [
+            "prek",
+            "--all-files",
+            "--show-diff-on-failure",
+            "--color",
+            "always",
+            "--verbose",
+            "--hook-stage",
+            "manual",
+            "upgrade-important-versions",
+        ],
+        check=False,
+    )
+    res = run_command(["git", "diff", "--exit-code"], check=False)
+    if res.returncode == 0:
+        get_console().print("[success]No changes were made during the upgrade. Exiting[/]")
+        sys.exit(0)
+
+    if user_confirm("Do you want to create a PR with the upgrade changes?") == Answer.YES:
+        # Get current HEAD commit hash for unique branch name
+        head_result = run_command(
+            ["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True, check=False
+        )
+        commit_hash = head_result.stdout.strip() if head_result.returncode == 0 else "unknown"
+        branch_name = f"ci-upgrade-{commit_hash}"
+
+        # Check if branch already exists and delete it
+        branch_check = run_command(
+            ["git", "rev-parse", "--verify", branch_name], capture_output=True, check=False
+        )
+        if branch_check.returncode == 0:
+            get_console().print(f"[info]Branch {branch_name} already exists, deleting it...[/]")
+            run_command(["git", "branch", "-D", branch_name])
+
+        run_command(["git", "checkout", "-b", branch_name])
+        run_command(["git", "add", "."])
+        run_command(["git", "commit", "-m", "CI: Upgrade important CI environment"])
+
+        # Push the branch to origin
+        get_console().print(f"[info]Pushing branch {branch_name} to origin...[/]")
+        push_result = run_command(
+            ["git", "push", "-u", "origin", branch_name],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if push_result.returncode != 0:
+            get_console().print(
+                f"[error]Failed to push branch:\n{push_result.stdout}\n{push_result.stderr}[/]"
+            )
+            sys.exit(1)
+        get_console().print(f"[success]Branch {branch_name} pushed to origin.[/]")
+
+        # Create PR from the pushed branch
+        pr_result = run_command(
+            [
+                "gh",
+                "pr",
+                "create",
+                "--head",
+                branch_name,
+                "--base",
+                target_branch,
+                "--title",
+                f"[{target_branch}]: Upgrade important CI environment",
+                "--body",
+                "This PR upgrades important parts of the CI environment.",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if pr_result.returncode != 0:
+            get_console().print(f"[error]Failed to create PR:\n{pr_result.stdout}\n{pr_result.stderr}[/]")
+            sys.exit(1)
+        pr_url = pr_result.stdout.strip() if pr_result.returncode == 0 else ""
+        get_console().print(f"[success]PR created successfully: {pr_url}.[/]")
+
+        # Switch back to appropriate branch and delete the temporary branch
+        get_console().print(f"[info]Cleaning up temporary branch {branch_name}...[/]")
+        if user_switched_to_target:
+            # User explicitly chose to switch to target branch, so stay there
+            run_command(["git", "checkout", target_branch])
+        else:
+            # User didn't switch initially, restore to original branch/commit
+            if original_branch == "HEAD":
+                # Detached HEAD state, restore to original commit
+                get_console().print(f"[info]Restoring to original commit {original_commit[:8]}...[/]")
+                run_command(["git", "checkout", original_commit])
+            else:
+                # Named branch, restore to it
+                get_console().print(f"[info]Restoring to original branch {original_branch}...[/]")
+                run_command(["git", "checkout", original_branch])
+
+        # Delete local branch
+        run_command(["git", "branch", "-D", branch_name])
+        get_console().print(f"[success]Local branch {branch_name} deleted.[/]")
+
+        # Delete remote branch from origin
+        get_console().print(f"[info]Deleting branch {branch_name} from origin...[/]")
+        run_command(["git", "push", "origin", "--delete", branch_name], check=False)
+        get_console().print(f"[success]Remote branch {branch_name} deleted from origin.[/]")
