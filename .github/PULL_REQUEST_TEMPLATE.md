@@ -1,23 +1,4 @@
 <!--
- Licensed to the Apache Software Foundation (ASF) under one
- or more contributor license agreements.  See the NOTICE file
- distributed with this work for additional information
- regarding copyright ownership.  The ASF licenses this file
- to you under the Apache License, Version 2.0 (the
- "License"); you may not use this file except in compliance
- with the License.  You may obtain a copy of the License at
-
-   http://www.apache.org/licenses/LICENSE-2.0
-
- Unless required by applicable law or agreed to in writing,
- software distributed under the License is distributed on an
- "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- KIND, either express or implied.  See the License for the
- specific language governing permissions and limitations
- under the License.
- -->
-
-<!--
 Thank you for contributing! Please make sure that your code changes
 are covered with tests. And in case of new features or big changes
 remember to adjust the documentation.
@@ -31,11 +12,19 @@ related: #ISSUE
 
 How to write a good git commit message:
 http://chris.beams.io/posts/git-commit/
+
+If generative AI tooling has been used in the process of authoring this patch, please include the
+phrase: 'Generated-by: ' followed by the name of the tool and its version.
+If no, write 'No'.
+Please refer to the [ASF Generative Tooling Guidance](https://www.apache.org/legal/generative-tooling.html) for details.
 -->
 
 
+## Was generative AI tooling used to co-author this patch?
 
-<!-- Please keep an empty line above the dashes. -->
+- [ ] Yes (please specify the tool and version below)
+
+
 ---
 **^ Add meaningful description above**
 Read the **[Pull Request Guidelines](https://github.com/apache/airflow/blob/main/contributing-docs/05_pull_requests.rst#pull-request-guidelines)** for more information.
