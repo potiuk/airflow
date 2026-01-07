@@ -54,6 +54,9 @@ repos:
           ^docs/README\.md$|
           ^\.github/.*\.md$|
           ^airflow-core/tests/system/README\.md$
+        exclude:
+            (?x)
+            .github/PULL_REQUEST_TEMPLATE\.md$
         args:
           - "--maxlevel"
           - "2"

@@ -33,9 +33,18 @@ How to write a good git commit message:
 http://chris.beams.io/posts/git-commit/
 -->
 
+# Was generative AI tooling used to co-author this patch?
 
+<!--
+If generative AI tooling has been used in the process of authoring this patch, please include the
+phrase: 'Generated-by: ' followed by the name of the tool and its version.
+If no, write 'No'.
+Please refer to the [ASF Generative Tooling Guidance](https://www.apache.org/legal/generative-tooling.html) for details.
+
+-->
 
 <!-- Please keep an empty line above the dashes. -->
+
 ---
 **^ Add meaningful description above**
 Read the **[Pull Request Guidelines](https://github.com/apache/airflow/blob/main/contributing-docs/05_pull_requests.rst#pull-request-guidelines)** for more information.
