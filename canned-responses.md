@@ -173,10 +173,10 @@ use, given to users with no high privileges, can be considered a vulnerability).
 
 We addressed it in Airflow 2.7.0 by:
 
-  * disabling test connection by default
-  * informing our users that enabling test connection is dangerous and you should only do it when you know about
-    all those capabilities you implicitly give those users who have connection editing capabilities
-  * clarifying in our security model
+* disabling test connection by default
+* informing our users that enabling test connection is dangerous and you should only do it when you know about
+  all those capabilities you implicitly give those users who have connection editing capabilities
+* clarifying in our security model
 
 We explained in release notes and communication when we released
 Airflow 2.7 that users who have connection editing capabilities are highly privileged and that they
@@ -189,7 +189,7 @@ for all the systems that Airflow interacts with, so giving access to that functi
 Please make sure to read it again and digest it before responding to that email and
 sending yet-another-similar-report.
 
-You can read more about it in Airflow's security model https://airflow.apache.org/docs/apache-airflow/stable/security/security_model.html
+You can read more about it in Airflow's security model https://airflow.apache.org/docs/apache-airflow/stable/security/security_model.html#connection-configuration-users
 
 Connection editing users have such capabilities. Our users are aware of that, and this is intended. We are not planning to do anything about it.
 
