@@ -22,7 +22,15 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 
-from ray.job_submission import JobSubmissionClient
+from airflow.exceptions import AirflowOptionalProviderFeatureException
+
+try:
+    from ray.job_submission import JobSubmissionClient
+except ImportError:
+    raise AirflowOptionalProviderFeatureException(
+        "Ray is not installed. Please install the 'ray' extra to use this feature."
+    )
+
 
 from airflow.providers.google.common.hooks.base_google import GoogleBaseHook
 

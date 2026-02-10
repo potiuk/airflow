@@ -25,7 +25,15 @@ from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
 from google.api_core.exceptions import NotFound
-from ray.dashboard.modules.job.common import JobStatus
+
+from airflow.exceptions import AirflowOptionalProviderFeatureException
+
+try:
+    from ray.dashboard.modules.job.common import JobStatus
+except ImportError:
+    raise AirflowOptionalProviderFeatureException(
+        "Ray is not installed. Please install the 'ray' extra to use this feature."
+    )
 
 from airflow.providers.common.compat.sdk import AirflowNotFoundException, AirflowTaskTimeout
 from airflow.providers.google.cloud.hooks.ray import RayJobHook
