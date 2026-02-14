@@ -331,4 +331,5 @@ jobs:
       - name: "Test airflow core issue generation automatically"
         run: |
           ./scripts/ci/testing/run_breeze_command_with_retries.sh \
-          release-management generate-issue-content-core --limit-pr-count 25 --latest --verbose
+          release-management generate-issue-content-core --limit-pr-count 25 \
+          --previous-release 2.11.0 --verbose
