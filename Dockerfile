@@ -53,9 +53,9 @@ ARG PYTHON_BASE_IMAGE="python:3.9-slim-bookworm"
 # You can swap comments between those two args to test pip from the main version
 # When you attempt to test if the version of `pip` from specified branch works for our builds
 # Also use `force pip` label on your PR to swap all places we use `uv` to `pip`
-ARG AIRFLOW_PIP_VERSION=25.1.1
+ARG AIRFLOW_PIP_VERSION=25.3
 # ARG AIRFLOW_PIP_VERSION="git+https://github.com/pypa/pip.git@main"
-ARG AIRFLOW_UV_VERSION=0.7.3
+ARG AIRFLOW_UV_VERSION=0.9.11
 ARG AIRFLOW_USE_UV="false"
 ARG UV_HTTP_TIMEOUT="300"
 ARG AIRFLOW_IMAGE_REPOSITORY="https://github.com/apache/airflow"
@@ -85,7 +85,7 @@ FROM scratch as scripts
 
 ##############################################################################################
 # Please DO NOT modify the inlined scripts manually. The content of those files will be
-# replaced by pre-commit automatically from the "scripts/docker/" folder.
+# replaced by prek automatically from the "scripts/docker/" folder.
 # This is done in order to avoid problems with caching and file permissions and in order to
 # make the PROD Dockerfile standalone
 ##############################################################################################

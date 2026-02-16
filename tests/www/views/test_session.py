@@ -29,7 +29,7 @@ pytestmark = pytest.mark.db_test
 
 
 def get_session_cookie(client):
-    return next((cookie for cookie in client.cookie_jar if cookie.name == "session"), None)
+    return client.get_cookie("session")
 
 
 def test_session_cookie_created_on_login(user_client):
@@ -66,12 +66,13 @@ def test_invalid_session_backend_option():
         with conf_vars({("webserver", "session_backend"): "invalid_value_for_session_backend"}):
             return app.create_app(testing=True)
 
-    expected_exc_regex = (
-        "^Unrecognized session backend specified in web_server_session_backend: "
-        r"'invalid_value_for_session_backend'\. Please set this to .+\.$"
-    )
-    with pytest.raises(AirflowConfigException, match=expected_exc_regex):
-        poorly_configured_app_factory()
+    with conf_vars({("fab", "auth_rate_limited"): "False"}):
+        expected_exc_regex = (
+            "^Unrecognized session backend specified in web_server_session_backend: "
+            r"'invalid_value_for_session_backend'\. Please set this to .+\.$"
+        )
+        with pytest.raises(AirflowConfigException, match=expected_exc_regex):
+            poorly_configured_app_factory()
 
 
 def test_session_id_rotates(app, user_client):
@@ -97,7 +98,7 @@ def test_check_active_user(app, user_client):
     user.active = False
     resp = user_client.get("/home")
     assert resp.status_code == 302
-    assert "/login/?next=http%3A%2F%2Flocalhost%2Fhome" in resp.headers.get("Location")
+    assert "/login/?next=http://localhost/home" in resp.headers.get("Location")
 
 
 def test_check_deactivated_user_redirected_to_login(app, user_client):

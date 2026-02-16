@@ -35,7 +35,7 @@ from functools import partial
 from multiprocessing import Pool
 from pathlib import Path
 from subprocess import DEVNULL
-from typing import IO, TYPE_CHECKING, Any, Literal, NamedTuple, Union
+from typing import IO, TYPE_CHECKING, Any, Literal, NamedTuple
 
 import click
 from rich.progress import Progress
@@ -136,7 +136,6 @@ from airflow_breeze.utils.parallel import (
     run_with_pool,
 )
 from airflow_breeze.utils.path_utils import (
-    AIRFLOW_PROVIDERS_DIR,
     AIRFLOW_SOURCES_ROOT,
     CONSTRAINTS_CACHE_DIR,
     DIST_DIR,
@@ -233,15 +232,15 @@ class VersionedFile(NamedTuple):
     file_name: str
 
 
-AIRFLOW_PIP_VERSION = "25.1.1"
-AIRFLOW_UV_VERSION = "0.7.3"
+AIRFLOW_PIP_VERSION = "25.3"
+AIRFLOW_UV_VERSION = "0.9.11"
 AIRFLOW_USE_UV = False
 # TODO: automate these as well
 WHEEL_VERSION = "0.44.0"
 GITPYTHON_VERSION = "3.1.43"
 RICH_VERSION = "13.9.4"
 NODE_VERSION = "22.2.0"
-PRE_COMMIT_VERSION = "3.5.0"
+PREK_VERSION = "0.3.2"
 HATCH_VERSION = "1.13.0"
 PYYAML_VERSION = "6.0.2"
 
@@ -249,7 +248,7 @@ AIRFLOW_BUILD_DOCKERFILE = f"""
 FROM python:{DEFAULT_PYTHON_MAJOR_MINOR_VERSION}-slim-{ALLOWED_DEBIAN_VERSIONS[0]}
 RUN apt-get update && apt-get install -y --no-install-recommends git
 RUN pip install --root-user-action ignore pip=={AIRFLOW_PIP_VERSION} hatch=={HATCH_VERSION} pyyaml=={PYYAML_VERSION}\
- gitpython=={GITPYTHON_VERSION} rich=={RICH_VERSION} pre-commit=={PRE_COMMIT_VERSION}
+ gitpython=={GITPYTHON_VERSION} rich=={RICH_VERSION} prek=={PREK_VERSION}
 COPY . /opt/airflow
 """
 
@@ -871,43 +870,23 @@ def prepare_provider_packages(
             get_console().print()
             with ci_group(f"Preparing provider package [special]{provider_id}"):
                 get_console().print()
-                new_provider_root_dir = AIRFLOW_PROVIDERS_DIR.joinpath(*provider_id.split("."))
-                if (new_provider_root_dir / "provider.yaml").exists():
-                    get_console().print(
-                        f"[info]Provider {provider_id} is a new-style provider. "
-                        f"Skipping package generation as it is not needed for new-style providers."
-                    )
-                    cleanup_build_remnants(new_provider_root_dir)
-                    build_provider_package(
-                        provider_id=provider_id,
-                        package_format=package_format,
-                        target_provider_root_sources_path=new_provider_root_dir,
-                    )
-                    move_built_packages_and_cleanup(
-                        new_provider_root_dir,
-                        DIST_DIR,
-                        skip_cleanup=skip_deleting_generated_files,
-                        delete_only_build_and_dist_folders=True,
-                    )
-                else:
-                    # TODO(potiuk) - remove this once all providers are new-style
-                    target_provider_root_sources_path = copy_provider_sources_to_target(provider_id)
-                    generate_build_files(
-                        provider_id=provider_id,
-                        version_suffix=package_version,
-                        target_provider_root_sources_path=target_provider_root_sources_path,
-                    )
-                    cleanup_build_remnants(target_provider_root_sources_path)
-                    build_provider_package(
-                        provider_id=provider_id,
-                        package_format=package_format,
-                        target_provider_root_sources_path=target_provider_root_sources_path,
-                    )
-                    move_built_packages_and_cleanup(
-                        target_provider_root_sources_path,
-                        DIST_DIR,
-                        skip_cleanup=skip_deleting_generated_files,
-                    )
+                target_provider_root_sources_path = copy_provider_sources_to_target(provider_id)
+                generate_build_files(
+                    provider_id=provider_id,
+                    version_suffix=package_version,
+                    target_provider_root_sources_path=target_provider_root_sources_path,
+                )
+                cleanup_build_remnants(target_provider_root_sources_path)
+                build_provider_package(
+                    provider_id=provider_id,
+                    package_format=package_format,
+                    target_provider_root_sources_path=target_provider_root_sources_path,
+                )
+                move_built_packages_and_cleanup(
+                    target_provider_root_sources_path,
+                    DIST_DIR,
+                    skip_cleanup=skip_deleting_generated_files,
+                )
         except PrepareReleasePackageTagExistException:
             skipped_as_already_released_packages.append(provider_id)
         except PrepareReleasePackageWrongSetupException:
@@ -2788,7 +2767,7 @@ FILES_TO_COPY_TO_CLIENT_REPO = [
     ".openapi-generator-ignore",
     "CHANGELOG.md",
     "README.md",
-    "INSTALL",
+    "INSTALLING.md",
     "LICENSE",
     "NOTICE",
     "pyproject.toml",
@@ -3340,7 +3319,7 @@ def generate_issue_content(
 ):
     from github import Github, Issue, PullRequest, UnknownObjectException
 
-    PullRequestOrIssue = Union[PullRequest.PullRequest, Issue.Issue]
+    PullRequestOrIssue = PullRequest.PullRequest | Issue.Issue
     verbose = get_verbose()
 
     previous = previous_release

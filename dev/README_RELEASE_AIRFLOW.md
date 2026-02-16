@@ -252,7 +252,7 @@ The Release Candidate artifacts we vote upon should be the exact ones we vote ag
 
 - Set your version in `airflow/__init__.py`, `airflow/api_connexion/openapi/v1.yaml` (without the RC tag).
 - Run `git commit` without a message to update versions in `docs`.
-- Add supported Airflow version to `./scripts/ci/pre_commit/supported_versions.py` and let pre-commit do the job again.
+- Add supported Airflow version to `./scripts/ci/pre_commit/supported_versions.py` and let prek do the job again.
 - Replace the versions in `README.md` about installation and verify that installation instructions work fine.
 - Add entry for default python version to `BASE_PROVIDERS_COMPATIBILITY_CHECKS` in `src/airflow_breeze/global_constants.py`
   with the new Airflow version, and empty exclusion for providers. This list should be updated later when providers
@@ -675,7 +675,7 @@ Optionally it can be followed with constraints
 
 ```shell script
 pip install apache-airflow==<VERSION>rc<X> \
-  --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-<VERSION>/constraints-3.9.txt"`
+  --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-<VERSION>/constraints-3.10.txt"`
 ```
 
 Note that the constraints contain python version that you are installing it with.
@@ -687,7 +687,7 @@ There is also an easy way of installation with Breeze if you have the latest sou
 Running the following command will use tmux inside breeze, create `admin` user and run Webserver & Scheduler:
 
 ```shell script
-breeze start-airflow --use-airflow-version 2.7.0rc1 --python 3.9 --backend postgres
+breeze start-airflow --use-airflow-version 2.7.0rc1 --python 3.10 --backend postgres
 ```
 
 You can also choose different executors and extras to install when you are installing airflow this way. For
@@ -695,7 +695,7 @@ example in order to run Airflow with CeleryExecutor and install celery, google a
 Airflow 2.7.0, you need to have celery provider installed to run Airflow with CeleryExecutor) you can run:
 
 ```shell script
-breeze start-airflow --use-airflow-version 2.7.0rc1 --python 3.9 --backend postgres \
+breeze start-airflow --use-airflow-version 2.7.0rc1 --python 3.10 --backend postgres \
   --executor CeleryExecutor --airflow-extras "celery,google,amazon"
 ```
 
@@ -831,7 +831,7 @@ the older branches, you should set the "skip" field to true.
 ## Verify production images
 
 ```shell script
-for PYTHON in 3.9 3.10 3.11 3.12
+for PYTHON in 3.10 3.11 3.12
 do
     docker pull apache/airflow:${VERSION}-python${PYTHON}
     breeze prod-image verify --image-name apache/airflow:${VERSION}-python${PYTHON}
@@ -1027,7 +1027,7 @@ EOF
 
 This includes:
 
-- Modify `./scripts/ci/pre_commit/supported_versions.py` and let pre-commit do the job.
+- Modify `./scripts/ci/pre_commit/supported_versions.py` and let prek do the job.
 - For major/minor release, update version in `airflow/__init__.py`, `docs/docker-stack/` and `airflow/api_connexion/openapi/v1.yaml` to the next likely minor version release.
 - Sync `RELEASE_NOTES.rst` (including deleting relevant `newsfragments`) and `README.md` changes.
 - Updating `Dockerfile` with the new version.

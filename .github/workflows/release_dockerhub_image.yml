@@ -56,7 +56,7 @@ jobs:
         shell: bash
         run: docker run -v "${GITHUB_WORKSPACE}:/workspace" -u 0:0 bash -c "rm -rf /workspace/*"
       - name: "Checkout ${{ github.ref }} ( ${{ github.sha }} )"
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
         with:
           persist-credentials: false
       - name: "Cleanup docker"
@@ -95,7 +95,7 @@ jobs:
         shell: bash
         run: docker run -v "${GITHUB_WORKSPACE}:/workspace" -u 0:0 bash -c "rm -rf /workspace/*"
       - name: "Checkout ${{ github.ref }} ( ${{ github.sha }} )"
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
         with:
           persist-credentials: false
       - name: "Cleanup docker"
@@ -145,16 +145,13 @@ jobs:
       - name: "Create airflow_cache builder"
         run: docker buildx create --name airflow_cache
       - name: "Prepare chicken-eggs provider packages"
-        # In case of provider packages which use latest dev0 version of providers, we should prepare them
-        # from the source code, not from the PyPI because they have apache-airflow>=X.Y.Z dependency
-        # And when we prepare them from sources they will have apache-airflow>=X.Y.Z.dev0
         shell: bash
         env:
           CHICKEN_EGG_PROVIDERS: ${{ needs.build-info.outputs.chicken-egg-providers }}
         run: >
           breeze release-management prepare-provider-packages
           --package-format wheel
-          --version-suffix-for-pypi dev0 ${CHICKEN_EGG_PROVIDERS}
+          ${CHICKEN_EGG_PROVIDERS}
         if: needs.build-info.outputs.chicken-egg-providers != ''
       - name: "Copy dist packages to docker-context files"
         shell: bash

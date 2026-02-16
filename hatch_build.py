@@ -43,7 +43,7 @@ PRE_INSTALLED_PROVIDERS = [
     "common.compat",
     "common.io",
     "common.sql",
-    "fab>=1.0.2",
+    "fab>=1.5.4,<2.0",
     "ftp",
     "http",
     "imap",
@@ -156,10 +156,12 @@ CORE_EXTRAS: dict[str, list[str]] = {
 
 DOC_EXTRAS: dict[str, list[str]] = {
     "doc": [
-        "astroid>=3; python_version >= '3.9'",
+        # Astroid 4 released 5 Oct 2025 breaks autoapi https://github.com/apache/airflow/issues/56420
+        "astroid>=3,<4; python_version >= '3.9'",
         "checksumdir>=1.2.0; python_version >= '3.9'",
         "click>=8.1.8; python_version >= '3.9'",
         "docutils>=0.21; python_version >= '3.9'",
+        "setuptools!=82.0.0",  # until https://github.com/sphinx-contrib/redoc/issues/53 is resolved
         "sphinx-airflow-theme>=0.1.0; python_version >= '3.9'",
         "sphinx-argparse>=0.4.0; python_version >= '3.9'",
         "sphinx-autoapi>=3; python_version >= '3.9'",
@@ -201,7 +203,9 @@ DEVEL_EXTRAS: dict[str, list[str]] = {
         "pipdeptree>=2.13.1",
         "pygithub>=2.1.1",
         "restructuredtext-lint>=1.4.0",
-        "rich-click>=1.7.0",
+        # Temporarily pinned to fix for changes in https://github.com/ewels/rich-click/releases/tag/v1.9.0
+        # Example failure without it: https://github.com/apache/airflow/actions/runs/17770084165/job/50505281673?pr=55725
+        "rich-click>=1.7.1,<1.9.0",
         "semver>=3.0.2",
         "towncrier>=23.11.0",
         "twine>=4.0.2",
@@ -227,8 +231,8 @@ DEVEL_EXTRAS: dict[str, list[str]] = {
         "types-aiofiles",
         "types-certifi",
         "types-croniter",
-        "types-docutils",
-        "types-paramiko",
+        "types-docutils<0.22.0",
+        "types-paramiko<4.0.0",
         "types-protobuf",
         "types-python-dateutil",
         "types-python-slugify",
@@ -245,7 +249,7 @@ DEVEL_EXTRAS: dict[str, list[str]] = {
     ],
     "devel-static-checks": [
         "black>=23.12.0",
-        "pre-commit>=3.5.0",
+        "prek>=0.3.2",
         "ruff==0.5.5",
         "yamllint>=1.33.0",
     ],
@@ -266,9 +270,10 @@ DEVEL_EXTRAS: dict[str, list[str]] = {
         "pytest-rerunfailures>=13.0",
         "pytest-timeouts>=1.2.1",
         "pytest-xdist>=3.5.0",
-        "pytest>=8.2,<9",
+        "pytest>=8.2,<8.3",
         "requests_mock>=1.11.0",
-        "time-machine>=2.13.0",
+        # Time machine is only used in tests and version 3 introduced breaking changes
+        "time-machine>=2.19.0,<3",
         "wheel>=0.42.0",
     ],
     "devel": [
@@ -406,8 +411,7 @@ DEPRECATED_EXTRAS: dict[str, list[str]] = {
 DEPENDENCIES = [
     # Alembic is important to handle our migrations in predictable and performant way. It is developed
     # together with SQLAlchemy. Our experience with Alembic is that it very stable in minor version
-    # The 1.13.0 of alembic marked some migration code as SQLAlchemy 2+ only so we limit it to 1.13.1
-    "alembic>=1.13.1, <2.0",
+    "alembic>=1.14.0, <2.0",
     "argcomplete>=1.10",
     "asgiref>=2.3.0",
     "attrs>=22.1.0",
@@ -416,13 +420,7 @@ DEPENDENCIES = [
     "blinker>=1.6.2",
     "colorlog>=6.8.2",
     "configupdater>=3.1.1",
-    # `airflow/www/extensions/init_views` imports `connexion.decorators.validation.RequestBodyValidator`
-    # connexion v3 has refactored the entire module to middleware, see: /spec-first/connexion/issues/1525
-    # Specifically, RequestBodyValidator was removed in: /spec-first/connexion/pull/1595
-    # The usage was added in #30596, seemingly only to override and improve the default error message.
-    # Either revert that change or find another way, preferably without using connexion internals.
-    # This limit can be removed after https://github.com/apache/airflow/issues/35234 is fixed
-    "connexion[flask]>=2.14.2,<3.0",
+    "connexion>=2.15.1,<3.0",
     "cron-descriptor>=1.2.24",
     "croniter>=2.0.2",
     "cryptography>=41.0.0",
@@ -432,19 +430,14 @@ DEPENDENCIES = [
     # description on PyPI for more details: https://pypi.org/project/eval-type-backport/
     # see https://github.com/pydantic/pydantic/issues/10958
     'eval-type-backport>=0.2.0;python_version<"3.10"',
-    "flask-caching>=2.0.0",
-    # Flask-Session 0.6 add new arguments into the SqlAlchemySessionInterface constructor as well as
-    # all parameters now are mandatory which make AirflowDatabaseSessionInterface incompatible with this version.
-    "flask-session>=0.4.0,<0.6",
-    "flask-wtf>=1.1.0",
-    # Flask 2.3 is scheduled to introduce a number of deprecation removals - some of them might be breaking
-    # for our dependencies - notably `_app_ctx_stack` and `_request_ctx_stack` removals.
-    # We should remove the limitation after 2.3 is released and our dependencies are updated to handle it
-    "flask>=2.2.1,<2.3",
+    "flask-caching>=2.3.1",
+    "flask-session>=0.8.0",
+    "flask-wtf>=1.2.2",
+    "flask>=2.3.3,<4",
     "fsspec>=2023.10.0",
     'google-re2>=1.0;python_version<"3.12"',
     'google-re2>=1.1;python_version>="3.12"',
-    "gunicorn>=20.1.0",
+    "gunicorn>=21.2.0",
     "httpx>=0.25.0",
     'importlib_metadata>=6.5;python_version<"3.12"',
     # Importib_resources 6.2.0-6.3.1 break pytest_rewrite
@@ -469,7 +462,7 @@ DEPENDENCIES = [
     'pendulum>=3.0.0,<4.0;python_version>="3.12"',
     "pluggy>=1.5.0",
     "psutil>=5.8.0",
-    "pygments>=2.0.1",
+    "pygments>=2.16.9",
     "pyjwt>=2.0.0",
     "python-daemon>=3.0.0",
     "python-dateutil>=2.7.0",
@@ -477,7 +470,7 @@ DEPENDENCIES = [
     "python-slugify>=5.0",
     # Requests 3 if it will be released, will be heavily breaking.
     "requests>=2.27.0,<3",
-    "requests-toolbelt>=0.4.0",
+    "requests-toolbelt>=1.0.0",
     "rfc3339-validator>=0.1.4",
     "rich-argparse>=1.0.0",
     "rich>=12.4.4",
@@ -491,12 +484,9 @@ DEPENDENCIES = [
     "tabulate>=0.7.5",
     "tenacity>=8.0.0,!=8.2.0",
     "termcolor>=1.1.0",
-    # Universal Pathlib 0.2.4 adds extra validation for Paths and our integration with local file paths
-    # Does not work with it Tracked in https://github.com/fsspec/universal_pathlib/issues/276
-    "universal-pathlib>=0.2.2,!=0.2.4",
-    # Werkzug 3 breaks Flask-Login 0.6.2, also connexion needs to be updated to >= 3.0
-    # we should remove this limitation when FAB supports Flask 2.3 and we migrate connexion to 3+
-    "werkzeug>=2.0,<3",
+    # https://github.com/apache/airflow/issues/56369 , rework universal-pathlib usage
+    "universal-pathlib>=0.2.6,<0.3.0",
+    "werkzeug>=3.1.3,<4",
 ]
 
 
@@ -586,6 +576,7 @@ def get_provider_requirement(provider_spec: str) -> str:
 
         current_airflow_version = Version(airflow_version_match.group(1))
         provider_id, min_version = provider_spec.split(">=")
+        min_version = min_version.split(",")[0]
         provider_version = Version(min_version)
         if provider_version.is_prerelease and not current_airflow_version.is_prerelease:
             # strip pre-release version from the pre-installed provider's version when we are preparing
@@ -665,7 +656,7 @@ class CustomBuild(BuilderInterface[BuilderConfig, PluginManager]):
         self.write_git_version()
         work_dir = Path(self.root)
         commands = [
-            ["pre-commit run --hook-stage manual compile-www-assets --all-files"],
+            ["prek run --hook-stage manual compile-www-assets --all-files"],
         ]
         for cmd in commands:
             run(cmd, cwd=work_dir.as_posix(), check=True, shell=True)
@@ -756,6 +747,14 @@ def get_python_exclusion(excluded_python_versions: list[str]):
             exclusion += f'{separator}python_version != "{version}"'
             separator = " and "
     return exclusion
+
+
+def get_provider_exclusion(normalized_provider_name: str):
+    if normalized_provider_name == "celery":
+        # This version of celery provider breaks Airflow 2.11.1
+        # https://github.com/apache/airflow/issues/61766#issuecomment-3902002494
+        return "!=3.16.0"
+    return ""
 
 
 def skip_for_editable_build(excluded_python_versions: list[str]) -> bool:
@@ -897,10 +896,12 @@ class CustomBuildHook(BuildHookInterface[BuilderConfig]):
 
             if version == "standard":
                 # add providers instead of dependencies for wheel builds
-                self.optional_dependencies[normalized_extra_name] = [
+                dependency = (
                     f"apache-airflow-providers-{normalized_extra_name}"
+                    f"{get_provider_exclusion(normalized_extra_name)}"
                     f"{get_python_exclusion(excluded_python_versions)}"
-                ]
+                )
+                self.optional_dependencies[normalized_extra_name] = [dependency]
             else:
                 # for editable packages - add regular + devel dependencies retrieved from provider.yaml
                 # but convert the provider dependencies to apache-airflow[extras]

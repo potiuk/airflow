@@ -166,7 +166,7 @@ class TestSecurity:
         )
 
         response = client.post(f"/users/delete/{user_to_delete.id}", follow_redirects=True)
-        check_content_in_response("Deleted Row", response)
+        check_content_in_response("User confirmation needed", response)
         check_content_not_in_response(user_to_delete.username, response)
         assert bool(self.security_manager.get_user_by_id(user_to_delete.id)) is False
 
@@ -191,7 +191,7 @@ class TestResetUserSessions:
         self.interface = self.app.session_interface
         self.model = self.interface.sql_session_model
         self.serializer = self.interface.serializer
-        self.db = self.interface.db
+        self.db = self.interface.client
         self.db.session.query(self.model).delete()
         self.db.session.commit()
         self.db.session.flush()
@@ -212,7 +212,7 @@ class TestResetUserSessions:
         self.db.session.add(
             self.model(
                 session_id=session_id,
-                data=self.serializer.dumps({"_user_id": user_id}),
+                data=self.serializer.encode({"_user_id": user_id}),
                 expiry=datetime.now() + time_delta,
             )
         )

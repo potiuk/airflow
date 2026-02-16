@@ -33,7 +33,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Collection, Iterable, Iterator
 
 from deprecated import deprecated
-from sqlalchemy import and_, delete, func, not_, or_, select, text, update
+from sqlalchemy import and_, delete, desc, func, inspect, not_, or_, select, text, update
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import lazyload, load_only, make_transient, selectinload
 from sqlalchemy.sql import expression
@@ -940,7 +940,16 @@ class SchedulerJobRunner(BaseJobRunner, LoggingMixin):
                     )
                     executor.send_callback(request)
                 else:
-                    ti.handle_failure(error=msg, session=session)
+                    try:
+                        ti.handle_failure(error=msg, session=session)
+                    except RecursionError as error:
+                        self.log.error(
+                            "Impossible to handle failure for a task instance %s due to %s.",
+                            ti,
+                            error,
+                        )
+                        session.rollback()
+                        continue
 
         return len(event_buffer)
 
@@ -1801,10 +1810,7 @@ class SchedulerJobRunner(BaseJobRunner, LoggingMixin):
             try:
                 for ti in stuck_tis:
                     executor.revoke_task(ti=ti)
-                    self._maybe_requeue_stuck_ti(
-                        ti=ti,
-                        session=session,
-                    )
+                    self._maybe_requeue_stuck_ti(ti=ti, session=session, executor=executor)
             except NotImplementedError:
                 # this block only gets entered if the executor has not implemented `revoke_task`.
                 # in which case, we try the fallback logic
@@ -1824,7 +1830,7 @@ class SchedulerJobRunner(BaseJobRunner, LoggingMixin):
             )
         )
 
-    def _maybe_requeue_stuck_ti(self, *, ti, session):
+    def _maybe_requeue_stuck_ti(self, *, ti, session, executor):
         """
         Requeue task if it has not been attempted too many times.
 
@@ -1849,14 +1855,37 @@ class SchedulerJobRunner(BaseJobRunner, LoggingMixin):
                 "Task requeue attempts exceeded max; marking failed. task_instance=%s",
                 ti,
             )
+            msg = f"Task was requeued more than {self._num_stuck_queued_retries} times and will be failed."
             session.add(
                 Log(
                     event="stuck in queued tries exceeded",
                     task_instance=ti.key,
-                    extra=f"Task was requeued more than {self._num_stuck_queued_retries} times and will be failed.",
+                    extra=msg,
                 )
             )
-            ti.set_state(TaskInstanceState.FAILED, session=session)
+            try:
+                dag = self.dagbag.get_dag(ti.dag_id)
+                task = dag.get_task(ti.task_id)
+            except Exception:
+                self.log.warning(
+                    "The DAG or task could not be found. If a failure callback exists, it will not be run.",
+                    exc_info=True,
+                )
+            else:
+                ti.task = task
+                if task.on_failure_callback:
+                    if inspect(ti).detached:
+                        ti = session.merge(ti)
+                    request = TaskCallbackRequest(
+                        full_filepath=ti.dag_model.fileloc,
+                        simple_task_instance=SimpleTaskInstance.from_ti(ti),
+                        msg=msg,
+                        processor_subdir=ti.dag_model.processor_subdir,
+                    )
+                    executor.send_callback(request)
+            finally:
+                ti.set_state(TaskInstanceState.FAILED, session=session)
+                executor.fail(ti.key)
 
     @deprecated(
         reason="This is backcompat layer for older executor interface. Should be removed in 3.0",
@@ -1899,18 +1928,33 @@ class SchedulerJobRunner(BaseJobRunner, LoggingMixin):
 
         We can then use this information to determine whether to reschedule a task or fail it.
         """
-        return (
-            session.query(Log)
+        last_running_time = session.scalar(
+            select(Log.dttm)
             .where(
-                Log.task_id == ti.task_id,
                 Log.dag_id == ti.dag_id,
+                Log.task_id == ti.task_id,
                 Log.run_id == ti.run_id,
                 Log.map_index == ti.map_index,
                 Log.try_number == ti.try_number,
-                Log.event == TASK_STUCK_IN_QUEUED_RESCHEDULE_EVENT,
+                Log.event == "running",
             )
-            .count()
+            .order_by(desc(Log.dttm))
+            .limit(1)
         )
+
+        query = session.query(Log).where(
+            Log.task_id == ti.task_id,
+            Log.dag_id == ti.dag_id,
+            Log.run_id == ti.run_id,
+            Log.map_index == ti.map_index,
+            Log.try_number == ti.try_number,
+            Log.event == TASK_STUCK_IN_QUEUED_RESCHEDULE_EVENT,
+        )
+
+        if last_running_time:
+            query = query.where(Log.dttm > last_running_time)
+
+        return query.count()
 
     @provide_session
     def _emit_pool_metrics(self, session: Session = NEW_SESSION) -> None:

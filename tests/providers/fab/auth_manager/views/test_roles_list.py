@@ -21,7 +21,8 @@ import pytest
 
 from airflow.security import permissions
 from airflow.www import app as application
-from tests.test_utils.api_connexion_utils import create_user, delete_user
+from tests.providers.fab.auth_manager.api_endpoints.api_connexion_utils import create_user, delete_user
+from tests.providers.fab.auth_manager.views import _assert_dataset_deprecation_warning
 from tests.test_utils.compat import AIRFLOW_V_2_9_PLUS
 from tests.test_utils.www import client_with_login
 
@@ -62,6 +63,8 @@ def client_roles_reader(fab_app, user_roles_reader):
 
 @pytest.mark.db_test
 class TestRolesListView:
-    def test_role_model_view(self, client_roles_reader):
+    def test_role_model_view(self, client_roles_reader, recwarn):
         resp = client_roles_reader.get("/roles/list/", follow_redirects=True)
+
+        _assert_dataset_deprecation_warning(recwarn)
         assert resp.status_code == 200

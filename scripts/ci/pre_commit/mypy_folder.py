@@ -33,7 +33,7 @@ initialize_breeze_precommit(__name__, __file__)
 
 ALLOWED_FOLDERS = [
     "airflow",
-    "providers/src/airflow/providers",
+    "airflow/providers/fab",
     "dev",
     "docs",
 ]
@@ -48,13 +48,9 @@ if mypy_folder not in ALLOWED_FOLDERS:
     sys.exit(1)
 
 arguments = [mypy_folder]
-if mypy_folder == "providers/src/airflow/providers":
-    arguments.extend(
-        [
-            "providers/tests",
-            "--namespace-packages",
-        ]
-    )
+script = "/opt/airflow/scripts/in_container/run_mypy.sh"
+if mypy_folder == "airflow/providers/fab":
+    script = "/opt/airflow/scripts/in_container/run_mypy_providers.sh"
 
 if mypy_folder == "airflow":
     arguments.extend(
@@ -63,11 +59,11 @@ if mypy_folder == "airflow":
         ]
     )
 
-print("Running /opt/airflow/scripts/in_container/run_mypy.sh with arguments: ", arguments)
+print(f"Running {script} with arguments: {arguments}")
 
 res = run_command_via_breeze_shell(
     [
-        "/opt/airflow/scripts/in_container/run_mypy.sh",
+        script,
         *arguments,
     ],
     warn_image_upgrade_needed=True,
@@ -86,7 +82,7 @@ if res.returncode != 0:
             "[yellow]You are running mypy with the folders selected. If you want to "
             "reproduce it locally, you need to run the following command:\n"
         )
-        console.print("pre-commit run --hook-stage manual mypy-<folder> --all-files\n")
+        console.print("prek run --hook-stage manual mypy-<folder> --all-files\n")
     upgrading = os.environ.get("UPGRADE_TO_NEWER_DEPENDENCIES", "false") != "false"
     if upgrading:
         console.print(
@@ -97,6 +93,6 @@ if res.returncode != 0:
         "[yellow]If you see strange stacktraces above, and can't reproduce it, please run"
         " this command and try again:\n"
     )
-    console.print(f"breeze ci-image build --python 3.9{flag}\n")
+    console.print(f"breeze ci-image build --python 3.10{flag}\n")
     console.print("[yellow]You can also run `breeze down --cleanup-mypy-cache` to clean up the cache used.\n")
 sys.exit(res.returncode)

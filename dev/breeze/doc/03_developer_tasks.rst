@@ -39,7 +39,7 @@ as follows:
 
 .. code-block:: bash
 
-    breeze --python 3.9 --backend mysql --mysql-version 8.0
+    breeze --python 3.10 --backend mysql --mysql-version 8.0
 
 .. note:: Note for Windows WSL2 users
 
@@ -55,7 +55,7 @@ Try adding ``--builder=default`` to your command. For example:
 
 .. code-block:: bash
 
-    breeze --builder=default --python 3.9 --backend mysql --mysql-version 8.0
+    breeze --builder=default --python 3.10 --backend mysql --mysql-version 8.0
 
 The choices you make are persisted in the ``./.build/`` cache directory so that next time when you use the
 ``breeze`` script, it could use the values that were used previously. This way you do not have to specify
@@ -224,7 +224,7 @@ as the short hand operator.
 Running static checks
 ---------------------
 
-You can run static checks via Breeze. You can also run them via pre-commit command but with auto-completion
+You can run static checks via Breeze. You can also run them via prek command but with auto-completion
 Breeze makes it easier to run selective static checks. If you press <TAB> after the static-check and if
 you have auto-complete setup you should see auto-completable list of all checks available.
 
@@ -239,13 +239,13 @@ will run mypy check for currently staged files inside ``airflow/`` excluding pro
 Selecting files to run static checks on
 ---------------------------------------
 
-Pre-commits run by default on staged changes that you have locally changed. It will run it on all the
+Prek hooks run by default on staged changes that you have locally changed. It will run it on all the
 files you run ``git add`` on and it will ignore any changes that you have modified but not staged.
 If you want to run it on all your modified files you should add them with ``git add`` command.
 
 With ``--all-files`` you can run static checks on all files in the repository. This is useful when you
 want to be sure they will not fail in CI, or when you just rebased your changes and want to
-re-run latest pre-commits on your changes, but it can take a long time (few minutes) to wait for the result.
+re-run latest prek hooks on your changes, but it can take a long time (few minutes) to wait for the result.
 
 .. code-block:: bash
 
@@ -328,7 +328,7 @@ When you are starting airflow from local sources, www asset compilation is autom
 
 .. code-block:: bash
 
-    breeze --python 3.9 --backend mysql start-airflow
+    breeze --python 3.10 --backend mysql start-airflow
 
 You can also use it to start different executor.
 
@@ -341,7 +341,7 @@ You can also use it to start any released version of Airflow from ``PyPI`` with 
 
 .. code-block:: bash
 
-    breeze start-airflow --python 3.9 --backend mysql --use-airflow-version 2.7.0
+    breeze start-airflow --python 3.10 --backend mysql --use-airflow-version 2.7.0
 
 When you are installing version from PyPI, it's also possible to specify extras that should be used
 when installing Airflow - you can provide several extras separated by coma - for example to install

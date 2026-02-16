@@ -30,7 +30,7 @@ from rich.console import Console
 
 AIRFLOW_SOURCES_ROOT_PATH = Path(__file__).parents[3].resolve()
 AIRFLOW_BREEZE_SOURCES_PATH = AIRFLOW_SOURCES_ROOT_PATH / "dev" / "breeze"
-DEFAULT_PYTHON_MAJOR_MINOR_VERSION = "3.9"
+DEFAULT_PYTHON_MAJOR_MINOR_VERSION = "3.10"
 
 console = Console(width=400, color_system="standard")
 
@@ -113,7 +113,7 @@ def initialize_breeze_precommit(name: str, file: str):
         )
 
     if os.environ.get("SKIP_BREEZE_PRE_COMMITS"):
-        console.print("[yellow]Skipping breeze pre-commit as SKIP_BREEZE_PRE_COMMIT is set")
+        console.print("[yellow]Skipping breeze prek as SKIP_BREEZE_PRE_COMMIT is set")
         sys.exit(0)
     if shutil.which("breeze") is None:
         console.print(
@@ -135,7 +135,7 @@ def run_command_via_breeze_shell(
     backend: str = "none",
     executor: str = "SequentialExecutor",
     extra_env: dict[str, str] | None = None,
-    project_name: str = "pre-commit",
+    project_name: str = "prek",
     skip_environment_initialization: bool = True,
     warn_image_upgrade_needed: bool = False,
     **other_popen_kwargs,
@@ -223,12 +223,12 @@ def validate_cmd_result(cmd_result, include_ci_env_check=False):
                 "\n[yellow]If you see strange stacktraces above, especially about missing imports "
                 "run this command:[/]\n"
             )
-            console.print("[magenta]breeze ci-image build --python 3.9 --upgrade-to-newer-dependencies[/]\n")
+            console.print("[magenta]breeze ci-image build --python 3.10 --upgrade-to-newer-dependencies[/]\n")
 
     elif cmd_result.returncode != 0:
         console.print(
             "[warning]\nIf you see strange stacktraces above, "
-            "run `breeze ci-image build --python 3.9` and try again."
+            "run `breeze ci-image build --python 3.10` and try again."
         )
     sys.exit(cmd_result.returncode)
 

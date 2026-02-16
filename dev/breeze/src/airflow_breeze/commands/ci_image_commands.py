@@ -22,10 +22,11 @@ import signal
 import subprocess
 import sys
 import time
+from collections.abc import Callable
 from copy import deepcopy
 from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 import click
 
@@ -1130,6 +1131,7 @@ def import_mount_cache(
     get_console().print("[info]Built temporary image and copied cache[/]")
     get_console().print("[info]Removing temporary image[/]")
     run_command(["docker", "rmi", "airflow-import-cache"], check=True)
+    run_command(["docker", "system", "prune", "-f"], check=True)
     get_console().print("[info]Built temporary image and copying context[/]")
     get_console().print(f"[info]Removing context: {context}[/]")
     context_cache_file.unlink()
