@@ -50,7 +50,7 @@ Thanks for keeping Airflow secure.
 We have discussed similar concerns in the past and consider such generic reports concerning those
 kinds of issues invalid. Unless you can provide a specific scenario where it can be exploited and
 Confidentiality, Availability, and Integrity of Airflow deployment are breached in a meaningful way,
-we consider that as a regular issue, We encourage people like you to submit fixes via PR using our
+we consider that as a regular issue, we encourage people like you to submit fixes via PR using our
 regular GitHub contribution process. That's an easy way to become one of more than 2700
 contributors, and we encourage directly fixing such issues in PRs without even creating GitHub Issues for them.
 
