@@ -4,6 +4,7 @@
 
 - [Confirmation of receiving the report](#confirmation-of-receiving-the-report)
 - [Immediate response for DOS issues triggered by Authenticated users](#immediate-response-for-dos-issues-triggered-by-authenticated-users)
+- [When someone claims Dag Author provided "user input" is dangerous](#when-someone-claims-dag-author-provided-user-input-is-dangerous)
 - [Image scan results](#image-scan-results)
 - [Immediate response for self-XSS issues triggered by Authenticated users](#immediate-response-for-self-xss-issues-triggered-by-authenticated-users)
 - [Positive Assessment response](#positive-assessment-response)
@@ -29,7 +30,7 @@ Thanks for keeping Airflow secure.
 We have discussed similar concerns in the past and consider such generic reports concerning those
 kinds of issues invalid. Unless you can provide a specific scenario where it can be exploited and
 Confidentiality, Availability, and Integrity of Airflow deployment are breached in a meaningful way,
-we consider that as a regular issue, and we encourage people like you to submit fixes via PR using our
+we consider that as a regular issue, We encourage people like you to submit fixes via PR using our
 regular GitHub contribution process. That's an easy way to become one of more than 2700
 contributors, and we encourage directly fixing such issues in PRs without even creating GitHub Issues for them.
 
@@ -39,6 +40,52 @@ done is to crash a particular process or make an internal Denial Of Service, but
 as CVE-worthy and generally advisory-worthy.
 
 More details about it in our policy: https://github.com/apache/airflow/security/policy#is-this-really-a-security-vulnerability-
+
+# When someone claims Dag Author provided "user input" is dangerous
+
+You need to first look at the Security Model of ours and read about Dag Author capabilities:
+https://airflow.apache.org/docs/apache-airflow/stable/security/security_model.html.
+
+In your report a form of "User controlled input" is used, but you need to explain
+**which** User Role controls it, otherwise it ambiguous and does not take the model into account.
+
+Dag Author can generally modify any code and execute any python code on the worker and have access to
+all credentials. So they already can do a lot, and they are also responsible to make sure that they
+are not passing any "other user roles" controlled input to a function that is potentially dangerous.
+
+With great powers come great responsibilities and Dag Authors have both.
+
+If other user roles can (without Dag Author deliberately passing such input) can pass such input,
+then we could consider it as a potential vulnerability. Dag Author can make a lot of harm if they
+are not careful programmers, and this is clearly explained in our model, including some remediation
+(such as mandatory code reviews) that can be put in place by the Deployment Manager to mitigate such risks.
+
+Unless you provide a POC where such scenario happens, and Dag Author does not have to deliberately pass
+other user input to a dangerous function - we consider this report as invalid.
+
+Often, such a dangerous function could be improved by sanitizing things by default, but there are many
+dangerous functions - even in the standard library that assume that whoever uses them will do it with
+care and we cannot sanitize all of them by default. So if you think anything from your report indicates
+that there is a possible security improvement, we encourage you to follow the regular contribution
+process and submit a PR with the improvement you think is needed or open a public issue about it - like
+more than 3600 other contributors. If your goal is to improve the security of Airflow, this is the most
+pragmatic way to do it.
+
+Thank you for your understanding - our security team is volunteer-driven and and the "behind the
+scenes" process is only taking care of issues that cannot be public  and that are "real" security issues,
+otherwise we might not be able to focus on real issues with appropriate priority.
+
+Your help in making Airflow secure is highly appreciated, but in this case (unless you can provide a
+POC proving otherwise) - this is not a security issue and public / usual way of contribution is the
+only appropriate way of moving forward with it.
+
+If you are using any AI tooling to generate such a report, we strongly recommend you feed it with our model
+and this response and improve the way how it reports such issues. Ideally such AI tool should not only
+understand that this is not a security issue, but also it should be able to prepare a PR for you that
+you could review and submit after reviewing and making sure that you cannot provide a POC that
+goes beyond the security model we have - which we heartily recommend you to do if you want to
+improve security of Airflow.
+
 
 # Image scan results
 
