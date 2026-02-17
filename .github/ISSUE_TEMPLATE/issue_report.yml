@@ -71,11 +71,11 @@ body:
         [Severity Rating blog post](https://security.apache.org/blog/severityrating)
       multiple: false
       options:
-        - "Critical"
-        - "Important"
-        - "Moderate"
-        - "Low"
         - "Unknown"
+        - "Low"
+        - "Moderate"
+        - "Important"
+        - "Critical"
     validations:
       required: true
   - type: input
