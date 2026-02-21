@@ -70,6 +70,11 @@ class TestOpensearchTaskHandler:
     JSON_LOG_ID = f"{DAG_ID}-{TASK_ID}-{OpensearchTaskHandler._clean_date(LOGICAL_DATE)}-1"
     FILENAME_TEMPLATE = "{try_number}.log"
 
+    @pytest.fixture(autouse=True)
+    def _use_historical_filename_templates(self):
+        with conf_vars({("core", "use_historical_filename_templates"): "True"}):
+            yield
+
     @pytest.fixture
     def ti(self, create_task_instance, create_log_template):
         if AIRFLOW_V_3_0_PLUS:
