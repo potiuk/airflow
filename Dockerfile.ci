@@ -1511,6 +1511,24 @@ function start_api_server_with_examples(){
     echo "${COLOR_BLUE}Airflow api-server started${COLOR_RESET}"
 }
 
+function setup_codespaces() {
+    if [[ ${CODESPACES:=} != "true" ]]; then
+        return
+    fi
+    echo
+    echo "${COLOR_BLUE}Setting up Codespaces environment${COLOR_RESET}"
+    echo
+    # Cap Docker API version to avoid "client version is too new" error
+    # when the Codespaces host daemon supports a lower API version
+    export DOCKER_API_VERSION=1.43
+    echo "  * ${COLOR_BLUE}Docker API version:${COLOR_RESET} pinned to ${DOCKER_API_VERSION}"
+    # Install breeze for development convenience
+    uv tool install -e ./dev/breeze --force
+    echo "  * ${COLOR_BLUE}Breeze:${COLOR_RESET} installed via uv tool"
+    echo
+}
+
+setup_codespaces
 handle_mount_sources
 determine_airflow_to_use
 environment_initialization
