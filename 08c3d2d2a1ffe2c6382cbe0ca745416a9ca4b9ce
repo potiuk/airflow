@@ -1,0 +1,23 @@
+AGENTS.md
+  e2af095a81780b37 26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.6",
+  "base_commit_sha": "08c3d2d2a1ffe2c6382cbe0ca745416a9ca4b9ce",
+  "prompts": {
+    "e2af095a81780b37": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5f33d042-d17d-4000-8ebb-7d3c844723ac",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Jarek Potiuk <jarek@potiuk.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 0,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
