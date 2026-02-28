@@ -6,7 +6,11 @@
         "../../scripts/ci/docker-compose/devcontainer-mysql.yml"
     ],
     "features": {
-        "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+        "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+            "version": "24.0",
+            "dockerDashComposeVersion": "v2",
+            "installDockerBuildx": true
+        }
     },
     "settings": {
         "terminal.integrated.defaultProfile.linux": "bash"
