@@ -3,8 +3,8 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Confirmation of receiving the report](#confirmation-of-receiving-the-report)
-- [Parameter injection in low-level hook](#parameter-injection-in-low-level-hook)
-- [Immediate response for DOS issues triggered by Authenticated users](#immediate-response-for-dos-issues-triggered-by-authenticated-users)
+- [Parameter injection to operator or hook](#parameter-injection-to-operator-or-hook)
+- [DOS issues triggered by Authenticated users](#dos-issues-triggered-by-authenticated-users)
 - [When someone claims Dag Author provided "user input" is dangerous](#when-someone-claims-dag-author-provided-user-input-is-dangerous)
 - [Image scan results](#image-scan-results)
 - [Immediate response for self-XSS issues triggered by Authenticated users](#immediate-response-for-self-xss-issues-triggered-by-authenticated-users)
@@ -24,26 +24,21 @@ Thanks for the report and for trying to make Airflow secure.
 We registered the issue. This is our initial response, you can expect that we will come back to you with the result of our assessment
 according to our security policy: https://github.com/apache/airflow/security/policy#what-happens-after-you-report-the-issue-
 
-# Parameter injection in low-level hook
+# Parameter injection to operator or hook
 
-Do you have any example where we _explicitly_ recommend using this feature in the way described—i.e., by passing table names or similar parameters from the UI directly into a hook?
+Thanks for making Airflow secure, but this is not a vulnerability.
+Do you have an example where we explicitly recommend using this feature in the described way—i.e., by passing table names or similar parameters from the UI directly into a hook?
 
-If not, we consider this report as invalid and not a security vulnerability. If you are about improving the security posture of Airflow, feel free to create a public PR improving it. We will greatly appreciate it.
+If not, we consider this report invalid and not a security vulnerability. If you are interested in improving Airflow's security posture, feel free to create a public PR to do so. We will greatly appreciate it.
 
-**More explanation**
+More explanation:
 
-When you write Airflow DAGs, you use Python and you can pass any input parameter to any of the underlying code. Airflow Hooks are a low-level
-interface to the integration Airflow exposes and in order to connect the low-level interface with the UI input, DAG authors need to write DAGs,
-tasks, operators to pass those values. DAG authors - according to the security model
-https://airflow.apache.org/docs/apache-airflow/stable/security/security_model.html can execute arbitrary code and connect with arbitrary
-credentials to any of the systems that Airflow interacs with.
+When you write Airflow DAGs, you use Python and can pass any input parameter to any of the underlying code. Airflow Hooks are a low-level interface to the integration Airflow exposes. To connect this low-level interface with UI input, DAG authors must write DAGs, tasks, or operators to pass those values. DAG authors - according to the security model https://airflow.apache.org/docs/apache-airflow/stable/security/security_model.html#capabilities-of-dag-authors  can execute arbitrary code and connect with arbitrary credentials to any system Airflow interacts with. As programmers, they are responsible for not passing untrusted user input to the operators.
 
-In order to exploit the low level interface that you pointed out with the UI / parameter entry by the users, DAG needs to be written in a
-specific way. Similarly as you can pass "input parameter" to Bash operator - and execute arbitrary code - you can pass any other
-parameters to any other inputs of any other hooks, and it's up to the DAG author to make sure the parameters are passed in a safe way.
-The only reason CVE-2025-27018 was assigned a (low) severity was due to official documentation that suggested a pattern that could lead to misuse. If no such guidance or documentation exists in this case, there’s no vulnerability.
+To exploit the parameter entry by users, the DAG needs to be written in a specific way and pass the user input to the operator, which requires explicit Dag Author action. Similarly, just as you can pass an "input parameter" to the Bash operator and execute arbitrary code, you can pass any other parameters to any other hook inputs. It is up to the DAG author to ensure parameters are passed safely. The only reason some past cves (like `CVE-2025-50213` or `CVE-2025-27018` were assigned a (low) severity was due to official documentation that suggested a pattern that could lead to misuse. I
+f no such guidance or documentation exists in the case you described, there’s no vulnerability (but we stil encourage you to submit the PR as a regular contribution process).
 
-# Immediate response for DOS issues triggered by Authenticated users
+# DOS issues triggered by Authenticated users
 
 Thanks for keeping Airflow secure.
 
