@@ -110,3 +110,82 @@ def confirm_action(
     elif answer == Answer.QUIT:
         sys.exit(1)
     return False
+
+
+class TriageAction(Enum):
+    DRAFT = "d"
+    CLOSE = "c"
+    READY = "r"
+    SKIP = "s"
+    QUIT = "q"
+
+
+def prompt_triage_action(
+    message: str,
+    default: TriageAction = TriageAction.DRAFT,
+    timeout: float | None = None,
+) -> TriageAction:
+    """Prompt the user to choose a triage action for a flagged PR.
+
+    :param message: message to display (should describe the PR)
+    :param default: default action returned on Enter or timeout
+    :param timeout: seconds before auto-selecting default (None = no timeout)
+    """
+    from inputimeout import TimeoutOccurred, inputimeout
+
+    _LABELS = {
+        TriageAction.DRAFT: "draft",
+        TriageAction.CLOSE: "close",
+        TriageAction.READY: "ready",
+        TriageAction.SKIP: "skip",
+        TriageAction.QUIT: "quit",
+    }
+    while True:
+        try:
+            force = get_forced_answer() or os.environ.get("ANSWER")
+            if force:
+                print(f"Forced answer for '{message}': {force}")
+                upper = force.upper()
+                if upper in ("Y", "YES"):
+                    return default
+                if upper in ("N", "NO"):
+                    return TriageAction.SKIP
+                if upper == "Q":
+                    return TriageAction.QUIT
+                for action in TriageAction:
+                    if upper == action.value.upper():
+                        return action
+                return default
+
+            # Build choice display: uppercase the default letter
+            choices = []
+            for action in TriageAction:
+                letter = action.value
+                label = _LABELS[action]
+                if action == default:
+                    choices.append(f"[{letter.upper()}]{label}")
+                else:
+                    choices.append(f"[{letter}]{label}")
+            choices_str = " / ".join(choices)
+
+            prompt_text = f"\n{message}\n{choices_str}"
+            if timeout:
+                prompt_text += (
+                    f"  (auto-select {_LABELS[default]} in {timeout}s"
+                    f" — add `--answer {default.value}` to skip)"
+                )
+            prompt_text += ": "
+
+            user_input = inputimeout(prompt=prompt_text, timeout=timeout)
+            if user_input == "":
+                return default
+
+            upper = user_input.strip().upper()
+            for action in TriageAction:
+                if upper == action.value.upper():
+                    return action
+            print(f"Invalid input '{user_input}'. Please enter one of: d/c/r/s/q")
+        except TimeoutOccurred:
+            return default
+        except KeyboardInterrupt:
+            return TriageAction.QUIT
