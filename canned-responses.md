@@ -3,7 +3,7 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Confirmation of receiving the report](#confirmation-of-receiving-the-report)
-- [Invalid automated report](invalid-automated-report)
+- [Invalid automated report](#invalid-automated-report)
 - [Not an issue, please submit it](#not-an-issue-please-submit-it)
 - [Parameter injection to operator or hook](#parameter-injection-to-operator-or-hook)
 - [DOS issues triggered by Authenticated users](#dos-issues-triggered-by-authenticated-users)
@@ -33,7 +33,7 @@ This is an invalid, automated report. that has no substance,
 The behaviour you explain is by design and described in our Security Model https://airflow.apache.org/docs/apache-airflow/stable/security/security_model.html
 The sent report does not follow our security policy (https://github.com/apache/airflow/security/policy), does not refer to our security model, and does not explain how it is violated.
 
-Please elaborate and refer to our security model, explaining how it is violated. We will be happy to discuss this with the person who verified and reviewed the reports. Please read and understand the model and the policy we have (according to our policy). 
+Please elaborate and refer to our security model, explaining how it is violated. We will be happy to discuss this with the person who verified and reviewed the reports. Please read and understand the model and the policy we have (according to our policy).
 
 Multiple such reports will result in blacklisting those accounts. We will immediately close reports from blacklisted entities without reading them.
 
