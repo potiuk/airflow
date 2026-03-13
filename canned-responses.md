@@ -3,6 +3,7 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Confirmation of receiving the report](#confirmation-of-receiving-the-report)
+- [Not an issue, please submit it](#not-an-issue-please-submit-it)
 - [Parameter injection to operator or hook](#parameter-injection-to-operator-or-hook)
 - [DOS issues triggered by Authenticated users](#dos-issues-triggered-by-authenticated-users)
 - [When someone claims Dag Author provided "user input" is dangerous](#when-someone-claims-dag-author-provided-user-input-is-dangerous)
@@ -30,7 +31,7 @@ Thanks for attempts to make Airflow secure, but this report is invalid.
 
 This is not a security vulnerability, this does not violate Confidentiality, Availability and Integrity and the Role of the user involved already has more capabilities than what you describe.
 
-Our security team deals only with security issues. 
+Our security team deals only with security issues.
 
 But the approach you suggested is a good idea to improve Airflow in general. Feel absolutely free to submit it via regular contribution pattern; PRs as usual are most welcome.
 
