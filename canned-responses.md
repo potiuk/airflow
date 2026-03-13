@@ -24,6 +24,17 @@ Thanks for the report and for trying to make Airflow secure.
 We registered the issue. This is our initial response, you can expect that we will come back to you with the result of our assessment
 according to our security policy: https://github.com/apache/airflow/security/policy#what-happens-after-you-report-the-issue-
 
+# Not an issue, please submit it
+
+Thanks for attempts to make Airflow secure, but this report is invalid.
+
+This is not a security vulnerability, this does not violate Confidentiality, Availability and Integrity and the Role of the user involved already has more capabilities than what you describe.
+
+Our security team deals only with security issues. 
+
+But the approach you suggested is a good idea to improve Airflow in general. Feel absolutely free to submit it via regular contribution pattern; PRs as usual are most welcome.
+
+
 # Parameter injection to operator or hook
 
 Thanks for making Airflow secure, but this is not a vulnerability.
