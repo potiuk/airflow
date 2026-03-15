@@ -33,8 +33,6 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    cooldown:
-      default-days: 7
     groups:
       pre-commit-hooks:
         patterns:
