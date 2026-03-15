@@ -1,0 +1,4 @@
+rules:
+  dependabot-cooldown:
+    ignore:
+      - dependabot.yml:32  # pre-commit ecosystem doesn't support cooldown
