@@ -4,6 +4,7 @@
 
 - [Confirmation of receiving the report](#confirmation-of-receiving-the-report)
 - [Invalid automated report](#invalid-automated-report)
+- [Sending multiple issues in consolidated report](#sending-multiple-issues-in-consolidated-report)
 - [Not an issue, please submit it](#not-an-issue-please-submit-it)
 - [Parameter injection to operator or hook](#parameter-injection-to-operator-or-hook)
 - [DOS issues triggered by Authenticated users](#dos-issues-triggered-by-authenticated-users)
@@ -36,6 +37,16 @@ The sent report does not follow our security policy (https://github.com/apache/a
 Please elaborate and refer to our security model, explaining how it is violated. We will be happy to discuss this with the person who verified and reviewed the reports. Please read and understand the model and the policy we have (according to our policy).
 
 Multiple such reports will result in blacklisting those accounts. We will immediately close reports from blacklisted entities without reading them.
+
+# Sending multiple issues in consolidated report
+
+We reject the reports that do not follow our policies and do not review them. This report does not follow our policy: https://github.com/apache/airflow/security/policy. Issues must follow the one-issue-per-mailing-thread rule, require human verification against our Security Model, and include a detailed, easy-to-reproduce Proof of Concept (POC) that allows us to reproduce the issue. The POC should explain how the issue violates our model: https://airflow.apache.org/docs/apache-airflow/stable/security/security_model.html—including describing the roles involved and detailing the attack scenario.
+
+Thanks for following our policies, this time, and in the future.
+
+I hope you will resubmit any issues you found after detailed verification against our policies, provided your manual verification confirms that those are real vulnerabilities and you provide a detailed, easy-to-follow POC. Again ONE per issue, human verified against the model, and with an easy-to-follow POC that we can easily reproduce.
+
+We reject such reports. If an author repeatedly violates our policies despite being aware of the expectations, we will denylist those reports and mark them as spam. Therefore, carefully review our model and provide a good explanation of the violation.
 
 # Not an issue, please submit it
 
