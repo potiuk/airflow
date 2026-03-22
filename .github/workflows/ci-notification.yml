@@ -37,7 +37,7 @@ jobs:
     strategy:
       matrix:
         branch: ["v3-1-test"]
-        workflow-id: ["ci-amd-arm.yml"]
+        workflow-id: ["ci-tests.yml", "ci-tests-arm.yml"]
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout ${{ github.ref }} ( ${{ github.sha }} )"

@@ -1524,7 +1524,7 @@ class SelectiveChecks:
         import requests  # type: ignore[import-untyped]
 
         job_name = "Basic tests"
-        workflow_name = "ci-amd-arm.yml"
+        workflow_name = "ci-tests.yml"
         headers = {"Accept": "application/vnd.github.v3+json"}
         if os.environ.get("GITHUB_TOKEN"):
             headers["Authorization"] = f"token {os.environ.get('GITHUB_TOKEN')}"

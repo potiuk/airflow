@@ -18,20 +18,22 @@
 ---
 name: Tests
 on:  # yamllint disable-line rule:truthy
-  schedule:
-    - cron: '28 1,3,7,9,13,15,19,21 * * *'
-  push:
-    branches:
-      - v[0-9]+-[0-9]+-test
-      - providers-[a-z]+-?[a-z]*/v[0-9]+-[0-9]+
-  pull_request:
-    branches:
-      - main
-      - v[0-9]+-[0-9]+-test
-      - v[0-9]+-[0-9]+-stable
-      - providers-[a-z]+-?[a-z]*/v[0-9]+-[0-9]+
-    types: [opened, reopened, synchronize, ready_for_review]
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      platform:
+        description: "Target platform: linux/amd64 or linux/arm64"
+        required: true
+        type: string
+    secrets:
+      SLACK_BOT_TOKEN:
+        description: "Slack bot token for CI notifications"
+        required: false
+      DOCS_AWS_ACCESS_KEY_ID:
+        description: "AWS access key for docs publishing"
+        required: false
+      DOCS_AWS_SECRET_ACCESS_KEY:
+        description: "AWS secret key for docs publishing"
+        required: false
 permissions:
   # All other permissions are set to none by default
   contents: read
@@ -42,10 +44,6 @@ env:
   SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
   UV_VERSION: "0.10.12"  # Keep this comment to allow automatic replacement of uv version
   VERBOSE: "true"
-
-concurrency:
-  group: ci-amd-arm-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
 
 jobs:
   build-info:
@@ -94,7 +92,7 @@ jobs:
       mypy-checks: ${{ steps.selective-checks.outputs.mypy-checks }}
       mysql-exclude: ${{ steps.selective-checks.outputs.mysql-exclude }}
       mysql-versions: ${{ steps.selective-checks.outputs.mysql-versions }}
-      platform: ${{ steps.selective-checks.outputs.platform }}
+      platform: ${{ inputs.platform }}
       postgres-exclude: ${{ steps.selective-checks.outputs.postgres-exclude }}
       postgres-versions: ${{ steps.selective-checks.outputs.postgres-versions }}
       prod-image-build: ${{ steps.selective-checks.outputs.prod-image-build }}
@@ -123,7 +121,8 @@ jobs:
       run-task-sdk-integration-tests: ${{ steps.selective-checks.outputs.run-task-sdk-integration-tests }}
       run-breeze-integration-tests: ${{ steps.selective-checks.outputs.run-breeze-integration-tests }}
       run-scripts-tests: ${{ steps.selective-checks.outputs.run-scripts-tests }}
-      runner-type: ${{ steps.selective-checks.outputs.runner-type }}
+      runner-type: >-
+        ${{ inputs.platform == 'linux/arm64' && '["ubuntu-22.04-arm"]' || steps.selective-checks.outputs.runner-type }}
       run-ui-tests: ${{ steps.selective-checks.outputs.run-ui-tests }}
       run-ui-e2e-tests: ${{ steps.selective-checks.outputs.run-ui-e2e-tests }}
       run-unit-tests: ${{ steps.selective-checks.outputs.run-unit-tests }}
@@ -937,7 +936,7 @@ jobs:
     if: >-
       always() &&
       !cancelled() &&
-      github.event_name == 'schedule' &&
+      needs.build-info.outputs.canary-run == 'true' &&
       github.run_attempt == 1
     runs-on: ["ubuntu-22.04"]
     steps:
@@ -968,13 +967,13 @@ jobs:
         shell: bash
         run: python3 scripts/ci/slack_notification_state.py
         env:
-          ARTIFACT_NAME: "slack-state-tests-${{ github.ref_name }}"
+          ARTIFACT_NAME: "slack-state-tests-${{ inputs.platform == 'linux/arm64' && 'arm' || 'amd' }}-${{ github.ref_name }}"
           CURRENT_FAILURES: "${{ steps.get-failures.outputs.failed-jobs }}"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: "Upload notification state"
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7.0.0
         with:
-          name: "slack-state-tests-${{ github.ref_name }}"
+          name: "slack-state-tests-${{ inputs.platform == 'linux/arm64' && 'arm' || 'amd' }}-${{ github.ref_name }}"
           path: ./slack-state/
           retention-days: 7
           overwrite: true
