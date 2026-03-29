@@ -3,6 +3,7 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Confirmation of receiving the report](#confirmation-of-receiving-the-report)
+- [Invalid report about Simple Auth Manager with multiple issues](#invalid-report-about-simple-auth-manager-with-multiple-issues)
 - [Invalid automated report](#invalid-automated-report)
 - [Sending multiple issues in consolidated report](#sending-multiple-issues-in-consolidated-report)
 - [Not an issue, please submit it](#not-an-issue-please-submit-it)
@@ -26,6 +27,20 @@ Thanks for the report and for trying to make Airflow secure.
 
 We registered the issue. This is our initial response, you can expect that we will come back to you with the result of our assessment
 according to our security policy: https://github.com/apache/airflow/security/policy#what-happens-after-you-report-the-issue-
+
+# Invalid report about Simple Auth Manager with multiple issues
+
+This is invalid. Simple Auth Manager is not only described in the docs as "only for dev and testing," but a huge banner also appears every time you try to log in, announcing this fact.
+
+If you actually ran Airflow with it - and saw the banner - rather than only running a generic scanner without understanding Airflow and trying to check it (as we ask for in our policies [1]), you would have realised that.
+Also, if you had actually read our policies, you would know that we reject submissions containing multiple vulnerabilities. We clearly state that there should be one mail for one issue only and that we reject such issues.
+
+If you feel like there are things to improve in Simple Auth Manager - even if it is not - as we explained - as security issue, feel absolutely free to follow a regular contribution process and become one of our contributors (we have almost 4000 of those). We will
+happily accept such contributions (providing of course that they will follow our contribution guidelines - https://github.com/apache/airflow/blob/main/contributing-docs/README.rst)
+
+So next, time please read and follow the policies before sending a report. Two reasons indicate that you did not. Due to the high volume of spam we receive, we also place accounts that do not follow our policies on a deny list and reject their reports without reading them.
+
+[1] https://github.com/apache/airflow/security/policy
 
 # Invalid automated report
 
