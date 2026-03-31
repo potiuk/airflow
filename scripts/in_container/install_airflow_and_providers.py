@@ -1125,6 +1125,7 @@ def _install_airflow_and_optionally_providers_together(
         "uv",
         "pip",
         "install",
+        "--no-cache",
     ]
     if installation_spec.pre_release:
         base_install_cmd.append("--pre")
@@ -1181,6 +1182,7 @@ def _install_airflow_ctl_with_constraints(installation_spec: InstallationSpec, g
         "uv",
         "pip",
         "install",
+        "--no-cache",
     ]
     # if airflow is also being installed we should add airflow to the base_install_providers_cmd
     # to avoid accidentally upgrading airflow to a version that is different from installed in the
@@ -1221,6 +1223,7 @@ def _install_only_airflow_airflow_core_task_sdk_with_constraints(
         "uv",
         "pip",
         "install",
+        "--no-cache",
     ]
     if installation_spec.pre_release:
         console.print("[bright_blue]Allowing pre-release versions of airflow")

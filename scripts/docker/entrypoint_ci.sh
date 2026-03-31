@@ -324,7 +324,7 @@ function check_boto_upgrade() {
     # removed in 2.6.0 `getheaders()` call (instead of `headers` property.
     # Tracked in https://github.com/kubernetes-client/python/issues/2477
     # shellcheck disable=SC2086
-    ${PACKAGING_TOOL_CMD} install ${EXTRA_INSTALL_FLAGS} --upgrade "boto3<1.38.3" "botocore<1.38.3" "urllib3<2.6.0"
+    ${PACKAGING_TOOL_CMD} install ${EXTRA_INSTALL_FLAGS} --no-cache --upgrade "boto3<1.38.3" "botocore<1.38.3" "urllib3<2.6.0"
 }
 
 # Upgrade sqlalchemy to the latest version to run tests with it
@@ -337,7 +337,7 @@ function check_upgrade_sqlalchemy() {
     echo
     echo "${COLOR_BLUE}Upgrading sqlalchemy to the latest version to run tests with it${COLOR_RESET}"
     echo
-    uv sync --all-packages --no-install-package apache-airflow-providers-fab --resolution highest \
+    uv sync --no-cache --all-packages --no-install-package apache-airflow-providers-fab --resolution highest \
         --no-python-downloads --no-managed-python
 }
 
@@ -352,7 +352,7 @@ function check_downgrade_sqlalchemy() {
     echo "${COLOR_BLUE}Downgrading sqlalchemy to minimum supported version: ${min_sqlalchemy_version}${COLOR_RESET}"
     echo
     # shellcheck disable=SC2086
-    ${PACKAGING_TOOL_CMD} install ${EXTRA_INSTALL_FLAGS} "sqlalchemy[asyncio]==${min_sqlalchemy_version}"
+    ${PACKAGING_TOOL_CMD} install ${EXTRA_INSTALL_FLAGS} --no-cache "sqlalchemy[asyncio]==${min_sqlalchemy_version}"
     echo
     echo "${COLOR_BLUE}Running 'pip check'${COLOR_RESET}"
     echo
@@ -371,7 +371,7 @@ function check_downgrade_pendulum() {
     echo "${COLOR_BLUE}Downgrading pendulum to minimum supported version: ${min_pendulum_version}${COLOR_RESET}"
     echo
     # shellcheck disable=SC2086
-    ${PACKAGING_TOOL_CMD} install ${EXTRA_INSTALL_FLAGS} "pendulum==${min_pendulum_version}"
+    ${PACKAGING_TOOL_CMD} install ${EXTRA_INSTALL_FLAGS} --no-cache "pendulum==${min_pendulum_version}"
     echo
     echo "${COLOR_BLUE}Running 'pip check'${COLOR_RESET}"
     echo
@@ -413,7 +413,7 @@ function check_force_lowest_dependencies() {
         # --no-binary  is needed in order to avoid libxml and xmlsec using different version of libxml2
         # (binary lxml embeds its own libxml2, while xmlsec uses system one).
         # See https://bugs.launchpad.net/lxml/+bug/2110068
-        uv sync --resolution lowest-direct --no-binary-package lxml --no-binary-package xmlsec --all-extras \
+        uv sync --no-cache --resolution lowest-direct --no-binary-package lxml --no-binary-package xmlsec --all-extras \
             --no-python-downloads --no-managed-python
     else
         echo
@@ -423,7 +423,7 @@ function check_force_lowest_dependencies() {
         # --no-binary  is needed in order to avoid libxml and xmlsec using different version of libxml2
         # (binary lxml embeds its own libxml2, while xmlsec uses system one).
         # See https://bugs.launchpad.net/lxml/+bug/2110068
-        uv sync --resolution lowest-direct --no-binary-package lxml --no-binary-package xmlsec --all-extras \
+        uv sync --no-cache --resolution lowest-direct --no-binary-package lxml --no-binary-package xmlsec --all-extras \
             --no-python-downloads --no-managed-python
     fi
 }
