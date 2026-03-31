@@ -18,6 +18,9 @@
 services:
   airflow:
     volumes:
-      # We should be ok with sharing the cache between the builds - now that we are using uv
+      # We should be ok with sharing the cache between the builds - now that we are using uv.
       # The cache should be safe to share between parallel builds.
+      # Note: for lowest-dependencies tests, the entrypoint copies this shared cache to a
+      # per-test temporary directory (via UV_CACHE_DIR) so that each test has its own
+      # isolated copy and does not interfere with other parallel tests.
       - /mnt/.cache/uv:/root/.cache/uv

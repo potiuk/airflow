@@ -396,36 +396,56 @@ function check_force_lowest_dependencies() {
     if [[ ${FORCE_LOWEST_DEPENDENCIES=} != "true" ]]; then
         return
     fi
+    # Copy the shared uv cache to a per-test temporary directory so that parallel
+    # lowest-dependency tests do not interfere with each other. The temp directory
+    # is automatically cleaned up when the container is removed.
+    local tmp_cache
+    tmp_cache="$(mktemp -d /tmp/uv-cache-XXXXXX)"
+    if [[ -d /root/.cache/uv ]]; then
+        echo "${COLOR_BLUE}Copying shared uv cache to isolated temp cache: ${tmp_cache}${COLOR_RESET}"
+        cp -a /root/.cache/uv/. "${tmp_cache}"/
+    fi
+    export UV_CACHE_DIR="${tmp_cache}"
+    local project_dir
     if [[ ${TEST_TYPE=} =~ Providers\[.*\] ]]; then
         local provider_id
         # shellcheck disable=SC2001
         provider_id=$(echo "${TEST_TYPE}" | sed 's/Providers\[\(.*\)\]/\1/')
-        echo
-        echo "${COLOR_BLUE}Forcing dependencies to lowest versions for provider: ${provider_id}${COLOR_RESET}"
-        echo
+
         if ! /opt/airflow/scripts/in_container/is_provider_excluded.py "${provider_id}"; then
             echo
             echo "S${COLOR_YELLOW}Skipping ${provider_id} provider check on Python ${PYTHON_MAJOR_MINOR_VERSION}!${COLOR_RESET}"
             echo
             exit 0
         fi
-        cd "${AIRFLOW_SOURCES}/providers/${provider_id/.//}" || exit 1
+        echo
+        echo "${COLOR_BLUE}Forcing dependencies to lowest versions for provider: ${provider_id}${COLOR_RESET}"
+        echo
+        project_dir="${AIRFLOW_SOURCES}/providers/${provider_id/.//}" || exit 1
         # --no-binary  is needed in order to avoid libxml and xmlsec using different version of libxml2
         # (binary lxml embeds its own libxml2, while xmlsec uses system one).
         # See https://bugs.launchpad.net/lxml/+bug/2110068
-        uv sync --resolution lowest-direct --no-binary-package lxml --no-binary-package xmlsec --all-extras \
+        set -x
+        uv sync --project "${project_dir}" --resolution lowest-direct \
+            --no-binary-package lxml --no-binary-package xmlsec --all-extras \
             --no-python-downloads --no-managed-python
+        set +x
     else
         echo
         echo "${COLOR_BLUE}Forcing dependencies to lowest versions for Airflow.${COLOR_RESET}"
         echo
-        cd "${AIRFLOW_SOURCES}/airflow-core"
+        project_dir="${AIRFLOW_SOURCES}/airflow-core"
         # --no-binary  is needed in order to avoid libxml and xmlsec using different version of libxml2
         # (binary lxml embeds its own libxml2, while xmlsec uses system one).
         # See https://bugs.launchpad.net/lxml/+bug/2110068
-        uv sync --resolution lowest-direct --no-binary-package lxml --no-binary-package xmlsec --all-extras \
+        set -x
+        uv sync --project "${project_dir}"--resolution lowest-direct \
+            --no-binary-package lxml --no-binary-package xmlsec --all-extras \
             --no-python-downloads --no-managed-python
+        set +x
     fi
+    echo "Changing directory to ${project_dir}"
+    cd "${project_dir}"
 }
 
 function check_airflow_python_client_installation() {

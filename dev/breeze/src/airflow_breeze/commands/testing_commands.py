@@ -431,6 +431,72 @@ def pull_images_for_docker_compose(shell_params: ShellParams):
     run_command(pull_cmd, output=None, check=False, env=env)
 
 
+def _warm_uv_cache_for_lowest_deps(shell_params: ShellParams) -> None:
+    """Run a single ``uv sync`` (normal resolution) so the shared uv cache is populated.
+
+    Each parallel lowest-deps test will copy this warm cache to its own temp
+    directory, avoiding redundant downloads across parallel containers.
+    """
+    console_print("\n[info]Warming up the shared uv cache before lowest-deps tests …[/]\n")
+    env = shell_params.env_variables_for_docker_commands
+    # Use normal resolution (not lowest-direct) and skip test execution —
+    # we only want to populate the shared uv cache.
+    env["SKIP_ENVIRONMENT_INITIALIZATION"] = "true"
+    env["FORCE_LOWEST_DEPENDENCIES"] = "false"
+    env["RUN_TESTS"] = "false"
+    compose_project_name = "airflow-warm-uv-cache"
+    down_cmd = [
+        "docker",
+        "compose",
+        "--project-name",
+        compose_project_name,
+        "down",
+        "--remove-orphans",
+        "--volumes",
+    ]
+    run_command(down_cmd, output=None, check=False, env=env)
+    # Run uv sync with normal resolution to download packages into the shared cache.
+    # --no-binary-package flags mirror what check_force_lowest_dependencies() uses.
+    run_cmd = [
+        "docker",
+        "compose",
+        "--project-name",
+        compose_project_name,
+        "run",
+        "-T",
+        "--rm",
+        "airflow",
+        "-c",
+        "uv sync --all-extras"
+        " --no-binary-package lxml --no-binary-package xmlsec"
+        " --no-python-downloads --no-managed-python",
+    ]
+    try:
+        console_print("[info]Running 'uv sync' with normal resolution to warm up the shared uv cache …[/]")
+        result = run_command(run_cmd, output=None, check=False, env=env)
+        if result.returncode != 0:
+            console_print("[warning]uv cache warm-up failed – tests will still run but may be slower[/]")
+    finally:
+        run_command(
+            [
+                "docker",
+                "compose",
+                "--project-name",
+                compose_project_name,
+                "rm",
+                "--stop",
+                "--force",
+                "-v",
+            ],
+            output=None,
+            check=False,
+            verbose_override=False,
+            quiet=True,
+        )
+        remove_docker_networks(networks=[f"{compose_project_name}_default"])
+    console_print("[success]uv cache warm-up complete[/]\n")
+
+
 def run_tests_in_parallel(
     shell_params: ShellParams,
     extra_pytest_args: tuple,
@@ -453,6 +519,8 @@ def run_tests_in_parallel(
     console_print("[info]Shell params:")
     console_print(shell_params.__dict__)
     pull_images_for_docker_compose(shell_params)
+    if shell_params.force_lowest_dependencies:
+        _warm_uv_cache_for_lowest_deps(shell_params)
     _run_tests_in_pool(
         tests_to_run=shell_params.parallel_test_types_list,
         parallelism=parallelism,
