@@ -22,7 +22,9 @@ from __future__ import annotations
 import os
 import re
 import shutil
+import subprocess
 import sys
+import time
 from functools import cache
 from pathlib import Path
 from typing import NamedTuple
@@ -1117,6 +1119,50 @@ def install_airflow_and_providers(
     console.print("\n[green]Done!")
 
 
+def _run_uv_install_with_retry(
+    cmd: list[str],
+    github_actions: bool,
+    check: bool = True,
+    max_attempts: int = 5,
+    sleep_seconds: int = 30,
+) -> subprocess.CompletedProcess:
+    """Run a uv pip install command with retry logic for cargo-related transient failures.
+
+    Workaround for https://github.com/astral-sh/uv/issues/18801 — uv can fail with cargo-related
+    errors during package builds. When a failure contains "cargo" or "maturin" in the output, we retry up to
+    max_attempts times. Non-cargo failures are returned immediately without retry.
+    """
+    for attempt in range(1, max_attempts + 1):
+        console.print(f"[bright_blue]Attempt {attempt} of {max_attempts} for uv install")
+        result = run_command(
+            cmd,
+            github_actions=github_actions,
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        output = result.stdout.decode() if result.stdout else ""
+        if output:
+            console.print(output)
+        if result.returncode == 0:
+            return result
+        if "cargo" not in output and "maturin" not in output:
+            console.print("[yellow]Failure is not cargo-related, not retrying.")
+            if check:
+                sys.exit(result.returncode)
+            return result
+        if attempt < max_attempts:
+            console.print(
+                f"[yellow]Attempt {attempt} failed with cargo-related error. Sleeping {sleep_seconds}s before retry..."
+            )
+            time.sleep(sleep_seconds)
+        else:
+            console.print(f"[red]All {max_attempts} attempts failed.")
+            if check:
+                sys.exit(result.returncode)
+    return result
+
+
 def _install_airflow_and_optionally_providers_together(
     installation_spec: InstallationSpec, github_actions: bool
 ):
@@ -1161,15 +1207,17 @@ def _install_airflow_and_optionally_providers_together(
         )
         install_providers_command.extend(["--constraint", installation_spec.provider_constraints_location])
         console.print()
-        result = run_command(install_providers_command, github_actions=github_actions, check=False)
+        result = _run_uv_install_with_retry(
+            install_providers_command, github_actions=github_actions, check=False
+        )
         if result.returncode != 0:
             console.print(
                 "[warning]Installation with constraints failed - might be because pre-installed provider"
                 " has conflicting dependencies in PyPI. Falling back to a non-constraint installation."
             )
-            run_command(base_install_cmd, github_actions=github_actions, check=True)
+            _run_uv_install_with_retry(base_install_cmd, github_actions=github_actions, check=True)
     else:
-        run_command(base_install_cmd, github_actions=github_actions, check=True)
+        _run_uv_install_with_retry(base_install_cmd, github_actions=github_actions, check=True)
 
 
 def _install_airflow_ctl_with_constraints(installation_spec: InstallationSpec, github_actions: bool):
@@ -1192,13 +1240,13 @@ def _install_airflow_ctl_with_constraints(installation_spec: InstallationSpec, g
         console.print(f"[bright_blue]Use constraints: {installation_spec.airflow_ctl_constraints_location}")
         install_airflow_ctl_cmd.extend(["--constraint", installation_spec.airflow_ctl_constraints_location])
     console.print()
-    result = run_command(install_airflow_ctl_cmd, github_actions=github_actions, check=True)
+    result = _run_uv_install_with_retry(install_airflow_ctl_cmd, github_actions=github_actions, check=False)
     if result.returncode != 0:
         console.print(
             "[warning]Installation with constraints failed - might be because there are"
             " conflicting dependencies in PyPI. Falling back to a non-constraint installation."
         )
-        run_command(base_install_airflow_ctl_cmd, github_actions=github_actions, check=True)
+        _run_uv_install_with_retry(base_install_airflow_ctl_cmd, github_actions=github_actions, check=True)
 
 
 def _install_only_airflow_airflow_core_task_sdk_with_constraints(
@@ -1247,13 +1295,13 @@ def _install_only_airflow_airflow_core_task_sdk_with_constraints(
         console.print(f"[bright_blue]Use constraints: {installation_spec.airflow_constraints_location}")
         install_airflow_cmd.extend(["--constraint", installation_spec.airflow_constraints_location])
     console.print()
-    result = run_command(install_airflow_cmd, github_actions=github_actions, check=False)
+    result = _run_uv_install_with_retry(install_airflow_cmd, github_actions=github_actions, check=False)
     if result.returncode != 0:
         console.print(
             "[warning]Installation with constraints failed - might be because pre-installed provider"
             " has conflicting dependencies in PyPI. Falling back to a non-constraint installation."
         )
-        run_command(base_install_airflow_cmd, github_actions=github_actions, check=True)
+        _run_uv_install_with_retry(base_install_airflow_cmd, github_actions=github_actions, check=True)
 
 
 if __name__ == "__main__":

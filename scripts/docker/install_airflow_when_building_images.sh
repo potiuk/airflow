@@ -35,6 +35,45 @@
 # shellcheck source=scripts/docker/common.sh
 . "$( dirname "${BASH_SOURCE[0]}" )/common.sh"
 
+# Retry wrapper for uv commands that may fail with transient cargo/maturin build errors.
+# Workaround for https://github.com/astral-sh/uv/issues/18801
+# Usage: run_uv_with_cargo_retry <command...>
+# Returns the exit code of the command (non-zero only after all retries exhausted for cargo errors,
+# or immediately for non-cargo failures).
+function run_uv_with_cargo_retry() {
+    local max_attempts=5
+    local sleep_seconds=30
+    local attempt
+    local exit_code
+    local output_file
+    output_file=$(mktemp)
+    # shellcheck disable=SC2064
+    trap "rm -f ${output_file}" RETURN
+    for attempt in $(seq 1 ${max_attempts}); do
+        echo "${COLOR_BLUE}Attempt ${attempt} of ${max_attempts} for: $*${COLOR_RESET}"
+        set +e
+        set -x
+        "$@" 2>&1 | tee "${output_file}"
+        exit_code=${PIPESTATUS[0]}
+        set +x
+        set -e
+        if [[ ${exit_code} == 0 ]]; then
+            return 0
+        fi
+        if ! grep -qi -e "cargo" -e "maturin" "${output_file}"; then
+            echo "${COLOR_YELLOW}Failure is not cargo-related, not retrying.${COLOR_RESET}"
+            return ${exit_code}
+        fi
+        if [[ ${attempt} -lt ${max_attempts} ]]; then
+            echo "${COLOR_YELLOW}Attempt ${attempt} failed with cargo-related error. Sleeping ${sleep_seconds}s before retry...${COLOR_RESET}"
+            sleep ${sleep_seconds}
+        else
+            echo "${COLOR_RED}All ${max_attempts} attempts failed.${COLOR_RESET}"
+        fi
+    done
+    return ${exit_code}
+}
+
 function install_from_sources() {
     local extra_sync_flags
     extra_sync_flags=""
@@ -56,12 +95,10 @@ function install_from_sources() {
         # --no-binary  is needed in order to avoid libxml and xmlsec using different version of libxml2
         # (binary lxml embeds its own libxml2, while xmlsec uses system one).
         # See https://bugs.launchpad.net/lxml/+bug/2110068
-        set -x
-        uv sync --all-packages --resolution highest --group dev --group docs --group docs-gen \
+        run_uv_with_cargo_retry uv sync --all-packages --resolution highest --group dev --group docs --group docs-gen \
             --group leveldb ${extra_sync_flags} --no-binary-package lxml --no-binary-package xmlsec \
             --no-python-downloads --no-managed-python
     else
-        set +x
         echo
         echo "${COLOR_BLUE}Installing all packages from uv.lock (frozen).${COLOR_RESET}"
         echo
@@ -69,11 +106,9 @@ function install_from_sources() {
         # --no-binary-package is needed in order to avoid libxml and xmlsec using different version of
         # libxml2 (binary lxml embeds its own libxml2, while xmlsec uses system one).
         # See https://bugs.launchpad.net/lxml/+bug/2110068
-        set -x
-        if ! uv sync --all-packages --frozen --group dev --group docs --group docs-gen \
+        if ! run_uv_with_cargo_retry uv sync --all-packages --frozen --group dev --group docs --group docs-gen \
             --group leveldb ${extra_sync_flags} --no-binary-package lxml --no-binary-package xmlsec \
             --no-python-downloads --no-managed-python; then
-            set +x
             if [[ ${AIRFLOW_FALLBACK_NO_CONSTRAINTS_INSTALLATION} != "true" ]]; then
                 echo
                 echo "${COLOR_RED}Failing because frozen uv.lock installation failed and fallback is disabled.${COLOR_RESET}"
@@ -85,11 +120,9 @@ function install_from_sources() {
             echo
             echo "${COLOR_BLUE}Falling back to re-resolving dependencies (uv sync without --frozen).${COLOR_RESET}"
             echo
-            set -x
-            uv sync --all-packages --group dev --group docs --group docs-gen \
+            run_uv_with_cargo_retry uv sync --all-packages --group dev --group docs --group docs-gen \
                 --group leveldb ${extra_sync_flags} --no-binary-package lxml --no-binary-package xmlsec \
                 --no-python-downloads --no-managed-python
-            set +x
         fi
     fi
 }
@@ -116,16 +149,12 @@ function install_from_external_spec() {
         echo
         echo "${COLOR_BLUE}Installing all packages with highest resolutions. Installation method: ${AIRFLOW_INSTALLATION_METHOD}${COLOR_RESET}"
         echo
-        set -x
-        ${PACKAGING_TOOL_CMD} install ${EXTRA_INSTALL_FLAGS} ${UPGRADE_TO_HIGHEST_RESOLUTION} ${ADDITIONAL_PIP_INSTALL_FLAGS} ${installation_command_flags}
-        set +x
+        run_uv_with_cargo_retry ${PACKAGING_TOOL_CMD} install ${EXTRA_INSTALL_FLAGS} ${UPGRADE_TO_HIGHEST_RESOLUTION} ${ADDITIONAL_PIP_INSTALL_FLAGS} ${installation_command_flags}
     else
         echo
         echo "${COLOR_BLUE}Installing all packages with constraints. Installation method: ${AIRFLOW_INSTALLATION_METHOD}${COLOR_RESET}"
         echo
-        set -x
-        if ! ${PACKAGING_TOOL_CMD} install ${EXTRA_INSTALL_FLAGS} ${ADDITIONAL_PIP_INSTALL_FLAGS} ${installation_command_flags} --constraint "${HOME}/constraints.txt"; then
-            set +x
+        if ! run_uv_with_cargo_retry ${PACKAGING_TOOL_CMD} install ${EXTRA_INSTALL_FLAGS} ${ADDITIONAL_PIP_INSTALL_FLAGS} ${installation_command_flags} --constraint "${HOME}/constraints.txt"; then
             if [[ ${AIRFLOW_FALLBACK_NO_CONSTRAINTS_INSTALLATION} != "true" ]]; then
                 echo
                 echo "${COLOR_RED}Failing because constraints installation failed and fallback is disabled.${COLOR_RESET}"
@@ -137,9 +166,7 @@ function install_from_external_spec() {
             echo
             echo "${COLOR_BLUE}Falling back to no-constraints installation.${COLOR_RESET}"
             echo
-            set -x
-            ${PACKAGING_TOOL_CMD} install ${EXTRA_INSTALL_FLAGS} ${UPGRADE_IF_NEEDED} ${ADDITIONAL_PIP_INSTALL_FLAGS} ${installation_command_flags}
-            set +x
+            run_uv_with_cargo_retry ${PACKAGING_TOOL_CMD} install ${EXTRA_INSTALL_FLAGS} ${UPGRADE_IF_NEEDED} ${ADDITIONAL_PIP_INSTALL_FLAGS} ${installation_command_flags}
         fi
     fi
 }
