@@ -17,6 +17,11 @@
 ---
 # Details: https://github.com/kaxil/boring-cyborg
 
+# This flag indicates boring-cyborg[bot] is a recognised contributor whose
+# workflow runs do not require manual approval.
+# See: https://github.com/kaxil/boring-cyborg
+boringCyborgAsRecognisedContributor: true
+
 labelPRBasedOnFilePath:
   provider:airbyte:
     - providers/airbyte/**
