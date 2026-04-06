@@ -96,7 +96,7 @@ We have discussed similar concerns in the past and consider such generic reports
 kinds of issues invalid. Unless you can provide a specific scenario where it can be exploited and
 Confidentiality, Availability, and Integrity of Airflow deployment are breached in a meaningful way,
 we consider that as a regular issue, we encourage people like you to submit fixes via PR using our
-regular GitHub contribution process. That's an easy way to become one of more than 2700
+regular GitHub contribution process. That's an easy way to become one of thousands of Airflow
 contributors, and we encourage directly fixing such issues in PRs without even creating GitHub Issues for them.
 
 The reason for that is that Airflow is not publicly available software. When you run Airflow in an
@@ -195,7 +195,7 @@ We have discussed similar concerns in the past and consider such reports concern
 kinds of issues as invalid. Unless you can provide a specific scenario where it can be exploited
 and Confidentiality, Availability, and Integrity of Airflow deployment are breached in a meaningful way,
 we consider that as a regular issue, and we encourage people like you to submit fixes via PR using
-our regular GitHub contribution process. That's an easy way to become one of more than 2700
+our regular GitHub contribution process. That's an easy way to become one of thousands of Airflow
 contributors, and we encourage directly fixing such issues in PRs without even creating
 GitHub Issues for them.
 
