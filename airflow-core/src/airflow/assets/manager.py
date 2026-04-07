@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from collections.abc import Collection, Iterable
 from contextlib import contextmanager
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 import structlog
 from sqlalchemy import exc, or_, select
@@ -575,7 +575,7 @@ def resolve_asset_manager() -> AssetManager:
         key="asset_manager_kwargs",
         fallback={},
     )
-    return _asset_manager_class(**_asset_manager_kwargs)
+    return _asset_manager_class(**cast("dict[str, Any]", _asset_manager_kwargs))
 
 
 asset_manager = resolve_asset_manager()
