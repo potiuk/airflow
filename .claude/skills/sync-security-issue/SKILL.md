@@ -220,6 +220,7 @@ will change and *why*. Group them by category:
 - **Status transitions** — e.g. *"close the issue as invalid"*, *"add `Not yet
   announced` now that apache/airflow#NNNN has merged"*, *"add `vendor-advisory`
   and link to lists.apache.org archive entry"*.
+
 - **Status update to the reporter** — **whenever the issue's status has changed
   since the last message we sent to the reporter, propose a Gmail draft that
   brings the reporter up to date.** The security team commits to keeping the
@@ -237,24 +238,64 @@ will change and *why*. Group them by category:
   - any credits or fields visible in the eventual public advisory have changed.
 
   Each status update should: (a) state plainly what has changed, (b) link to
-  the relevant artifact (PR URL, CVE ID, advisory link), (c) state what comes
-  next, and (d) re-ask the credit-preference question if the reporter has not
-  yet answered it. Always reply on the **original** Gmail thread (the one
-  identified in Step 1c), not on the GitHub-notifications mirror thread.
+  the relevant artifact (PR URL, CVE ID, advisory link), and (c) state what
+  comes next. Always reply on the **original** Gmail thread (the one identified
+  in Step 1c), not on the GitHub-notifications mirror thread.
+
+  **Do not re-ask questions that have already been asked.** Before drafting,
+  scan the existing thread end-to-end for any open question we have already
+  put to the reporter — most importantly the credit-preference question, but
+  also any technical follow-ups. If a question is already pending an answer
+  from the reporter, **omit it from the new draft**. Restate the credit
+  question only if (a) it has never been asked on the thread, or (b) more than
+  ~7 days have passed since it was last asked **and** publication is imminent.
+  When in doubt, ask the user before re-pinging the reporter — pinging twice
+  about the same question is rude and gets us blocklisted.
+
+  Concrete check: when you find a previous message from the security team in
+  the thread, look for keywords like *"credited"*, *"credit"*, *"how would
+  you like to be"*, *"name (and, if applicable, affiliation"*, or *"prefer to
+  remain anonymous"*. If any of those are present in a message we sent and
+  the reporter has not replied, the credit question is **already pending** —
+  do not re-ask.
+
+- **Status update on the GitHub issue (`airflow-s/airflow-s`)** — **every
+  status change must also be recorded as a comment on the issue itself**, not
+  only sent by email. The two channels serve different audiences: the email
+  keeps the reporter informed; the issue comment keeps the rest of the
+  security team and the release manager informed without forcing them to
+  reconstruct the state from labels and timestamps.
+
+  Whenever any of the trigger events listed above fires, propose a
+  `gh issue comment` that says, in one short paragraph: what changed, the
+  link to the artifact (PR URL, CVE ID, advisory link), the new label /
+  milestone state, and what is expected next. End the comment with one of:
+
+  - *"Reporter has been notified on the original mail thread."* — when a
+    status-update draft has been created in the same sync, **or**
+  - *"No reporter notification needed (reporter is on the security team)."*
+    — only if the real reporter is themselves a member of the security team
+    and is already in the loop, **or**
+  - *"Reporter notification still pending — see draft `<draftId>`."* — if a
+    draft was created but the user has not yet sent it.
 
 - **Draft email to reporter (other reasons)** — whenever the ball is in our
-  court on the email thread for any other reason (a question from the reporter,
-  a follow-up needed for triage, communicating a negative assessment), propose
-  a **Gmail draft** reply (not a sent message). State the intent of the draft
-  in one line and prefer to reuse a canned response from
-  [`canned-responses.md`](../../../canned-responses.md) verbatim where one
-  applies. Show the exact subject, recipients, In-Reply-To, and body in the
-  proposal.
+  court on the email thread for any other reason (a question from the
+  reporter, a follow-up needed for triage, communicating a negative
+  assessment), propose a **Gmail draft** reply (not a sent message). State
+  the intent of the draft in one line and prefer to reuse a canned response
+  from [`canned-responses.md`](../../../canned-responses.md) verbatim where
+  one applies. Show the exact subject, recipients, In-Reply-To, and body in
+  the proposal.
 
   **Never send.** Always create a draft. The draft must always be created on
   the original mail thread (`threadId` from Step 1c) so that
   In-Reply-To/References are set automatically and the reply lands in the
-  right conversation.
+  right conversation. Note that the Gmail MCP exposes only `create`, `list`
+  and `read` for drafts — there is no update or delete tool, so if you find
+  yourself drafting a *correction* to a prior draft from this same sync,
+  surface that explicitly to the user and tell them which prior `draftId` to
+  discard manually in Gmail.
 
 ### 2c. Next-step recommendation
 

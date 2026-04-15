@@ -33,9 +33,18 @@ thread). A short status update should be sent to the reporter whenever any of th
 * any credits or fields visible in the eventual public advisory have changed.
 
 Each status update should plainly state what has changed, link to the relevant artifact (PR URL,
-CVE ID, advisory link), state what comes next, and — if the reporter has not yet replied with their
-preferred credit — re-ask the credit-preference question (defaulting to their full name from the
-original email if they do not respond before publication).
+CVE ID, advisory link), and state what comes next. If the reporter has not yet replied with their
+preferred credit, ask the credit-preference question — but **do not re-ask it if it has already
+been asked** on the same thread and is still awaiting a reply. Pinging the reporter twice about the
+same open question is rude and gets us blocklisted; default to the reporter's full name from the
+original email if they do not respond before publication.
+
+**Every status transition must also be recorded as a comment on the GitHub issue in
+`airflow-s/airflow-s`**, not only sent by email. The two channels serve different audiences: the
+email keeps the reporter informed; the issue comment keeps the rest of the security team and the
+release manager informed without forcing them to reconstruct the state from labels and timestamps.
+The comment should briefly state what changed, link to the artifact (PR URL, CVE ID, advisory
+link), and indicate whether the reporter has been notified.
 
 Note that the **author of the GitHub issue is not always the reporter**: security team members
 routinely copy reports from the mailing list into GitHub issues, so the GitHub author is the
