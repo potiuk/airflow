@@ -6,6 +6,7 @@
   - [Repository purpose](#repository-purpose)
   - [Local setup](#local-setup)
   - [Commit and PR conventions](#commit-and-pr-conventions)
+  - [Confidentiality of `airflow-s/airflow-s`](#confidentiality-of-airflow-sairflow-s)
   - [Writing and editing documentation](#writing-and-editing-documentation)
   - [Reusable skills](#reusable-skills)
   - [Before submitting](#before-submitting)
@@ -82,6 +83,59 @@ if a hook is failing, fix the underlying issue or update the hook configuration 
   [`README.md`](README.md). Unless the user explicitly says otherwise, base PRs on `airflow-s`.
 - Keep the commit message focused on the user-visible change, not the mechanics of how the edit
   was made.
+
+## Confidentiality of `airflow-s/airflow-s`
+
+The existence of this private repository, the issue numbers it contains, the
+labels we use, and the discussions inside it are **not public**. Anything that
+leaves the security team's private channels — public Apache Airflow PRs,
+public GitHub issues, public mailing lists, public canned responses, public
+release notes, public commit messages, public blog posts, **anything visible
+to non-security-team members** — must not contain:
+
+- URLs of the form `https://github.com/airflow-s/airflow-s/...`
+  (issue links, PR links, discussion links, comment links);
+- bare references like `airflow-s/airflow-s#NNN` or `#NNN` in a context where
+  the implicit repository is `airflow-s/airflow-s`;
+- the literal string `airflow-s` used as a repo or org name;
+- screenshots or excerpts of the airflow-s GitHub UI;
+- copy/paste of comments, labels, or milestones from this repository if doing
+  so reveals that the source is the private security tracker.
+
+These references are allowed **only** in:
+
+- documents that live inside this private repository (this file, `README.md`,
+  `canned-responses.md`, `SKILL.md` files, etc.);
+- private mail threads on `security@airflow.apache.org` with the original
+  reporter (where letting them know we have a tracking issue is part of the
+  status update they receive);
+- private mail to `private@airflow.apache.org` when escalating a stalled
+  discussion per process step 4.
+
+In particular:
+
+- **Public `apache/airflow` PR descriptions and commit messages** must not
+  reveal the CVE, the security nature of the change, or any link back to
+  `airflow-s/airflow-s`. This is already required by process step 8 of
+  [`README.md`](README.md) and the rule above reinforces it.
+- **Canned responses** (`canned-responses.md`) must remain free of
+  `airflow-s/airflow-s` URLs, because they are sent verbatim as email replies.
+  If you are tempted to add one, link to the public Airflow Security Model or
+  policy instead.
+- **Status updates the skill drafts to reporters** *may* include the
+  `airflow-s/airflow-s` tracking-issue URL — the reporter is on the private
+  `security@airflow.apache.org` thread and is expected to keep it
+  confidential — but the same content **must not** be reused in any public
+  comment, comment to the public Airflow PR, or release-time advisory text.
+- **`gh issue comment` calls inside this repository are fine** because they
+  land on the private issue itself; they do not leak.
+
+When editing or generating any text destined for a public audience, search it
+for `airflow-s` and the patterns above before saving or sending. If a public
+audience needs to see a tracking link for transparency, link to the **public**
+artifact (the merged `apache/airflow` PR, the published CVE on `cve.org`, the
+`users@` advisory archive on `lists.apache.org`) — never to the private
+tracker.
 
 ## Writing and editing documentation
 

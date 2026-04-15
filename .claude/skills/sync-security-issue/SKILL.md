@@ -242,6 +242,17 @@ will change and *why*. Group them by category:
   comes next. Always reply on the **original** Gmail thread (the one identified
   in Step 1c), not on the GitHub-notifications mirror thread.
 
+  **Confidentiality:** the existence of `airflow-s/airflow-s` is private (see
+  the "Confidentiality of `airflow-s/airflow-s`" section of
+  [`AGENTS.md`](../../../AGENTS.md)). A status-update email to the reporter on
+  the `security@airflow.apache.org` thread *may* include the `airflow-s`
+  tracking-issue URL — the reporter is already on the private thread — but
+  the same text **must not** be reused in any public location: do not put it
+  in the public `apache/airflow` PR description, in any public comment, or in
+  the eventual public advisory. When linking from public surfaces, link to
+  the public artifact instead (the merged `apache/airflow` PR, the published
+  CVE on `cve.org`, the `users@` advisory archive).
+
   **Do not re-ask questions that have already been asked.** Before drafting,
   scan the existing thread end-to-end for any open question we have already
   put to the reporter — most importantly the credit-preference question, but
