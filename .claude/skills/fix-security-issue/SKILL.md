@@ -405,11 +405,13 @@ After the user submits the PR in the browser, capture the PR URL
 
 Now that a public PR exists, update the private tracking issue:
 
-1. **Add a comment** on `airflow-s/airflow-s#<N>` announcing the new
-   PR, the branch name, and the intended backport (if any). The
-   comment lives inside the private repo so it may contain the PR
-   URL, the branch name and the CVE reference (linked per the
-   "Linking CVEs" rule in [`AGENTS.md`](../../../AGENTS.md)).
+1. **Add a comment** on the private issue announcing the new PR, the
+   branch name, and the intended backport (if any). Render the issue
+   reference, the PR reference, and any CVE as clickable markdown links
+   per the "Linking CVEs" and "Linking `airflow-s/airflow-s` issues and
+   PRs" rules in [`AGENTS.md`](../../../AGENTS.md). A comment lives
+   inside the private repo so it may freely contain the
+   `apache/airflow` PR URL, the branch name, and the CVE reference.
 
 2. **Update the issue body "PR with the fix" field** if it is empty
    or points to a stale PR. Use `gh issue view --json body`, patch
@@ -417,29 +419,141 @@ Now that a public PR exists, update the private tracking issue:
    in the [`sync-security-issue`](../sync-security-issue/SKILL.md)
    skill.
 
-3. **Update labels** as follows, with user confirmation:
-   - keep `needs triage` **removed** if it was there (it should
-     already be gone after triage);
-   - do **not** add `Not yet announced` yet — that label belongs to
-     the post-merge state, which the sync-security-issue skill
-     applies on the next run after merge;
-   - apply any workflow-transition label the team uses for "fix
-     proposed, awaiting review" if one exists (check the label list
-     on the repo — as of the last audit the repo has `airflow`,
-     `providers`, `chart`, `API`, `needs triage`, `cve allocated`,
-     `Not yet announced`, `announced - emails sent`, `pending
-     response`, `wontfix`, `invalid`, `duplicate`, `not CVE worthy`,
-     `missing CVE`, `documentation update`, `dependencies`,
-     `Connections`, `FAB permissions vs. UI`, `waiting for upstream`
-     — pick the closest match if any, and ask the user if in doubt).
+3. **Maintain milestones and labels** — see the next section.
 
-4. **Drafted status update to the reporter** — if the `airflow-s`
-   issue has an identified external reporter and the reporter has
-   not yet been told about the fix PR, delegate to the
-   `sync-security-issue` skill's "Status update to the reporter"
-   category by re-running that skill with a pointer to the new PR.
-   Do **not** draft the reporter email directly in this skill — it's
-   the sync skill's responsibility.
+4. **Status update to the reporter** — if the airflow-s issue has an
+   identified external reporter and the reporter has not yet been
+   told about the fix PR, delegate to the `sync-security-issue`
+   skill's "Status update to the reporter" category by re-running
+   that skill with a pointer to the new PR. Do **not** draft the
+   reporter email directly in this skill — it is the sync skill's
+   responsibility.
+
+### Maintaining milestones and labels on `airflow-s/airflow-s`
+
+The fix skill is responsible for leaving the private issue in a
+consistent "fix-proposed, awaiting review" state by the time it
+returns. That means both the milestone and the label set must match
+the current release plan (see "Release branches currently in flight"
+in [`AGENTS.md`](../../../AGENTS.md) for the authoritative default
+release target). **Every action in this section is a proposal that
+requires explicit user confirmation before it is applied.**
+
+#### 9a. Ensure the target milestone exists
+
+The default milestone for a patch-release fix is whatever
+`AGENTS.md` names as the next patch release (currently **`3.2.2`**).
+Before assigning, check that the milestone exists:
+
+```bash
+gh api 'repos/airflow-s/airflow-s/milestones?state=all&per_page=100' \
+  --jq '.[] | select(.title == "<target>") | {number, state}'
+```
+
+If the query returns nothing, **propose creating the milestone**:
+
+```bash
+gh api repos/airflow-s/airflow-s/milestones \
+  -f title='<target>' \
+  -f state=open \
+  -f description='Airflow <target> release tracking.'
+```
+
+The skill must present the `title`, `state` and `description` it
+will use and wait for a `yes` before running the create call. Once
+created, capture the returned milestone `number` — you will need it
+for a closed-milestone fallback later.
+
+If the milestone exists but is **closed** (for example because it
+was reopened from history), `gh issue edit --milestone "<title>"`
+will fail with `'<title>' not found`. Fall back to the REST API and
+reference it by number:
+
+```bash
+gh api repos/airflow-s/airflow-s/issues/<N> -X PATCH -F milestone=<milestone-number>
+```
+
+#### 9b. Assign the issue to the target milestone
+
+If the issue currently sits on a stale milestone (for example
+`3.1.9`, `3.2.1` now that it has been cut, or the legacy `Airflow 3`
+placeholder), propose moving it to the current default and apply
+with user confirmation:
+
+```bash
+gh issue edit <N> --repo airflow-s/airflow-s --milestone '<target>'
+# or, for closed milestones, via REST:
+gh api repos/airflow-s/airflow-s/issues/<N> -X PATCH -F milestone=<number>
+```
+
+Do **not** silently move an issue that is intentionally parked on
+an older milestone (e.g. an already-released patch that still needs
+an advisory sent). When in doubt, surface the question to the user
+instead of moving it.
+
+#### 9c. Ensure the required labels exist
+
+The current label set on `airflow-s/airflow-s` can be listed with:
+
+```bash
+gh label list --repo airflow-s/airflow-s --limit 100 \
+  --json name,description,color --jq '.[].name'
+```
+
+For a post-triage, pre-merge fix, the target label set is:
+
+- **one** scope label: `airflow` | `providers` | `chart`;
+- `cve allocated` if a CVE has been allocated;
+- `needs triage` **removed** (if still present after triage);
+- **not** `Not yet announced` (that belongs to the post-merge state,
+  applied by the `sync-security-issue` skill on the next run after
+  the public PR merges);
+- **not** `announced - emails sent` (that belongs to the post-advisory
+  state, also applied by the sync skill).
+
+If a label the skill wants to apply does **not** exist on the
+repository (for example a typo in a past doc version — the canonical
+example is the README historically saying `vendor-advisory` when the
+actual label is `announced - emails sent`), stop and report the
+mismatch. Do **not** silently create labels without asking — label
+names are the shared vocabulary of the security team, and new labels
+should be discussed.
+
+If the user confirms creating a label, do it explicitly:
+
+```bash
+gh label create '<name>' --repo airflow-s/airflow-s \
+  --description '<short description>' \
+  --color '<hex>'
+```
+
+#### 9d. Apply the label changes
+
+Once the target label set is agreed, apply all add / remove
+operations in a single `gh issue edit` call so the change lands as
+one audit trail entry:
+
+```bash
+gh issue edit <N> --repo airflow-s/airflow-s \
+  --add-label 'airflow,cve allocated' \
+  --remove-label 'needs triage'
+```
+
+#### 9e. Consistency checks before moving on
+
+Before leaving the tracking issue, verify:
+
+- exactly one scope label is set (`airflow` **xor** `providers`
+  **xor** `chart`);
+- the milestone matches the current default from `AGENTS.md`, or
+  the user has explicitly confirmed a different one;
+- the issue body "PR with the fix" field points at the newly-opened
+  public PR;
+- the `cve allocated` label is present if the issue body contains a
+  CVE tool link, and absent if it does not;
+- `needs triage` is gone.
+
+Surface any remaining inconsistency in the Step 10 recap.
 
 ---
 
