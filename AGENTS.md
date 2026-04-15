@@ -4,6 +4,7 @@
 
 - [AGENTS instructions](#agents-instructions)
   - [Repository purpose](#repository-purpose)
+  - [Local setup](#local-setup)
   - [Commit and PR conventions](#commit-and-pr-conventions)
   - [Writing and editing documentation](#writing-and-editing-documentation)
   - [Before submitting](#before-submitting)
@@ -32,6 +33,34 @@ This repository contains:
 - [`new-members-onboarding.md`](new-members-onboarding.md) — onboarding guide for new security team members.
 
 There is no source code to build or test. Changes are reviewed and merged by the security team.
+
+## Local setup
+
+This repository uses [`prek`](https://github.com/j178/prek) (a fast, Rust-based drop-in
+replacement for `pre-commit`) to run pre-commit hooks that keep the documentation
+consistent — regenerating the `doctoc` tables of contents, stripping trailing whitespace,
+checking line endings, and blocking accidentally committed secrets. The hook configuration
+lives in [`.pre-commit-config.yaml`](.pre-commit-config.yaml).
+
+Install `prek` once and enable the hooks in your local clone before making any changes:
+
+```bash
+uv tool install prek   # or: pipx install prek
+prek install           # installs the git hook into .git/hooks/pre-commit
+```
+
+After that, every `git commit` in this repo will run the hooks automatically. You can also
+run them on demand:
+
+```bash
+prek run --all-files                 # run all hooks against every file
+prek run doctoc --all-files          # only regenerate TOCs
+prek run --from-ref airflow-s        # run against everything changed vs the base branch
+```
+
+If a hook modifies files (for example, `doctoc` regenerating a TOC), the commit is aborted;
+re-stage the modified files and commit again. **Do not bypass the hooks with `--no-verify`** —
+if a hook is failing, fix the underlying issue or update the hook configuration in the same PR.
 
 ## Commit and PR conventions
 
