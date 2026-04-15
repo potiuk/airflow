@@ -7,6 +7,7 @@
   - [Local setup](#local-setup)
   - [Commit and PR conventions](#commit-and-pr-conventions)
   - [Writing and editing documentation](#writing-and-editing-documentation)
+  - [Reusable skills](#reusable-skills)
   - [Before submitting](#before-submitting)
   - [References](#references)
 
@@ -159,6 +160,32 @@ If no chapter covers the case, that is a signal the Security Model should be upd
 - Preserve the `doctoc` TOC markers at the top of each document. If you rename a heading, update
   the corresponding TOC entry in the same change.
 - Do not add emojis.
+
+## Reusable skills
+
+Reusable, agent-friendly task definitions live under
+[`.claude/skills/`](.claude/skills/). Each skill is a plain Markdown file with
+YAML frontmatter, so it can be picked up by Claude Code, GitHub Copilot, and any
+other agent that follows the emerging skill convention. When a new recurring
+task is automated, add it as a skill rather than burying the instructions in a
+commit message or an ad-hoc comment.
+
+Currently available:
+
+- [`sync-security-issue`](.claude/skills/sync-security-issue/SKILL.md) —
+  reconciles a security issue with its GitHub discussion, its
+  `security@airflow.apache.org` mail thread, and any fixing PRs; proposes label,
+  milestone, field, and draft-email updates; and prompts the user to confirm each
+  change before applying it. Prints the ASF CVE allocation link when a CVE is
+  needed.
+
+When adding a new skill:
+
+- place it under `.claude/skills/<skill-name>/SKILL.md`;
+- start with YAML frontmatter containing `name`, `description`, and `when_to_use`;
+- make every state-changing action a *proposal* that requires explicit user
+  confirmation before it runs;
+- avoid agent-specific syntax so the skill remains portable across tools.
 
 ## Before submitting
 
