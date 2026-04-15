@@ -9,7 +9,7 @@
 - [Not an issue, please submit it](#not-an-issue-please-submit-it)
 - [Parameter injection to operator or hook](#parameter-injection-to-operator-or-hook)
 - [DoS issues triggered by Authenticated users](#dos-issues-triggered-by-authenticated-users)
-- [When someone claims DAG author-provided "user input" is dangerous](#when-someone-claims-dag-author-provided-user-input-is-dangerous)
+- [When someone claims Dag author-provided "user input" is dangerous](#when-someone-claims-dag-author-provided-user-input-is-dangerous)
 - [Image scan results](#image-scan-results)
 - [Immediate response for self-XSS issues triggered by Authenticated users](#immediate-response-for-self-xss-issues-triggered-by-authenticated-users)
 - [Positive Assessment response](#positive-assessment-response)
@@ -79,7 +79,7 @@ That said, the improvement you suggest is a reasonable idea for Airflow in gener
 
 Thank you for the report. We do not consider this a vulnerability.
 
-DAG author code passing unsanitized input to operators and hooks is explicitly out of scope for our security process. The full rationale — that DAG authors can already execute arbitrary code and are responsible for how input reaches operators and hooks — is documented in our Security Model:
+Dag author code passing unsanitized input to operators and hooks is explicitly out of scope for our security process. The full rationale — that Dag authors can already execute arbitrary code and are responsible for how input reaches operators and hooks — is documented in our Security Model:
 
 * "Dag author code passing unsanitized input to operators and hooks": https://airflow.apache.org/docs/apache-airflow/stable/security/security_model.html#dag-author-code-passing-unsanitized-input-to-operators-and-hooks
 * "Capabilities of Dag authors": https://airflow.apache.org/docs/apache-airflow/stable/security/security_model.html#capabilities-of-dag-authors
@@ -100,7 +100,7 @@ We would welcome a fix through the regular GitHub contribution process — no Gi
 
 More details are in our policy: https://github.com/apache/airflow/security/policy#is-this-really-a-security-vulnerability-
 
-# When someone claims DAG author-provided "user input" is dangerous
+# When someone claims Dag author-provided "user input" is dangerous
 
 Thank you for the report. Before we can consider it, please review the relevant chapters of our Security Model:
 
@@ -111,9 +111,9 @@ Thank you for the report. Before we can consider it, please review the relevant 
 
 Your report refers to "user-controlled input", but to assess it against the model we need to know **which** user role controls the input. Without that, the report is ambiguous and cannot be evaluated against our model.
 
-As the model explains, a DAG author already has the capability to execute arbitrary code and access all credentials, so a DAG author deliberately routing untrusted input into a dangerous call is not a vulnerability in Airflow. A vulnerability would only exist if another user role could cause such input to reach a dangerous function without the DAG author deliberately passing it through.
+As the model explains, a Dag author already has the capability to execute arbitrary code and access all credentials, so a Dag author deliberately routing untrusted input into a dangerous call is not a vulnerability in Airflow. A vulnerability would only exist if another user role could cause such input to reach a dangerous function without the Dag author deliberately passing it through.
 
-For this reason, we are unable to treat this as a security issue unless you provide a PoC showing a scenario in which the DAG author does not have to deliberately pass other users' input into a dangerous function.
+For this reason, we are unable to treat this as a security issue unless you provide a PoC showing a scenario in which the Dag author does not have to deliberately pass other users' input into a dangerous function.
 
 If your report points to a concrete improvement — for example, sanitising input to a specific function by default — the right path is the regular contribution process: open a public issue or submit a PR, as thousands of contributors have done before you.
 

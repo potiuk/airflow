@@ -119,7 +119,13 @@ If no chapter covers the case, that is a signal the Security Model should be upd
 - Do not include concrete contributor counts (e.g., "4000 contributors", "3600 contributors").
   Use *"thousands of contributors"* — the number changes constantly and hard-coding it dates the
   document immediately.
-- Prefer *DAG author*, *DAG*, *PoC*, *DoS*, *CVE* as the canonical capitalisations.
+- Use **`Dag`** (not `DAG`) when referring to Airflow DAGs in prose — e.g. *"Dag author"*,
+  *"Dag run"*, *"serialized Dags"*. This matches the Airflow Security Model chapter titles
+  (*"Capabilities of Dag authors"*, *"Dag authors executing arbitrary code"*, etc.) and the
+  convention used throughout `apache/airflow`'s own documentation and `AGENTS.md`. Do not
+  use the all-caps `DAG` form in documentation in this repository; leave it only inside
+  quoted content, URLs, anchor slugs, or code identifiers where it already appears.
+- Prefer *PoC*, *DoS*, *CVE* as the canonical capitalisations for those acronyms.
 - Use em dashes (`—`) sparingly; prefer shorter sentences to dash-heavy ones.
 - Preserve the `doctoc` TOC markers at the top of each document. If you rename a heading, update
   the corresponding TOC entry in the same change.
