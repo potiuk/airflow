@@ -285,6 +285,15 @@ Currently available:
   milestone, field, and draft-email updates; and prompts the user to confirm each
   change before applying it. Prints the ASF CVE allocation link when a CVE is
   needed.
+- [`fix-security-issue`](.claude/skills/fix-security-issue/SKILL.md) — runs
+  `sync-security-issue` first, then analyses the issue discussion to decide
+  whether the reported problem is easily fixable (clear consensus, small scope,
+  known location). If it is, proposes an implementation plan, writes the change
+  in the user's local `apache/airflow` clone, runs local checks and tests, and
+  opens a public PR via `gh pr create --web`. Every public surface (commit
+  message, branch name, PR title, PR body, newsfragment) is scrubbed for CVE /
+  `airflow-s` / `vulnerability` / `security fix` leakage before being written or
+  pushed. Updates the `airflow-s` tracking issue with the new PR link afterwards.
 
 When adding a new skill:
 

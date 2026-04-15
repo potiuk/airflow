@@ -1,0 +1,499 @@
+---
+name: fix-security-issue
+description: |
+  Attempt to fix a security issue tracked in airflow-s/airflow-s by
+  implementing the change in a public apache/airflow PR. Runs the
+  sync-security-issue skill first to reconcile the issue's state, then
+  analyses the discussion to decide whether the issue is easily fixable
+  (clear consensus, small scope, known location). If it is, proposes an
+  implementation plan, waits for explicit user confirmation, writes the
+  change in the user's local apache/airflow clone, runs the local checks
+  and tests, opens a PR from the user's fork via `gh pr create --web`,
+  and updates the airflow-s tracking issue with the new PR link and any
+  relevant labels. Public PR content is checked to make sure it does
+  **not** reveal the CVE, the security nature of the change, or any link
+  back to airflow-s/airflow-s.
+when_to_use: |
+  Invoke when a security team member says "try to fix issue NNN", "see
+  if you can land a fix for NNN", "draft a PR for NNN", or similar —
+  *after* the issue has been triaged and the team has a rough consensus
+  on what the fix should look like. Not appropriate for issues that are
+  still being assessed, for reports that haven't been classified as
+  valid vulnerabilities, or for changes that require private
+  code-review in `airflow-s/airflow-s` itself (the private-PR fallback
+  in process step 9 of README.md).
+---
+
+# fix-security-issue
+
+This skill automates the "attempt a fix" step of the security handling
+process for issues in [`airflow-s/airflow-s`](https://github.com/airflow-s/airflow-s).
+It composes with the [`sync-security-issue`](../sync-security-issue/SKILL.md)
+skill — it always runs the sync first so that the issue's state is
+reconciled with the mail thread and any existing PRs before attempting
+any new work.
+
+**Golden rule:** Every state-changing action — writing files in the
+local `apache/airflow` clone, committing, pushing to the user's fork,
+opening a public PR, editing or commenting on `airflow-s/airflow-s`,
+drafting mail on the `security@` thread — is a *proposal* that requires
+explicit confirmation from the user before it runs. The fact that the
+user invoked the skill is not a blanket "yes". In particular, **nothing
+public is pushed without the user explicitly approving the exact PR
+title, body and diff first.**
+
+**Confidentiality is paramount.** The resulting PR in `apache/airflow`
+is public to the world. It must not reveal the CVE ID, the security
+nature of the change, or any link back to `airflow-s/airflow-s`. See
+the "Confidentiality of `airflow-s/airflow-s`" section of
+[`AGENTS.md`](../../../AGENTS.md) and process step 8 of
+[`README.md`](../../../README.md).
+
+---
+
+## Inputs
+
+Before running the skill, you need:
+
+- **Issue number** in `airflow-s/airflow-s` (required) — e.g. `#216` or
+  just `216`.
+- **Path to local `apache/airflow` clone** (optional — the skill will
+  probe the usual locations if omitted). The clone must have a fork
+  remote configured; the user's fork is the only push target the skill
+  will accept.
+
+If the user does not supply the issue number, ask for it before doing
+anything else.
+
+---
+
+## Step 1 — Sync the issue first
+
+Run the [`sync-security-issue`](../sync-security-issue/SKILL.md) skill
+on the same issue number and apply any state corrections the user
+confirms there. **Do not attempt a fix before the sync has completed**,
+because:
+
+- the issue may already have a fix PR linked that only needs to be
+  nudged (review request, rebase, backport label), not a new one
+  written from scratch;
+- the issue may be in a state where a fix is premature — still under
+  triage, awaiting reporter input, or waiting on a wider-audience
+  discussion per process step 4 of [`README.md`](../../../README.md);
+- the issue may already be closed / advisory-published, in which case
+  the correct action is an erratum, not a new PR;
+- some of the metadata the fix workflow needs (scope label, milestone,
+  assignees, fix PR URL) may be stale and will be corrected during the
+  sync.
+
+Capture the sync's final state and next-step recommendation — they are
+inputs to Step 2.
+
+---
+
+## Step 2 — Assess whether the issue is easily fixable
+
+Read the issue body and the full comment thread — already fetched by
+the sync — and classify whether the fix should be attempted right now.
+
+### Easily-fixable signals (all of these should be true or close to
+true)
+
+- **Clear consensus on the approach.** There is either an explicit
+  "approach 2 for me as well" style vote, or one proposal has been
+  discussed and no one has disagreed, or a maintainer has concretely
+  said "we should just do X".
+- **Known location.** The discussion points to specific file paths,
+  function names, or line numbers in `apache/airflow` where the fix
+  should land. Bonus: there is an explicit code snippet in the
+  discussion showing what the change should look like.
+- **Small scope.** The fix touches a handful of files, one component,
+  no migrations, no new public API, no new dependencies, no
+  configuration changes.
+- **No open technical questions.** No "we still need to check if…",
+  "waiting for reporter to confirm…", or "we need to agree on the
+  response shape" threads left dangling.
+- **The security classification is settled.** The team agrees this is
+  a valid vulnerability (or valid hardening), not still being argued
+  over.
+
+### Hard-to-fix signals (any one of these is a stop condition)
+
+- Multiple competing approaches are still being debated in the
+  comments, with no convergence.
+- The fix requires architectural changes, new abstractions, or
+  cross-team coordination.
+- The discussion contains *"I'm not sure this is even a security
+  issue"* that has not yet been resolved.
+- The fix requires input from the reporter that has not yet been
+  provided.
+- The fix would need to be coordinated with a non-security change
+  that is already in flight (e.g. a refactor that is rewriting the
+  affected code).
+- The scope is large (many files, migration, API change, breaking
+  change) — a public PR would invite questions in review that hint at
+  the security nature of the fix, and that has to be handled via the
+  private-PR fallback (process step 9).
+- The affected component is a third-party provider code path where
+  the correct fix belongs in the provider's own repository, not in
+  `apache/airflow` main.
+
+### Report the classification
+
+Present the classification to the user explicitly. If **not** easily
+fixable, report why, suggest a concrete next step (a question for the
+issue comments, a targeted email to the reporter, a short proposal to
+send to the security team, a call for wider input, etc.), and **stop
+the skill**. Do not skip to implementation just because the user
+invoked the fix skill.
+
+If **easily fixable**, extract and write down:
+
+- the file paths that will need to change,
+- a one-paragraph description of the intended change (non-security
+  language, see Step 4),
+- any code snippet from the discussion that captures the fix,
+- the set of tests that the change should cover (existing tests to
+  update, new tests to add),
+- the target branch (`main` almost always; a release branch only if
+  the user explicitly says so),
+- any backport label that should be applied to the eventual PR, based
+  on the milestone on the `airflow-s` issue (e.g.
+  `backport-to-v3-1-test` when the milestone is a `3.1.x` release
+  that hasn't been cut yet).
+
+---
+
+## Step 3 — Locate and verify the local `apache/airflow` clone
+
+The skill will never write into `airflow-s/airflow-s` for a code
+change; it writes into a local clone of `apache/airflow`. Before
+touching any files:
+
+1. Detect or ask for the clone path. Common locations:
+   `~/code/airflow`, `~/code/apache-airflow`, `~/projects/airflow`.
+   Verify it is a git repository and its `origin` or one of the
+   remotes points to `github.com:apache/airflow.git` (or the user's
+   fork).
+
+2. Check `git remote -v`. Identify which remote is the **user's fork**
+   and which is the upstream `apache/airflow`. Per the rule in
+   [`apache/airflow/AGENTS.md`](https://github.com/apache/airflow/blob/main/AGENTS.md),
+   push only to the user's fork, never to `apache/airflow` directly.
+   If no fork remote is configured, **stop and ask the user to
+   configure one** (`gh repo fork apache/airflow --remote
+   --remote-name <name>`); do not auto-create one.
+
+3. Check that the working tree is clean (`git status` shows no
+   untracked or modified files the user did not opt in to).
+   If it is dirty, stop and ask the user how to proceed.
+
+4. Check that `prek` is installed and hooks are enabled per
+   `apache/airflow/AGENTS.md` — `uv tool install prek` and
+   `prek install` if not.
+
+5. Fast-forward the base branch to the latest upstream. For a typical
+   fix, that is `main`:
+
+   ```bash
+   git checkout main
+   git fetch <upstream-remote> main
+   git reset --hard <upstream-remote>/main
+   ```
+
+   Do not run this destructive command without the user's explicit
+   confirmation if `main` is ahead of the upstream for any reason.
+
+---
+
+## Step 4 — Propose the implementation plan (do not touch any code yet)
+
+Present a single, compact plan with the following sections. The plan
+is a *proposal*, and **no code is written until the user confirms it
+verbatim.**
+
+### 4a. Branch and base
+
+- **Base:** `main` (or the specific release branch if agreed).
+- **Branch name:** Use a descriptive, non-security slug. For example:
+  - good: `fix-extra-links-xcom-deserialization`
+  - good: `tighten-assets-graph-dag-permission-check`
+  - **bad** (reveals security / links airflow-s): `cve-2026-40690`,
+    `security-fix-218`, `airflow-s-216`.
+
+### 4b. Files that will change
+
+A bullet list of file paths (relative to the repo root), each with a
+one-line description of the change. Where the discussion pointed to
+specific lines, include them. If the discussion included a code
+snippet, reproduce it here so the user can confirm it's what will be
+written.
+
+### 4c. Commit message and PR title
+
+The commit message and the PR title must be **neutral bug-fix /
+improvement language**. They must not contain any of:
+
+- `CVE-YYYY-NNNNN`
+- `CVE`, `vulnerability`, `security fix`, `advisory`
+- `airflow-s`, `airflow-s/airflow-s`, `#216`, `airflow-s#216`
+- any reporter name tied to a security finding
+- the word *"sensitive"* in a way that points at an unmasked-credential
+  bug
+- wording that would allow a reader to reconstruct the attack from
+  the PR alone
+
+Good examples (neutral, accurate):
+
+- *"Fix asset graph view leaking DAGs outside the user's permissions"*
+- *"Add `access_key` and `connection_string` to DEFAULT_SENSITIVE_FIELDS"*
+- *"Improve xcom value handling in extra links API"*
+
+The PR description must describe the change, not the vulnerability.
+It can and should reference the public documentation being changed
+and include a test plan, but it must not say *"this fixes a security
+issue"* or link to any private tracker.
+
+### 4d. Test plan
+
+List:
+
+- existing tests that the change must continue to pass,
+- new tests to be added that exercise the fix (required unless the
+  change is a pure rename / typo fix),
+- the exact commands the skill will run locally before pushing, taken
+  from `apache/airflow/AGENTS.md`:
+
+  - `uv run --project airflow-core pytest path/to/test.py::TestClass::test_method -xvs` (unit test),
+  - `prek run --from-ref main --stage pre-commit` (fast static checks),
+  - `prek run --from-ref main --stage manual` (slow static checks),
+  - and a type-check (`uv run --project <project> --with "apache-airflow-devel-common[mypy]" mypy <path>`) where applicable.
+
+### 4e. Backport label
+
+If the `airflow-s` issue's milestone indicates a release branch that
+has not yet been cut (e.g. `3.1.9`, `3.2.1`), note which
+`backport-to-vX-Y-test` label the PR should carry so that the fix
+lands on the intended patch release. If no backport is needed (the
+milestone is the next `main`-branch release), say so explicitly.
+
+### 4f. Newsfragment
+
+Per `apache/airflow/AGENTS.md`, newsfragments are only added for
+major or breaking user-visible changes, and usually coordinated
+during review. For a security-adjacent bug fix, default to **not**
+adding a newsfragment in the initial PR — reviewers will ask for one
+if needed. Never add a newsfragment that describes the change as a
+security fix, because that reveals the security nature and defeats
+the whole point of the private tracking workflow.
+
+### 4g. PR body draft
+
+Write out the exact `--body` the skill will pass to
+`gh pr create --web`. Include:
+
+- a brief description of the user-visible change,
+- the test plan (markdown checklist),
+- the standard Gen-AI disclosure block per
+  [`apache/airflow/contributing-docs/05_pull_requests.rst`](https://github.com/apache/airflow/blob/main/contributing-docs/05_pull_requests.rst#gen-ai-assisted-contributions):
+
+  ```
+  ##### Was generative AI tooling used to co-author this PR?
+
+  - [X] Yes — Claude Opus 4.6 (1M context)
+
+  Generated-by: Claude Opus 4.6 (1M context) following the guidelines at
+  https://github.com/apache/airflow/blob/main/contributing-docs/05_pull_requests.rst#gen-ai-assisted-contributions
+  ```
+
+Before presenting the body, **grep it for the forbidden terms** listed
+in 4c and flag any hit to the user. Do not ship anything that matches.
+
+---
+
+## Step 5 — Confirm the plan with the user
+
+Present the full plan and wait for explicit confirmation. Accept:
+
+- `all` / `yes` — apply the whole plan.
+- numbered confirmation — apply only the listed items.
+- free-form edits — if the user wants to change the branch name, a
+  file, the PR title / body, or the test plan, update the plan and
+  re-present it for confirmation.
+- `none` / `cancel` — stop. Do not touch any files.
+
+Never assume confirmation. If the user replies ambiguously, ask again.
+
+---
+
+## Step 6 — Implement, check locally, and show the diff
+
+Only after Step 5 confirmation:
+
+1. Create the branch with the agreed name off the freshly pulled
+   base.
+2. Make the file edits from 4b, using the small-edit tools where
+   possible (prefer `Edit` over `Write` unless creating a new file).
+3. Run the test and static-check commands from 4d. If any fail, stop
+   and report the failure — do not push red code to the fork.
+4. Run `git diff main...HEAD` against the upstream base, and present
+   the full diff to the user.
+
+**Wait for the user to confirm the diff before the next step.** They
+may ask for tweaks; if so, apply them, re-run the checks, and re-show
+the diff.
+
+---
+
+## Step 7 — Commit and push to the fork
+
+After the user confirms the diff:
+
+1. Stage only the intentional changes (`git add <paths>` — never
+   `git add -A` or `git add .`).
+2. Commit with the agreed message from 4c, ending in the
+   `Generated-by:` trailer (not `Co-Authored-By:`), per
+   [`AGENTS.md`](../../../AGENTS.md).
+3. Rebase onto the latest upstream base one more time in case
+   something landed while you were working:
+
+   ```bash
+   git fetch <upstream-remote> <base-branch>
+   git rebase <upstream-remote>/<base-branch>
+   ```
+
+4. Push the branch to the **user's fork** — never to
+   `apache/airflow` directly, never with `--force` unless the user
+   explicitly asked (and then only with `--force-with-lease`):
+
+   ```bash
+   git push -u <fork-remote> <branch-name>
+   ```
+
+---
+
+## Step 8 — Open the PR on the public apache/airflow repo
+
+Use `gh pr create --web` with the pre-filled title and body from 4c
+and 4g. The user reviews the title, body and gen-AI disclosure in the
+browser before actually submitting the PR — matching the rule in
+[`AGENTS.md`](../../../AGENTS.md).
+
+```bash
+gh pr create --web --repo apache/airflow --base <base-branch> \
+  --title "<neutral title>" \
+  --body "$(cat /tmp/pr-body-<issue>.md)"
+```
+
+If a backport label is needed, tell the user to add it via the GitHub
+UI once the PR is open. Do not add the backport label programmatically
+from the skill — it may race with CI and is best done by a human
+reviewer who can judge the backport strategy.
+
+**Grep the PR body one more time for forbidden terms** (`CVE`,
+`airflow-s`, `vulnerability`, `security fix`, `advisory`, private
+issue number, reporter name tied to a finding) before calling
+`gh pr create --web`. If anything matches, abort and tell the user.
+
+After the user submits the PR in the browser, capture the PR URL
+(either from the browser or by running
+`gh pr view --json url --jq .url`) for Step 9.
+
+---
+
+## Step 9 — Update the airflow-s tracking issue
+
+Now that a public PR exists, update the private tracking issue:
+
+1. **Add a comment** on `airflow-s/airflow-s#<N>` announcing the new
+   PR, the branch name, and the intended backport (if any). The
+   comment lives inside the private repo so it may contain the PR
+   URL, the branch name and the CVE reference (linked per the
+   "Linking CVEs" rule in [`AGENTS.md`](../../../AGENTS.md)).
+
+2. **Update the issue body "PR with the fix" field** if it is empty
+   or points to a stale PR. Use `gh issue view --json body`, patch
+   only that field, and apply via `gh issue edit --body-file`, as
+   in the [`sync-security-issue`](../sync-security-issue/SKILL.md)
+   skill.
+
+3. **Update labels** as follows, with user confirmation:
+   - keep `needs triage` **removed** if it was there (it should
+     already be gone after triage);
+   - do **not** add `Not yet announced` yet — that label belongs to
+     the post-merge state, which the sync-security-issue skill
+     applies on the next run after merge;
+   - apply any workflow-transition label the team uses for "fix
+     proposed, awaiting review" if one exists (check the label list
+     on the repo — as of the last audit the repo has `airflow`,
+     `providers`, `chart`, `API`, `needs triage`, `cve allocated`,
+     `Not yet announced`, `announced - emails sent`, `pending
+     response`, `wontfix`, `invalid`, `duplicate`, `not CVE worthy`,
+     `missing CVE`, `documentation update`, `dependencies`,
+     `Connections`, `FAB permissions vs. UI`, `waiting for upstream`
+     — pick the closest match if any, and ask the user if in doubt).
+
+4. **Drafted status update to the reporter** — if the `airflow-s`
+   issue has an identified external reporter and the reporter has
+   not yet been told about the fix PR, delegate to the
+   `sync-security-issue` skill's "Status update to the reporter"
+   category by re-running that skill with a pointer to the new PR.
+   Do **not** draft the reporter email directly in this skill — it's
+   the sync skill's responsibility.
+
+---
+
+## Step 10 — Recap
+
+Print a short recap:
+
+- the public PR URL,
+- the branch name (in the user's fork),
+- the list of files changed,
+- the tests that were run and their results,
+- the comment posted on the `airflow-s` issue,
+- any backport label that still needs to be applied manually,
+- the next step — typically *"wait for review; re-run
+  sync-security-issue after the PR merges to transition the issue
+  to `Not yet announced` and update the milestone"*.
+
+---
+
+## Guardrails
+
+- **No public leakage.** The skill runs a final `grep` for
+  `CVE-`, `airflow-s`, `vulnerability`, `security fix`, `advisory`,
+  `security@`, the issue number preceded by `airflow-s#`, and any
+  reporter name on every piece of text headed for a public surface —
+  commit message, PR title, PR body, branch name, newsfragment,
+  comments on `apache/airflow`. If any hit, abort and ask the user.
+- **Fork only.** Never push to `apache/airflow` directly.
+- **No force push** to a shared branch or to `main` on any remote.
+  `--force-with-lease` on the user's own feature branch is allowed
+  only with explicit approval.
+- **Tests must pass.** Do not push a branch with failing unit tests
+  or failing pre-commit hooks.
+- **Small edits over large.** Prefer `Edit` over `Write`; prefer the
+  minimum-size diff that implements the fix; do not "tidy up"
+  surrounding code while you're there.
+- **No newsfragment for security fixes** unless explicitly approved.
+  A security newsfragment broadcasts the security nature of the
+  change.
+- **Stop on disagreement.** If at any point the local checks, upstream
+  CI, or a reviewer flags a problem the skill did not anticipate,
+  stop and surface it to the user — do not retry indefinitely.
+- **Follow AGENTS.md.** Everything in the top-level
+  [`AGENTS.md`](../../../AGENTS.md) of this repo — confidentiality,
+  commit trailers, `gh pr create --web`, polite-but-firm tone, CVE
+  linking — applies, and takes precedence over anything in this
+  skill file if the two ever disagree.
+
+---
+
+## References
+
+- [`sync-security-issue` skill](../sync-security-issue/SKILL.md) — run this first.
+- [`README.md`](../../../README.md) — canonical process description, especially steps 7–9 (implementing the fix).
+- [`AGENTS.md`](../../../AGENTS.md) — repo-wide rules (confidentiality, commit trailers, tone, CVE linking).
+- [`apache/airflow/AGENTS.md`](https://github.com/apache/airflow/blob/main/AGENTS.md) — parent conventions this skill defers to.
+- [`apache/airflow/contributing-docs/05_pull_requests.rst`](https://github.com/apache/airflow/blob/main/contributing-docs/05_pull_requests.rst) — public PR conventions and Gen-AI disclosure block.
