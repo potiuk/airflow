@@ -70,8 +70,10 @@ if a hook is failing, fix the underlying issue or update the hook configuration 
 As of 2026-04-15, the Airflow release trains are:
 
 - **Airflow `main`** — becomes the next minor release (3.3.x eventually).
-- **`v3-2-test`** — patch branch for the **Airflow 3.2.x** series. The next
-  patch release from this branch is **3.2.1**.
+- **`v3-2-test`** — patch branch for the **Airflow 3.2.x** series. 3.2.1
+  has already been cut; the **next patch release from this branch is
+  `3.2.2`**. New security fixes that need a patch release target this
+  branch.
 - **`v3-1-test`** — **no further 3.1.x releases are planned**. In particular,
   `3.1.9` will **not** be cut. The `3.1.9` milestone exists in
   `airflow-s/airflow-s` as an open milestone, but it is a legacy placeholder
@@ -80,19 +82,24 @@ As of 2026-04-15, the Airflow release trains are:
 **What this means for sync and fix skills**
 
 - When selecting a milestone for a newly-triaged security issue, default to
-  `3.2.1` (via the `v3-2-test` backport) for anything that needs a patch
+  **`3.2.2`** (via the `v3-2-test` backport) for anything that needs a patch
   release. Do **not** propose `3.1.9` unless the user explicitly asks for
   it. If the `sync-security-issue` skill finds an issue currently parked on
-  `3.1.9`, propose moving it to `3.2.1`.
+  `3.1.9` (or on `3.2.1` now that it has been cut), propose moving it to
+  `3.2.2`.
 - When selecting backport labels on public `apache/airflow` PRs, use
   `backport-to-v3-2-test` only — do **not** also apply
   `backport-to-v3-1-test` by default. A `v3-1-test` backport is only
   appropriate if the user explicitly requests it for a specific issue and
   is prepared to cut a 3.1.x patch release out-of-band.
+- If the `3.2.2` milestone does **not** yet exist in `airflow-s/airflow-s`
+  when the skill needs it, create it via `gh api` and then assign the issue
+  to it — see the "Maintaining milestones and labels" section of the
+  `fix-security-issue` skill.
 - This section is the authoritative answer to *"which branches do we back
-  fixes to?"* — when this changes (for example, when 3.3.x is cut or when
-  3.2.x goes into patch-only mode), update it in the same change that
-  ships the release.
+  fixes to?"* — when this changes (for example, when 3.3.x is cut, when
+  `3.2.2` is released, or when `v3-2-test` goes into patch-only mode),
+  update it in the same change that ships the release.
 
 ## Commit and PR conventions
 
@@ -280,6 +287,52 @@ case and link only to the ASF tool.
 
 When editing an existing document that contains a bare `CVE-YYYY-NNNNN`
 string, convert it to the linked form in the same edit.
+
+### Linking `airflow-s/airflow-s` issues and PRs
+
+Whenever a reference to an `airflow-s/airflow-s` issue, pull request,
+comment, or discussion appears in text this repository produces — sync /
+fix skill proposals, status comments on the private issue itself, recap
+messages, internal notes, `SKILL.md` files — render it as a **clickable
+markdown link**, not as a bare `#NNN` or `airflow-s/airflow-s#NNN`. The
+URL format is:
+
+```
+https://github.com/airflow-s/airflow-s/issues/<N>
+https://github.com/airflow-s/airflow-s/pull/<N>
+https://github.com/airflow-s/airflow-s/issues/<N>#issuecomment-<C>
+```
+
+Preferred rendering:
+
+> [`airflow-s/airflow-s#221`](https://github.com/airflow-s/airflow-s/issues/221)
+
+or, when the repository is already obvious from context (for example
+inside a comment on `airflow-s/airflow-s#221` itself):
+
+> [`#221`](https://github.com/airflow-s/airflow-s/issues/221)
+
+Link both the number *and* any referenced comment / review by using the
+per-comment anchor:
+
+> [`airflow-s/airflow-s#216 — issuecomment-4252393493`](https://github.com/airflow-s/airflow-s/issues/216#issuecomment-4252393493)
+
+**Confidentiality, as always**, takes precedence: these rendered links
+are *only* allowed inside this private repository and in private mail
+threads on `security@airflow.apache.org` — they are **never** permitted
+in public `apache/airflow` PR descriptions, public mailing-list posts,
+public canned responses, or anywhere else a non-security-team member
+could see them. See the "Confidentiality of `airflow-s/airflow-s`"
+section above. The scrubbing grep the `fix-security-issue` skill runs
+before pushing anything public is the final line of defence and must
+catch any stray `airflow-s` URL or `airflow-s#NNN` reference that slips
+into public text.
+
+When editing an existing document in this repo that contains a bare
+`#NNN` or `airflow-s/airflow-s#NNN`, convert it to the linked form in
+the same edit. Skill-generated output (sync proposals, issue comments,
+email drafts to reporters on the `security@` thread) must emit the
+linked form from the start — bare references are a miss.
 
 ### Other editorial guidelines
 

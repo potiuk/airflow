@@ -338,6 +338,22 @@ the recap — render it as a clickable link per the "Linking CVEs" section of
 
 Do not emit bare `CVE-YYYY-NNNNN` text — always link.
 
+**Whenever an `airflow-s/airflow-s` issue, PR, or comment is referenced** —
+in the proposal, in the status-change comment, in the recap, in any internal
+note — render it as a clickable markdown link per the "Linking
+`airflow-s/airflow-s` issues and PRs" section of
+[`AGENTS.md`](../../../AGENTS.md):
+
+- Issue: `[airflow-s/airflow-s#221](https://github.com/airflow-s/airflow-s/issues/221)` (or `[#221](https://github.com/airflow-s/airflow-s/issues/221)` when the repo is obvious from context).
+- PR: `[airflow-s/airflow-s#NNN](https://github.com/airflow-s/airflow-s/pull/NNN)`.
+- Specific comment: link to the `#issuecomment-<C>` anchor.
+
+Do not emit bare `#NNN` or `airflow-s/airflow-s#NNN` — always link. The
+confidentiality rule still applies: these links are for private surfaces
+only (this repo, the private issue itself, the `security@` mail thread)
+and must **never** appear in any `apache/airflow` PR description, public
+comment, mailing-list post, or other public surface.
+
 ---
 
 ## Step 3 — Confirm with the user
