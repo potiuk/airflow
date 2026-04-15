@@ -15,22 +15,22 @@ Generally speaking, Apache Airflow addresses security issues through the followi
 ## Process
 
 1. **Vulnerability Identification**:
-   The Apache Airflow community actively monitors security channels and mailing lists for reports of vulnerabilities. The issues are reported by reporters to security@apache.airflow.org email id.
+   The Apache Airflow community actively monitors security channels and mailing lists for reports of vulnerabilities. Issues are reported to the `security@airflow.apache.org` email address.
 
 2. **Security Advisories**:
-   When vulnerabilities are fixed, the release managers will issue security advisories to inform users about the
-   vulnerabilities and provide some guidance on mitigation.
+   When vulnerabilities are fixed, the release managers issue security advisories to inform users about the
+   vulnerabilities and provide guidance on mitigation.
 
 3. **Security Features**:
-   The Apache Airflow project continuously works on introducing new security features and enhancing the already existing
+   The Apache Airflow project continuously works on introducing new security features and enhancing existing
    ones to improve the overall security posture of the platform.
 
 4. **Community Engagement**:
    The Apache Airflow project encourages responsible vulnerability disclosure from users and security researchers
-   to ensure prompt and responsible handling of security issues. Airflow security team follows an on-call and handles reports received this way.
+   to ensure prompt and responsible handling of security issues. The Airflow security team follows an on-call rotation and handles reports received this way.
 
 
 ## Best Practices
 
-*  When we implement low severity issues for security, sometimes the ones that are even    not worthy of having a CVE, we avoid describing it as a security feature to avoid web scrappers / tools running against our repository commits
-   to raise reports that were not subscribed to. These tools might as well violate our security practices.
+*  When we implement low-severity security fixes — sometimes ones that are not even worthy of a CVE — we avoid describing them as security features. This prevents web scrapers and tools running against our repository commits
+   from raising reports about issues they were not originally aware of. Such tools may themselves violate our security practices.
