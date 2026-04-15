@@ -5,6 +5,7 @@
 - [AGENTS instructions](#agents-instructions)
   - [Repository purpose](#repository-purpose)
   - [Local setup](#local-setup)
+  - [Release branches currently in flight](#release-branches-currently-in-flight)
   - [Commit and PR conventions](#commit-and-pr-conventions)
   - [Confidentiality of `airflow-s/airflow-s`](#confidentiality-of-airflow-sairflow-s)
   - [Writing and editing documentation](#writing-and-editing-documentation)
@@ -63,6 +64,35 @@ prek run --from-ref airflow-s        # run against everything changed vs the bas
 If a hook modifies files (for example, `doctoc` regenerating a TOC), the commit is aborted;
 re-stage the modified files and commit again. **Do not bypass the hooks with `--no-verify`** —
 if a hook is failing, fix the underlying issue or update the hook configuration in the same PR.
+
+## Release branches currently in flight
+
+As of 2026-04-15, the Airflow release trains are:
+
+- **Airflow `main`** — becomes the next minor release (3.3.x eventually).
+- **`v3-2-test`** — patch branch for the **Airflow 3.2.x** series. The next
+  patch release from this branch is **3.2.1**.
+- **`v3-1-test`** — **no further 3.1.x releases are planned**. In particular,
+  `3.1.9` will **not** be cut. The `3.1.9` milestone exists in
+  `airflow-s/airflow-s` as an open milestone, but it is a legacy placeholder
+  and should not be used for new security fixes.
+
+**What this means for sync and fix skills**
+
+- When selecting a milestone for a newly-triaged security issue, default to
+  `3.2.1` (via the `v3-2-test` backport) for anything that needs a patch
+  release. Do **not** propose `3.1.9` unless the user explicitly asks for
+  it. If the `sync-security-issue` skill finds an issue currently parked on
+  `3.1.9`, propose moving it to `3.2.1`.
+- When selecting backport labels on public `apache/airflow` PRs, use
+  `backport-to-v3-2-test` only — do **not** also apply
+  `backport-to-v3-1-test` by default. A `v3-1-test` backport is only
+  appropriate if the user explicitly requests it for a specific issue and
+  is prepared to cut a 3.1.x patch release out-of-band.
+- This section is the authoritative answer to *"which branches do we back
+  fixes to?"* — when this changes (for example, when 3.3.x is cut or when
+  3.2.x goes into patch-only mode), update it in the same change that
+  ships the release.
 
 ## Commit and PR conventions
 
