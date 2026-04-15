@@ -77,36 +77,92 @@ Record:
 
 ### 1b. Find referenced and referencing PRs
 
+First, get the PRs that GitHub itself has linked to the issue via "fixes" /
+"closes" / "resolves" keywords:
+
 ```bash
-gh issue view <N> --repo airflow-s/airflow-s --json timelineItems
-gh search prs "airflow-s#<N>" --repo apache/airflow --state all --json number,title,state,url,milestone,mergedAt,mergeCommit
-gh search prs "<N>" --repo airflow-s/airflow-s --state all --json number,title,state,url,milestone,mergedAt,mergeCommit
+gh issue view <N> --repo airflow-s/airflow-s --json closedByPullRequestsReferences
+```
+
+Then look for any PR in either repo that mentions the issue number, in either
+state. `gh search prs --state` only accepts `open` or `closed`, so run two
+queries (or omit `--state` entirely for "any state"):
+
+```bash
+gh search prs "airflow-s#<N>" --repo apache/airflow         --json number,title,state,url,milestone,mergedAt
+gh search prs "#<N>"          --repo airflow-s/airflow-s    --json number,title,state,url,milestone,mergedAt
+```
+
+If the issue body itself contains a PR URL (the report template has a "PR with
+the fix" field), fetch that PR directly and trust it more than the search:
+
+```bash
+gh pr view <PR-NUMBER> --repo apache/airflow \
+  --json number,title,state,url,milestone,mergedAt,mergeCommit,labels,reviews,isDraft
 ```
 
 For each PR found, record: number, repo, title, state (open / merged / closed),
 merge date, milestone. A PR that is merged into `apache/airflow` with a milestone
 set is the strongest signal for what milestone the security issue should carry.
 
-### 1c. Read the mailing-list thread
+### 1c. Find the **real** reporter and read the mailing-list thread
 
-Search Gmail in the mailbox connected to the user running the sync:
+> The author of the GitHub issue in `airflow-s/airflow-s` is **not** necessarily
+> the person who reported the vulnerability. Per [`README.md`](../../../README.md)
+> step 1, the security team copies reports from the
+> `security@airflow.apache.org` mailing list into GitHub issues, so the GitHub
+> author is usually a security team member, while the **real reporter** is
+> whoever sent the original email. Always identify the real reporter before
+> proposing credit, draft replies, or status updates.
 
-1. Look for the original report thread. Start with the issue title as the query,
-   then fall back to the reporter's email address if the title does not match.
-   Use `mcp__claude_ai_Gmail__gmail_search_messages` with queries like:
-   - `list:security@airflow.apache.org "<issue title>"`
-   - `list:security@airflow.apache.org from:<reporter-email>`
-2. When you find the thread, read its full content with
-   `mcp__claude_ai_Gmail__gmail_read_thread`.
-3. Extract:
-   - the reporter's **preferred credit** (name, affiliation, handle, or anonymous);
-   - any additional technical context or PoC the reporter supplied;
-   - the latest message in the thread and whether it is *from* us or *to* us
-     (i.e. is the ball in our court?);
-   - any indication that the reporter is waiting on us.
+Process for finding the real reporter and the original thread:
 
-If you cannot find the thread, say so explicitly in the proposal and ask the
-user whether to proceed without email context.
+1. **Do not stop at the GitHub-notification mirror thread.** Searching Gmail
+   for the issue title typically returns the GitHub-notification thread
+   (`From: <user> via security <security@airflow.apache.org>`,
+   `To: airflow-s/airflow-s <airflow-s@noreply.github.com>`) first. That is
+   *not* the original report — it is a mirror of the GitHub issue and its
+   comments. Filter it out and keep digging.
+
+2. **Search for the original mail by content, not by title.** The GitHub issue
+   title is usually paraphrased by the security team member who copied it.
+   The original email had a different subject line. Pick a *distinctive
+   phrase* from the issue body (a function name, an endpoint, an error
+   message) and search Gmail with it, **excluding GitHub notifications**:
+
+   ```text
+   "<distinctive phrase>" -from:notifications@github.com -from:noreply@github.com
+   ```
+
+   For example: `"HITL" "ui/dags" -from:notifications@github.com -from:noreply@github.com`.
+
+3. **Identify the original sender.** In the result set, look for the message
+   whose `In-Reply-To` is empty (i.e. the root of its thread) and whose
+   `From:` is **not** the security team member who created the GitHub issue.
+   That sender is the real reporter. Record:
+
+   - their name and email address (e.g. `Jed Cunningham <jedcunningham@apache.org>`),
+   - the original Gmail `threadId` — this is the thread you must reply on
+     when drafting status updates,
+   - the original subject line (you will reuse it for In-Reply-To threading).
+
+4. **Read the full thread** with
+   `mcp__claude_ai_Gmail__gmail_read_thread <threadId>` and extract:
+
+   - the reporter's **preferred credit** if they have already stated one
+     (name, affiliation, handle, or anonymous);
+   - any additional technical context or PoC the reporter supplied beyond
+     what made it into the GitHub issue;
+   - **all status updates already sent to the reporter by the security team**
+     — this is what tells you whether a new status update is needed (see
+     Step 2b);
+   - the latest message in the thread, *who* sent it, and whether the ball
+     is in our court.
+
+5. **If you cannot find the original thread**, say so explicitly in the
+   proposal and ask the user whether the GitHub issue author is also the
+   reporter (which does happen for issues a security team member discovered
+   themselves). Do not assume.
 
 ### 1d. Locate the process step
 
@@ -164,14 +220,41 @@ will change and *why*. Group them by category:
 - **Status transitions** — e.g. *"close the issue as invalid"*, *"add `Not yet
   announced` now that apache/airflow#NNNN has merged"*, *"add `vendor-advisory`
   and link to lists.apache.org archive entry"*.
-- **Draft email to reporter** — whenever the ball is in our court on the email
-  thread, propose a **Gmail draft** reply (not a sent message). State the
-  intent of the draft in one line (*"acknowledge receipt and ask for credit
-  preference"*, *"communicate negative assessment"*, *"confirm CVE ID and ask
-  about credit"*, etc.) and prefer to reuse a canned response from
+- **Status update to the reporter** — **whenever the issue's status has changed
+  since the last message we sent to the reporter, propose a Gmail draft that
+  brings the reporter up to date.** The security team commits to keeping the
+  reporter informed at every state transition, per the "Keeping the reporter
+  informed" section of [`README.md`](../../../README.md). Concretely, draft a
+  status update whenever any of the following has happened since our last
+  message in the original mail thread:
+
+  - the report has been acknowledged or assessed (valid / invalid);
+  - a CVE has been allocated;
+  - a fix PR has been opened;
+  - a fix PR has been **merged**;
+  - the issue has been scheduled for a specific release (milestone set);
+  - the release has shipped and the public advisory has been sent;
+  - any credits or fields visible in the eventual public advisory have changed.
+
+  Each status update should: (a) state plainly what has changed, (b) link to
+  the relevant artifact (PR URL, CVE ID, advisory link), (c) state what comes
+  next, and (d) re-ask the credit-preference question if the reporter has not
+  yet answered it. Always reply on the **original** Gmail thread (the one
+  identified in Step 1c), not on the GitHub-notifications mirror thread.
+
+- **Draft email to reporter (other reasons)** — whenever the ball is in our
+  court on the email thread for any other reason (a question from the reporter,
+  a follow-up needed for triage, communicating a negative assessment), propose
+  a **Gmail draft** reply (not a sent message). State the intent of the draft
+  in one line and prefer to reuse a canned response from
   [`canned-responses.md`](../../../canned-responses.md) verbatim where one
   applies. Show the exact subject, recipients, In-Reply-To, and body in the
   proposal.
+
+  **Never send.** Always create a draft. The draft must always be created on
+  the original mail thread (`threadId` from Step 1c) so that
+  In-Reply-To/References are set automatically and the reply lands in the
+  right conversation.
 
 ### 2c. Next-step recommendation
 
