@@ -324,6 +324,20 @@ on its own line:
 
 > Allocate a CVE via the ASF CVE tool: https://cveprocess.apache.org/allocatecve
 
+**Whenever a CVE ID is mentioned** — in the proposal, in the status-change
+comment on the `airflow-s` issue, in the draft email to the reporter, or in
+the recap — render it as a clickable link per the "Linking CVEs" section of
+[`AGENTS.md`](../../../AGENTS.md). Concretely:
+
+- Before publication: link to the ASF CVE tool record, e.g.
+  `[CVE-2026-40690](https://cveprocess.apache.org/cve5/CVE-2026-40690)`.
+- After publication (issue has `vendor-advisory`, advisory has been sent to
+  `users@airflow.apache.org`): additionally link to the public `cve.org`
+  record, e.g. `CVE-2025-50213 ([ASF](https://cveprocess.apache.org/cve5/CVE-2025-50213),
+  [cve.org](https://www.cve.org/CVERecord?id=CVE-2025-50213))`.
+
+Do not emit bare `CVE-YYYY-NNNNN` text — always link.
+
 ---
 
 ## Step 3 — Confirm with the user
