@@ -367,7 +367,13 @@ Currently available:
   `security@airflow.apache.org` mail thread, and any fixing PRs; proposes label,
   milestone, field, and draft-email updates; and prompts the user to confirm each
   change before applying it. Prints the ASF CVE allocation link when a CVE is
-  needed.
+  needed. **At the end of every run** it also invokes
+  [`generate-cve-json`](.claude/skills/generate-cve-json/SKILL.md) with
+  `--attach` to refresh the CVE JSON attachment on the tracking issue (auto-
+  resolving `--remediation-developer` from the first apache/airflow PR author
+  in the *PR with the fix* body field), so the attached JSON stays in
+  lock-step with the issue body. Skipped only when no CVE has been allocated
+  yet, or when the issue has been closed as invalid / not-CVE-worthy / duplicate.
 - [`fix-security-issue`](.claude/skills/fix-security-issue/SKILL.md) — runs
   `sync-security-issue` first, then analyses the issue discussion to decide
   whether the reported problem is easily fixable (clear consensus, small scope,

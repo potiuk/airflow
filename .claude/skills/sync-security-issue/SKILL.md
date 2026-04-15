@@ -393,14 +393,114 @@ how to proceed — do not guess.
 
 ---
 
-## Step 5 — Recap
+## Step 5 — Regenerate the CVE JSON attachment
 
-After the apply loop finishes, print a short recap:
+After the apply loop finishes — **every time**, not as a proposal — run the
+[`generate-cve-json`](../generate-cve-json/SKILL.md) script with `--attach`
+to refresh the CVE JSON attachment on the tracking issue. Re-running the
+generator is cheap and idempotent: the script's HTML-comment marker (the
+``<!-- generate-cve-json: cve=CVE-YYYY-NNNN+ version=v1 -->`` line in the
+attachment comment body) lets it find the existing attachment comment and
+**patch it in place**, so a refresh never spawns a duplicate comment. If
+there is no previous attachment comment yet, the script creates one.
+
+Keeping the attachment in lock-step with the tracking issue body has two
+payoffs:
+
+1. The release manager can always grab the most-current JSON straight from
+   the issue at advisory-publication time, without having to remember to
+   regenerate.
+2. The `#source` paste URL is visible on every sync, so if a reviewer
+   notices the issue body drifting from the Vulnogram record they can
+   jump straight to the paste-ready JSON.
+
+### When to skip
+
+Skip the regeneration **only** when one of the following is true, and call
+it out explicitly in the Step 6 recap:
+
+- **No CVE has been allocated yet** — the issue body's *CVE tool link*
+  field is still `_No response_`. Running the generator in that state
+  would create an attachment comment with an `UNKNOWN` CVE marker, which
+  is not useful. Remind the user to allocate a CVE via
+  <https://cveprocess.apache.org/allocatecve> and mention that the next
+  sync run will attach the JSON automatically once a CVE is set.
+- **The tracking issue was closed as `invalid` / `not CVE worthy` /
+  `duplicate`** and there is nothing to attach.
+
+In every other case — including already-published CVEs — regenerate.
+
+### How to run it
+
+The minimum command, from the `airflow-s/airflow-s` clone root:
+
+```bash
+uv run .claude/skills/generate-cve-json/generate_cve_json.py <N> --attach
+```
+
+That alone is enough. The script reads every template field from the
+issue body, emits the full CVE 5.x record, and posts or patches the
+attachment comment.
+
+### Auto-resolve `--remediation-developer` from the fix PR
+
+For the regenerated JSON to carry a `remediation developer` credit
+alongside the `finder` credits, the sync skill should look up the author
+of the first PR mentioned in the *PR with the fix* field and pass it via
+`--remediation-developer`. One viable shell recipe:
+
+```bash
+pr_url=$(gh issue view <N> --repo airflow-s/airflow-s --json body --jq .body \
+  | grep -oE 'https://github\.com/apache/airflow/pull/[0-9]+' | head -n1)
+if [[ -n "$pr_url" ]]; then
+  pr_number=${pr_url##*/}
+  author_name=$(gh pr view "$pr_number" --repo apache/airflow \
+    --json author --jq '(.author.name // "") | select(length > 0) // .author.login' 2>/dev/null || echo "")
+fi
+
+uv run .claude/skills/generate-cve-json/generate_cve_json.py <N> --attach \
+  ${author_name:+--remediation-developer "$author_name"}
+```
+
+If the lookup fails for any reason (no PR URL yet in the body, URL is
+not a `pull/` URL, `gh` errors out), run the script **without**
+`--remediation-developer` — the attachment is still generated, just
+missing that one credit. A later manual run with the correct flag
+patches the comment in place.
+
+### Don't override `--version-start`
+
+The sync skill deliberately does **not** try to guess `--version-start`.
+If the *Affected versions* body field has a `>= X, < Y` shape, the script
+picks `X` automatically. If it has a bare `< Y` shape (the typical
+Airflow case), the script's default `"0"` is used, and the reviewer can
+tighten it later with a manual `--version-start 3.0.0` invocation that
+patches the same attachment comment.
+
+### Report the result
+
+The script prints one of two lines on success:
+
+- `Created attachment comment on airflow-s/airflow-s#<N>` — first run.
+- `Updated attachment comment on airflow-s/airflow-s#<N>` — subsequent
+  run; the existing attachment was patched in place.
+
+Capture the printed `html_url` and include it in the Step 6 recap so
+the user has one-click access to the attached JSON.
+
+---
+
+## Step 6 — Recap
+
+After the regeneration step finishes, print a short recap:
 
 - what was changed, what was skipped;
 - the drafts that are now waiting in Gmail (with a link to the thread);
 - the next step from 2c, repeated so the user does not have to scroll;
-- the CVE allocation link, if applicable.
+- the CVE allocation link, if applicable;
+- the CVE JSON attachment comment URL (newly created or just patched),
+  or an explicit note that regeneration was skipped because no CVE has
+  been allocated yet.
 
 ---
 
