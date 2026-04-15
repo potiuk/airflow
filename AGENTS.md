@@ -198,6 +198,59 @@ When adding a new canned response, identify the matching chapter in the Security
 If no chapter covers the case, that is a signal the Security Model should be updated in
 [`apache/airflow`](https://github.com/apache/airflow) rather than duplicated here.
 
+### Linking CVEs
+
+Whenever a CVE ID appears in text this repository produces — status comments
+on `airflow-s` issues, proposals from the `sync-security-issue` skill, recap
+messages, canned-response drafts to reporters, internal notes — render it as
+a **clickable link**, not as bare text. The canonical link is the ASF CVE
+tool entry, which any security team member can click through to the live
+CVE record we control:
+
+```
+https://cveprocess.apache.org/cve5/<CVE-ID>
+```
+
+Example:
+
+> [`CVE-2026-40690`](https://cveprocess.apache.org/cve5/CVE-2026-40690)
+
+For CVEs that have already been **published** (the advisory has been sent
+to `users@airflow.apache.org`, the issue carries `vendor-advisory`, and the
+CVE record is visible on public databases), additionally link to the public
+`cve.org` / MITRE record so non-security-team readers can see the public
+description without needing access to the ASF tool:
+
+```
+https://www.cve.org/CVERecord?id=<CVE-ID>
+```
+
+A published CVE should appear with both links, for example:
+
+> `CVE-2025-50213` ([ASF](https://cveprocess.apache.org/cve5/CVE-2025-50213),
+> [cve.org](https://www.cve.org/CVERecord?id=CVE-2025-50213))
+
+`https://nvd.nist.gov/vuln/detail/<CVE-ID>` is an acceptable alternative to
+`cve.org` once NVD has scored the record. Before publication, `cve.org`
+shows the CVE as RESERVED with no details — skip the public link in that
+case and link only to the ASF tool.
+
+**Confidentiality**, as a cross-reference to the
+"Confidentiality of `airflow-s/airflow-s`" section above:
+
+- ASF CVE tool links are fine inside `airflow-s/airflow-s` private
+  comments and in private mail to the reporter on
+  `security@airflow.apache.org` — the tool is team-internal and does not
+  reveal anything beyond the CVE ID itself.
+- Public `apache/airflow` PR descriptions, public mailing-list posts, and
+  any other public surface **must not** link to the ASF CVE tool before the
+  advisory is sent — doing so implies the existence of the private tracking
+  issue. Once the advisory is public, link only to `cve.org` (or NVD),
+  never to the ASF tool.
+
+When editing an existing document that contains a bare `CVE-YYYY-NNNNN`
+string, convert it to the linked form in the same edit.
+
 ### Other editorial guidelines
 
 - Do not include concrete contributor counts (e.g., "4000 contributors", "3600 contributors").
