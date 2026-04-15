@@ -26,11 +26,48 @@ This skill reconciles a single security issue in
 3. any **pull requests** in `apache/airflow` or `airflow-s/airflow-s` that reference or fix the issue;
 4. the **handling process** documented in [`README.md`](../../../README.md).
 
-**Golden rule:** Every change this skill performs is a *proposal*. The user running
-the sync must explicitly confirm each update before it is applied. Do not mutate
-GitHub state, do not send email, do not create, close, or edit anything without a
-clear "yes" from the user for that specific action. Drafts are always created as
-Gmail **drafts**, never sent directly.
+**Golden rule 1 — propose before applying.** Every change this skill
+performs is a *proposal*. The user running the sync must explicitly
+confirm each update before it is applied. Do not mutate GitHub state, do
+not send email, do not create, close, or edit anything without a clear
+"yes" from the user for that specific action. Drafts are always created
+as Gmail **drafts**, never sent directly.
+
+**Golden rule 2 — every `airflow-s/airflow-s` reference is a clickable
+link.** Whenever this skill mentions the tracking issue, any other
+`airflow-s/airflow-s` issue, a `airflow-s/airflow-s` PR, a specific
+issue comment, a milestone, or a label from this repository — in the
+observed-state dump, in the proposal, in the confirmation prompt, in
+the apply-loop output, in the regeneration output, in the recap, in
+status-change comments posted to the issue itself, anywhere — render
+it as a markdown link the user can click, **never** as a bare `#NNN`
+or `airflow-s/airflow-s#NNN` or plain-text number. The link form is
+defined in the "Linking `airflow-s/airflow-s` issues and PRs" section
+of [`AGENTS.md`](../../../AGENTS.md):
+
+- **Issue**: `[airflow-s/airflow-s#221](https://github.com/airflow-s/airflow-s/issues/221)`
+  (or `[#221](https://github.com/airflow-s/airflow-s/issues/221)` when
+  the repository is already obvious from context, e.g. inside a
+  status-change comment *on* that same issue).
+- **PR**: `[airflow-s/airflow-s#NNN](https://github.com/airflow-s/airflow-s/pull/NNN)`
+  (`.../pull/N`, not `.../issues/N`).
+- **Comment**: link to the `#issuecomment-<C>` anchor, e.g.
+  `[airflow-s/airflow-s#216 — issuecomment-4252393493](https://github.com/airflow-s/airflow-s/issues/216#issuecomment-4252393493)`.
+- **Milestone**: link to `https://github.com/airflow-s/airflow-s/milestone/<number>`
+  (not the title), because milestone titles can change and the number
+  is stable. Example: `[3.2.2](https://github.com/airflow-s/airflow-s/milestone/42)`.
+
+**Self-check before presenting any user-visible text** (proposal body,
+recap body, status-comment body, apply-loop progress messages): grep
+the text for bare `#\d+` tokens and bare `airflow-s/airflow-s#\d+`
+tokens and convert any match to the link form. If the scrub finds a
+reference the skill does not have the full URL for yet, look it up
+with `gh issue view <N> --repo airflow-s/airflow-s --json url --jq .url`
+before emitting. The confidentiality rule still applies: these linked
+references belong to the private surfaces listed in the
+"Confidentiality of `airflow-s/airflow-s`" section of
+[`AGENTS.md`](../../../AGENTS.md) and must **never** appear in any
+public surface.
 
 ---
 
@@ -338,21 +375,9 @@ the recap — render it as a clickable link per the "Linking CVEs" section of
 
 Do not emit bare `CVE-YYYY-NNNNN` text — always link.
 
-**Whenever an `airflow-s/airflow-s` issue, PR, or comment is referenced** —
-in the proposal, in the status-change comment, in the recap, in any internal
-note — render it as a clickable markdown link per the "Linking
-`airflow-s/airflow-s` issues and PRs" section of
-[`AGENTS.md`](../../../AGENTS.md):
-
-- Issue: `[airflow-s/airflow-s#221](https://github.com/airflow-s/airflow-s/issues/221)` (or `[#221](https://github.com/airflow-s/airflow-s/issues/221)` when the repo is obvious from context).
-- PR: `[airflow-s/airflow-s#NNN](https://github.com/airflow-s/airflow-s/pull/NNN)`.
-- Specific comment: link to the `#issuecomment-<C>` anchor.
-
-Do not emit bare `#NNN` or `airflow-s/airflow-s#NNN` — always link. The
-confidentiality rule still applies: these links are for private surfaces
-only (this repo, the private issue itself, the `security@` mail thread)
-and must **never** appear in any `apache/airflow` PR description, public
-comment, mailing-list post, or other public surface.
+See **Golden rule 2** at the top of this skill: every
+`airflow-s/airflow-s` reference in the proposal must be a clickable
+markdown link. Do not emit bare `#NNN` or `airflow-s/airflow-s#NNN`.
 
 ---
 
@@ -501,6 +526,29 @@ After the regeneration step finishes, print a short recap:
 - the CVE JSON attachment comment URL (newly created or just patched),
   or an explicit note that regeneration was skipped because no CVE has
   been allocated yet.
+
+**Before presenting the recap**, apply the Golden rule 2 self-check to
+the entire recap text: any mention of the tracking issue, any
+cross-referenced `airflow-s/airflow-s` issue, any PR, any specific
+comment anchor and any milestone must be a clickable markdown link.
+The user has to be able to click every `airflow-s` reference in the
+recap without manually pasting the number into the URL bar.
+
+Concrete minimum that every recap must include as clickable links:
+
+- the **tracking issue header** (e.g. *"Sync complete on
+  [`airflow-s/airflow-s#233`](https://github.com/airflow-s/airflow-s/issues/233)"*);
+- the **status-change comment** the sync just posted, as a
+  `#issuecomment-<C>` anchor link;
+- the **CVE JSON attachment comment** from Step 5, as a
+  `#issuecomment-<C>` anchor link;
+- any **cross-referenced issues** mentioned by the proposal (for
+  example *"similar to [`airflow-s/airflow-s#214`](…)"*);
+- any **milestone** the sync moved the issue to, as a
+  `…/milestone/<number>` link.
+
+If a reference is missing from the above list, fetch its URL before
+finalising the recap.
 
 ---
 
