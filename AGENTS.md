@@ -377,6 +377,17 @@ Currently available:
   message, branch name, PR title, PR body, newsfragment) is scrubbed for CVE /
   `airflow-s` / `vulnerability` / `security fix` leakage before being written or
   pushed. Updates the `airflow-s` tracking issue with the new PR link afterwards.
+- [`generate-cve-json`](.claude/skills/generate-cve-json/SKILL.md) — generates
+  a paste-ready CVE 5.x JSON record from a tracking issue, matching the shape
+  Vulnogram exports (`containers.cna` with `affected`, `descriptions` + HTML
+  `supportingMedia`, `problemTypes` with `type: "CWE"`, `metrics.other`,
+  tagged `references`, `providerMetadata.orgId`, `cveMetadata` envelope). A
+  deterministic `uv run` script — [`generate_cve_json.py`](.claude/skills/generate-cve-json/generate_cve_json.py) —
+  parses the issue's template fields (multiple credits on separate lines,
+  multiple reference URLs, `>= X, < Y` version ranges), writes the JSON to a
+  file, and prints the Vulnogram `#json` paste URL for the CVE. The ASF CVE
+  tool URL and any `airflow-s` URLs are filtered out of `references[]`
+  before serialising.
 
 When adding a new skill:
 
