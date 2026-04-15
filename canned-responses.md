@@ -28,6 +28,13 @@ Thanks for the report and for trying to make Airflow secure.
 We have registered the issue. This is our initial response; you can expect that we will come back to you with the result of our assessment
 according to our security policy: https://github.com/apache/airflow/security/policy#what-happens-after-you-report-the-issue-
 
+So that we do not have to ask later, in case this report leads us to allocate a CVE, how would you like to be credited in the advisory? Please let us know in your reply:
+
+* the name (and, if applicable, affiliation or handle) you would like to appear in the CVE credit, or
+* that you would prefer to remain anonymous.
+
+If you do not have a preference yet, a default of "anonymous" will be used, and you can update it at any point before the advisory is published.
+
 # Invalid report about Simple Auth Manager with multiple issues
 
 Thank you for the report. We cannot accept it, for two reasons.
