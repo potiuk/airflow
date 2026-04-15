@@ -12,7 +12,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-04-02T19:44:45.502210462Z"
+exclude-newer = "2026-04-11T15:09:55.090990229Z"
 exclude-newer-span = "P4D"
 
 [options.exclude-newer-package]
@@ -2400,8 +2400,8 @@ requires-dist = [
     { name = "jmespath", specifier = ">=0.7.0" },
     { name = "kgb", specifier = ">=7.2.0" },
     { name = "mypy", marker = "extra == 'mypy'", specifier = "==1.20.0" },
-    { name = "pagefind", marker = "extra == 'docs'", specifier = ">=1.5.0a3" },
-    { name = "pagefind-bin", marker = "extra == 'docs'", specifier = ">=1.5.0a3" },
+    { name = "pagefind", marker = "extra == 'docs'", specifier = ">=1.5.0" },
+    { name = "pagefind-bin", marker = "extra == 'docs'", specifier = ">=1.5.0" },
     { name = "pdbr", marker = "extra == 'debuggers'", specifier = ">=0.8.9" },
     { name = "pipdeptree", marker = "extra == 'devscripts'", specifier = ">=2.13.1" },
     { name = "pygithub", marker = "extra == 'devscripts'", specifier = ">=2.1.1" },
