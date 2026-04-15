@@ -18,6 +18,40 @@ Note that at various points we respond to the reporter with information about ou
 of the issue. We use [canned responses](canned-responses.md) to handle some common cases, so
 consult them if you need to send a response.
 
+### Keeping the reporter informed
+
+The security team commits to keeping the original reporter informed about the state of their report
+**at every status transition**, on the original mail thread (not on the GitHub-notifications mirror
+thread). A short status update should be sent to the reporter whenever any of the following happens:
+
+* the report has been acknowledged or assessed (valid / invalid);
+* a CVE has been allocated;
+* a fix PR has been opened;
+* a fix PR has been **merged**;
+* the issue has been scheduled for a specific release (milestone set);
+* the release has shipped and the public advisory has been sent;
+* any credits or fields visible in the eventual public advisory have changed.
+
+Each status update should plainly state what has changed, link to the relevant artifact (PR URL,
+CVE ID, advisory link), and state what comes next. If the reporter has not yet replied with their
+preferred credit, ask the credit-preference question — but **do not re-ask it if it has already
+been asked** on the same thread and is still awaiting a reply. Pinging the reporter twice about the
+same open question is rude and gets us blocklisted; default to the reporter's full name from the
+original email if they do not respond before publication.
+
+**Every status transition must also be recorded as a comment on the GitHub issue in
+`airflow-s/airflow-s`**, not only sent by email. The two channels serve different audiences: the
+email keeps the reporter informed; the issue comment keeps the rest of the security team and the
+release manager informed without forcing them to reconstruct the state from labels and timestamps.
+The comment should briefly state what changed, link to the artifact (PR URL, CVE ID, advisory
+link), and indicate whether the reporter has been notified.
+
+Note that the **author of the GitHub issue is not always the reporter**: security team members
+routinely copy reports from the mailing list into GitHub issues, so the GitHub author is the
+team member who copied it, while the real reporter is whoever sent the original email to
+`security@airflow.apache.org`. Always identify the real reporter from the original mail thread
+before sending a status update.
+
 The process of handling an issue is as follows:
 
 1) The reporter reports the issue to `security@airflow.apache.org` or `security@apache.org` (in the latter

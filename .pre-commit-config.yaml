@@ -33,6 +33,10 @@ repos:
       - id: doctoc
         name: Add TOC for Markdown and RST files
         files: ^.+\.(md|rst)$
+        # Skip agent-facing skill definitions: their YAML frontmatter must be
+        # the first thing in the file, which is incompatible with doctoc
+        # inserting a TOC block at the top.
+        exclude: ^\.claude/skills/.*$
         args:
           - "--maxlevel"
           - "2"
