@@ -523,11 +523,12 @@ For a post-triage, pre-merge fix, the target label set is:
 - **one** scope label: `airflow` | `providers` | `chart`;
 - `cve allocated` if a CVE has been allocated;
 - `needs triage` **removed** (if still present after triage);
-- **not** `Not yet announced` (that belongs to the post-merge state,
-  applied by the `sync-security-issue` skill on the next run after
-  the public PR merges);
-- **not** `announced - emails sent` (that belongs to the post-advisory
-  state, also applied by the sync skill).
+- `pr created` once the public PR is open;
+- **not** `pr merged` or `fix released` (those belong to post-merge
+  / post-release states, applied by the `sync-security-issue` skill
+  on later runs);
+- **not** `announced - emails sent` or `vendor-advisory ready` (those
+  belong to post-advisory states, also applied by the sync skill).
 
 If a label the skill wants to apply does **not** exist on the
 repository (for example a typo in a past doc version — the canonical
@@ -587,7 +588,7 @@ Print a short recap:
 - the backport label that was applied (or a note that none was needed),
 - the next step — typically *"wait for review; re-run
   sync-security-issue after the PR merges to transition the issue
-  to `Not yet announced` and update the milestone"*.
+  from `pr created` to `pr merged` and update the milestone"*.
 
 ---
 

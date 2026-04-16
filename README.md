@@ -182,9 +182,8 @@ The process of handling an issue is as follows:
     makes it explicit and surfaces an `fix released` backlog the release manager can drive from
     the board.
 
-13) During releases, the release manager looks through `fix released` issues in `airflow-s`
-    (historically marked `Not yet announced` — the new `fix released` label is the preferred
-    form), updates the [ASF CVE tool](https://cveprocess.apache.org), and updates the following
+13) During releases, the release manager looks through `fix released` issues in `airflow-s`,
+    updates the [ASF CVE tool](https://cveprocess.apache.org), and updates the following
     fields, taking them from the issue:
 
     * CWE (Common Weakness Enumeration) — possible CWEs are available [here](https://cwe.mitre.org/data/index.html)
@@ -298,7 +297,6 @@ labels left-to-right:
 | `pr merged` | The fix PR has merged into `apache/airflow`; no release with the fix has shipped yet. | 11 | 12 (replaced by `fix released` when the release ships) |
 | `fix released` | A release containing the fix has shipped to users; advisory has not been sent yet. | 12 | 13 (replaced by `announced - emails sent`) |
 | `announced - emails sent` | The public advisory has been sent to `announce@apache.org` / `users@airflow.apache.org`. The issue **stays open** after this label is applied; closing is gated on `vendor-advisory` being set in Step 15. | 13 | never (stays on the issue after closing for audit history) |
-| `Not yet announced` | **Legacy** synonym of `fix released`. New issues should use `fix released`; existing `Not yet announced` labels are still honoured by the skills during sync. | — | — |
 | `vendor-advisory ready` | The public advisory URL has been captured in the tracking issue's *Public advisory URL* body field and the attached CVE JSON has been regenerated so its `references[]` now carries the `vendor-advisory` URL. The tracking issue is waiting for the release manager to paste the CVE JSON into Vulnogram's `#source` tab, move the record to PUBLISHED, and close the issue (Step 15). | 14 | 15 (replaced by `vendor-advisory`) |
 | `vendor-advisory` | The release manager has pushed the CVE record to PUBLISHED in the ASF CVE tool and closed the tracking issue. This is the terminal state of the lifecycle. | 15 | never |
 | `wontfix` / `invalid` / `not CVE worthy` / `duplicate` | Closing dispositions for reports that are not valid or not CVE-worthy. | 5 / 6 | — |
