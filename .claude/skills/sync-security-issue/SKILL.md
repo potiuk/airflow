@@ -266,6 +266,22 @@ will change and *why*. Group them by category:
   release manager at Step 12 needs **every** field filled in to send the
   advisory.
 
+  **Special case for the "Security mailing list thread" field.** The
+  default value of this field on a new issue is a placeholder
+  `lists.apache.org/thread/<hash>` URL that *looks* like a public
+  archive link but points at a non-publicly-archived
+  `security@airflow.apache.org` thread. Those URLs **must not** survive
+  into the CVE record as `vendor-advisory` references — they 404 for
+  everyone outside the security team. Every sync run must either:
+  (a) replace the placeholder with a short textual note naming the
+  private Gmail thread ID (e.g. *"No public archive URL — tracked
+  privately on thread `19d24534972f9686`"*), or (b) replace it with
+  the **real** public advisory URL on `users@airflow.apache.org` once
+  that advisory has been sent. Never leave the field with a fake
+  `lists.apache.org/thread/<hash>` placeholder. See the "CVE references
+  must never point at non-public mailing-list threads" section of
+  [`AGENTS.md`](../../../AGENTS.md) for the full rationale.
+
   **Special case for the `Severity` field — never propagate reporter-supplied
   CVSS scores.** If the reporter attached a CVSS vector or a qualitative label
   (*"Low"*, *"High"*, *"Critical"*) to the mail thread, a GHSA draft, or the
