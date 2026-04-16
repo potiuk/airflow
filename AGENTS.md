@@ -8,6 +8,7 @@
   - [Release branches currently in flight](#release-branches-currently-in-flight)
   - [Commit and PR conventions](#commit-and-pr-conventions)
   - [Confidentiality of `airflow-s/airflow-s`](#confidentiality-of-airflow-sairflow-s)
+  - [Assessing reports](#assessing-reports)
   - [Writing and editing documentation](#writing-and-editing-documentation)
   - [Reusable skills](#reusable-skills)
   - [Before submitting](#before-submitting)
@@ -67,7 +68,7 @@ if a hook is failing, fix the underlying issue or update the hook configuration 
 
 ## Release branches currently in flight
 
-As of 2026-04-15, the Airflow release trains are:
+As of 2026-04-16, the Airflow release trains are:
 
 - **Airflow `main`** — becomes the next minor release (3.3.x eventually).
 - **`v3-2-test`** — patch branch for the **Airflow 3.2.x** series. 3.2.1
@@ -78,6 +79,37 @@ As of 2026-04-15, the Airflow release trains are:
   `3.1.9` will **not** be cut. The `3.1.9` milestone exists in
   `airflow-s/airflow-s` as an open milestone, but it is a legacy placeholder
   and should not be used for new security fixes.
+
+### Current release managers
+
+Each Airflow release has a specific release manager (not always the same
+person from one release to the next). The release manager is the committer
+who prepares the release candidate, calls the VOTE on `dev@airflow.apache.org`,
+closes the vote with `[RESULT][VOTE]`, and pushes the final artefacts. That
+same person is also the one who sends the security advisories for every CVE
+that shipped in their release to `announce@apache.org` and
+`users@airflow.apache.org` (Step 12 of the security process).
+
+**Do not assume or guess the release manager.** Look them up from the
+`[RESULT][VOTE]` thread on `dev@airflow.apache.org` — the sender of the
+`[RESULT][VOTE] Release Airflow <version>` message **is** the release
+manager for that version. Archive search URL:
+<https://lists.apache.org/list.html?dev@airflow.apache.org>.
+
+Known release managers for releases currently relevant to the security
+tracker:
+
+- **Airflow 3.2.0** (shipped 2026-04-07) — **Rahul Vats**
+  (`rah.sharma11@gmail.com`, GitHub: `vatsrahul1001`). Source: his
+  `[RESULT][VOTE] Release Airflow 3.2.0 from 3.2.0rc2 & Task SDK 1.2.0
+  from 1.2.0rc2` on `dev@airflow.apache.org`, 2026-04-07. He is the
+  person responsible for sending the advisories for CVE-2026-30898,
+  CVE-2026-30912, CVE-2026-31987, CVE-2026-32228, CVE-2026-32690 and
+  any other CVE that shipped in 3.2.0.
+
+When you update this list (because a new release has shipped), record
+the date the release went out and the archive link to the
+`[RESULT][VOTE]` thread so the attribution is auditable.
 
 **What this means for sync and fix skills**
 
@@ -173,6 +205,53 @@ audience needs to see a tracking link for transparency, link to the **public**
 artifact (the merged `apache/airflow` PR, the published CVE on `cve.org`, the
 `users@` advisory archive on `lists.apache.org`) — never to the private
 tracker.
+
+## Assessing reports
+
+### Reporter-supplied CVSS scores are informational only — never propagate them
+
+Reporters frequently attach a CVSS vector or numeric score to their report, either
+inline in the mail thread, in a private GitHub Security Advisory draft, or in the
+body of the tracking issue. **Treat every reporter-supplied CVSS score as
+informational background only.** Do not:
+
+- copy the reporter's score into the tracking-issue `Severity` field;
+- copy it into the CVE tool, the generated CVE JSON, the public advisory, or any
+  status update to the reporter;
+- repeat it in an email reply, even to confirm it.
+
+The Airflow security team scores every accepted vulnerability independently,
+as part of the CVE-allocation step, using the same CVSS version and vector
+conventions we use for all Airflow CVEs. The independent score is the **only**
+score that ends up in the CVE record and the public advisory. Reasons:
+
+- reporter scores are frequently inflated (*"High"* or *"Critical"* is the
+  default for many report templates, regardless of actual exploitability in
+  an Airflow deployment);
+- reporters typically do not know the Airflow Security Model and therefore
+  misjudge which capabilities are in-scope for a CVE in the first place;
+- propagating the reporter's score creates an implicit contract with them — if
+  we later revise it downward, they feel the rug has been pulled, and the
+  revision becomes a negotiation instead of an assessment.
+
+Practical consequences:
+
+- When a sync skill or any agent reads a reporter's score from the mail thread,
+  a GHSA record, or an issue body, it must surface it in the *observed state*
+  only ("*reporter estimated CVSS 4.0 = 7.2*"), never as a proposed value for
+  the `Severity` field.
+- Proposed field updates for `Severity` must either leave the field as
+  `_No response_` until the team scores it independently, or come from a
+  security-team member who has already done the scoring in-thread or in a
+  comment on the tracking issue — not from the reporter.
+- Draft replies to the reporter must not echo their score. If the reporter
+  asks us to confirm their score, respond that we score every CVE
+  independently during the CVE-allocation step and will share the final
+  score when the public advisory is sent.
+
+This rule applies equally to CVSS 3.x and 4.0 vectors, to qualitative labels
+(*"Low"*, *"High"*, *"Critical"*), and to any self-assigned CWE the reporter
+attaches alongside.
 
 ## Writing and editing documentation
 
