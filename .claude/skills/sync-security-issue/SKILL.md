@@ -1015,7 +1015,7 @@ updates land, based on the process step. Examples:
 
 - *"Step 3: start the CVE-worthiness discussion in a comment on the issue, tagging at least one other security team member."*
 - *"Step 4: draft a consultation message for `private@airflow.apache.org` — the discussion has been stalled for 34 days."*
-- *"Step 6: allocate a CVE. Open the ASF CVE tool: https://cveprocess.apache.org/allocatecve"*
+- *"Step 6: allocate a CVE. Run the [`allocate-cve`](../allocate-cve/SKILL.md) skill (it prints the ASF Vulnogram form URL plus a CVE-ready title and wires the allocated ID back into the tracker)."*
 - *"Step 10: close the private PR at airflow-s/airflow-s#NNN now that apache/airflow#NNNN has merged."*
 - *"Step 11: `pr merged` — tracker parked until the release train ships. No action needed from the security team; the next sync run will detect the PyPI / Helm release and propose the `fix released` swap (Step 12)."*
 - *"Step 12: `fix released` — the release carrying the fix is now on PyPI / the Helm registry. Ownership of the issue has transferred to the release manager; the label swap was the hand-off."*
@@ -1056,10 +1056,17 @@ substitute a "plausible" name** (e.g. a frequent release manager from
 previous releases) — the release manager rotates per cut, and a wrong
 name in a status update leads to the advisory sitting on nobody's desk.
 
-**If a CVE needs to be allocated**, always include the allocation link explicitly
-on its own line:
+**If a CVE needs to be allocated**, always point the user at the
+[`allocate-cve`](../allocate-cve/SKILL.md) skill explicitly on its own
+line so the handoff is unambiguous:
 
-> Allocate a CVE via the ASF CVE tool: https://cveprocess.apache.org/allocatecve
+> Allocate a CVE via the [`allocate-cve`](../allocate-cve/SKILL.md)
+> skill. It opens the ASF Vulnogram form at
+> <https://cveprocess.apache.org/allocatecve>, pre-computes a CVE-ready
+> title (stripped of `Apache Airflow:` / `[ Security Report ]` / version
+> noise), and — once you paste back the allocated `CVE-YYYY-NNNNN` ID —
+> wires it into the tracker (body field, label, status comment, CVE
+> JSON embed).
 
 **Whenever a CVE ID is mentioned** — in the proposal, in the status-change
 comment on the `airflow-s` issue, in the draft email to the reporter, or in
