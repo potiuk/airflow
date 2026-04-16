@@ -330,13 +330,15 @@ will change and *why*. Group them by category:
   PR author is a member of the Airflow security team** (their GitHub
   handle appears in the roster in the *"Security team roster"*
   subsection of [`AGENTS.md`](../../../AGENTS.md) — when in doubt,
-  run `gh api repos/airflow-s/airflow-s/collaborators --jq '.[] |
-  select(.permissions.push == true) | .login'` as the authoritative
-  check), **propose setting the tracking issue's assignee to that PR
-  author**. The PR author is the natural owner for driving the issue
-  through the rest of the process (review, merge, backport label,
-  advisory coordination), and setting them as assignee gives the
-  whole team a fast "who is on this?" answer in the issue list.
+  run `gh api repos/airflow-s/airflow-s/collaborators --jq '.[].login'`
+  as the authoritative check; **every collaborator counts regardless
+  of their permission level** — read, triage, write, maintain, and
+  admin are all valid), **propose setting the tracking issue's
+  assignee to that PR author**. The PR author is the natural owner
+  for driving the issue through the rest of the process (review,
+  merge, backport label, advisory coordination), and setting them
+  as assignee gives the whole team a fast "who is on this?" answer
+  in the issue list.
 
   If the PR author is **not** on the security-team roster (for
   example, an external contributor who submitted the fix via the
