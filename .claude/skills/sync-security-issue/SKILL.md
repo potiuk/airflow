@@ -845,6 +845,51 @@ finalising the recap.
   - `Chart-X.Y.Z` for Helm chart releases.
 - **Scope label is mandatory once triage is complete** — exactly one of
   `airflow`, `providers`, or `chart`.
+- **Multi-scope reports must be split into one tracking issue per
+  scope.** When an incoming report turns out to affect more than one
+  scope (for example a bug whose root cause lives in
+  `airflow.utils.*` but the same vector also exists in a provider's
+  hook), the sync skill must **not** apply two scope labels to one
+  issue. Instead, propose splitting the report so each scope has its
+  own tracker. Concretely:
+
+  1. Keep the original issue on the scope whose milestone family will
+     ship *first* (usually core Airflow vs. a providers wave — core
+     patch releases cut on a faster cadence, so core is typically the
+     anchor). Drop the extra scope label from that issue.
+  2. Create one new issue per remaining scope via `gh issue create
+     --repo airflow-s/airflow-s`, copying the report body
+     verbatim but with a one-line preamble that says *"Split from
+     [#NNN](...) for the `<scope>` scope — see that issue for the
+     full discussion history."* This preamble keeps the scope's
+     auditable history on that issue without forcing readers to
+     scroll through comments in another tracker.
+  3. Apply to each split issue:
+     - exactly one scope label (`airflow` / `providers` / `chart`);
+     - the same `cve allocated` label if a CVE is shared across
+       scopes — CVE reuse is correct when the same upstream bug
+       affects multiple products, with one `affected[]` entry per
+       product in the CVE record;
+     - the PR / advisory labels (`pr created` / `pr merged` /
+       `fix released`) derived independently per scope from the same
+       fix PR, because each scope rides a different release train;
+     - the matching milestone for that scope (`Airflow-X.Y.Z` /
+       `Providers YYYY-MM-DD` / `Chart-X.Y.Z`);
+     - the same assignee set as the anchor issue.
+  4. Post a cross-link comment on **each** issue pointing at the
+     other(s), so the maintainers and the reporter can see the full
+     picture at a glance.
+  5. Update the reporter email draft (if one is open) to mention
+     the split and link to every tracker, so the reporter does not
+     have to chase separate notifications.
+
+  Do **not** silently drop a scope label without splitting — both
+  scopes need their own tracker so that scope-specific release
+  managers can see the issue on their milestone without inheriting
+  irrelevant context from the other scope. A single issue with two
+  scope labels at once is a process bug; the sync skill should flag
+  it as a **blocker** and propose the split action as a concrete
+  numbered item.
 
 ---
 
