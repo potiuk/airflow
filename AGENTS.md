@@ -627,7 +627,7 @@ Currently available:
   Vulnogram exports (`containers.cna` with `affected`, `descriptions` + HTML
   `supportingMedia`, `problemTypes` with `type: "CWE"`, `metrics.other`,
   tagged `references`, `providerMetadata.orgId`, `cveMetadata` envelope). A
-  deterministic `uv run` script — [`generate_cve_json.py`](.claude/skills/generate-cve-json/generate_cve_json.py) —
+  deterministic `uv run` script — [the `generate-cve-json` project](.claude/skills/generate-cve-json/) —
   parses the issue's template fields (multiple credits on separate lines,
   multiple reference URLs, `>= X, < Y` version ranges), writes the JSON to a
   file, and prints the Vulnogram `#json` paste URL for the CVE. The ASF CVE

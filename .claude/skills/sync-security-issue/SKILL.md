@@ -678,7 +678,7 @@ In every other case — including already-published CVEs — regenerate.
 The minimum command, from the `airflow-s/airflow-s` clone root:
 
 ```bash
-uv run .claude/skills/generate-cve-json/generate_cve_json.py <N> --attach
+uv run --project .claude/skills/generate-cve-json generate-cve-json <N> --attach
 ```
 
 That alone is enough. The script reads every template field from the
@@ -701,7 +701,7 @@ if [[ -n "$pr_url" ]]; then
     --json author --jq '(.author.name // "") | select(length > 0) // .author.login' 2>/dev/null || echo "")
 fi
 
-uv run .claude/skills/generate-cve-json/generate_cve_json.py <N> --attach \
+uv run --project .claude/skills/generate-cve-json generate-cve-json <N> --attach \
   ${author_name:+--remediation-developer "$author_name"}
 ```
 
