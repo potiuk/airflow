@@ -420,6 +420,35 @@ will change and *why*. Group them by category:
   comes next. Always reply on the **original** Gmail thread (the one identified
   in Step 1c), not on the GitHub-notifications mirror thread.
 
+  **Use full, clickable URLs for every reference in the email body.**
+  Gmail renders plain URLs as clickable links; shorthand like
+  ``apache/airflow#65346`` or ``airflow-s/airflow-s#261`` does **not**
+  render as a link and forces the reporter to reconstruct the URL by
+  hand. Concretely:
+
+  - For the internal tracking issue (allowed on the private mail
+    thread), write the **full** URL:
+    ``https://github.com/airflow-s/airflow-s/issues/<N>``. Do not use
+    ``#<N>`` or ``airflow-s/airflow-s#<N>`` shorthand.
+  - For fix PRs on ``apache/airflow``, write the **full** URL:
+    ``https://github.com/apache/airflow/pull/<N>``. Do not use
+    ``apache/airflow#<N>`` shorthand.
+  - Same rule for any other GitHub reference you mention in the body
+    (public issues, commits, security advisories): always the full
+    URL. Markdown-link syntax (``[text](url)``) does **not** render
+    in plain-text email — use the bare URL.
+  - CVE IDs can stay as ``CVE-YYYY-NNNN`` inline text (email clients
+    typically do not autolink them), or be written as the full ASF
+    CVE tool URL (``https://cveprocess.apache.org/cve5/CVE-YYYY-NNNN``)
+    when you want the reporter to be able to click through.
+  - Advisory archive URLs (``lists.apache.org/thread/...``) are
+    already full URLs; just paste them as-is.
+
+  This is specific to the **email** path. Comments on the
+  ``airflow-s/airflow-s`` issue itself should still use the
+  markdown-linked ``[#<N>](url)`` / ``[apache/airflow#<N>](url)``
+  form per Golden rule 2, because GitHub does render that markdown.
+
   **Confidentiality:** the existence of `airflow-s/airflow-s` is private (see
   the "Confidentiality of `airflow-s/airflow-s`" section of
   [`AGENTS.md`](../../../AGENTS.md)). A status-update email to the reporter on
