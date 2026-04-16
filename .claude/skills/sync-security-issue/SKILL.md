@@ -430,6 +430,7 @@ update, label change, or next-step recommendation in Step 2:
 | Advisory message sent to `announce@apache.org` / `users@airflow.apache.org` for the CVE on the tracker | Propose adding the `announced - emails sent` label and removing `fix released`. **Do not propose closing the issue here** — per the 2026-04-16 process update, closing is gated on the archived public advisory URL being captured (see the next row). |
 | Advisory archived on `users@airflow.apache.org` (the announcement message is now visible in `lists.apache.org/list.html?users@airflow.apache.org` — scan the archive with the CVE ID when `announced - emails sent` is set and the *"Public advisory URL"* body field is empty) | Propose populating the *"Public advisory URL"* body field with the archive URL, regenerating the CVE JSON attachment (the generator picks the URL up automatically and tags it `vendor-advisory`), and adding the `vendor-advisory ready` label. **Do not close the issue and do not add the `vendor-advisory` label** — that is Step 15, owned by the release manager after they push the record to PUBLISHED in Vulnogram. |
 | `vendor-advisory ready` label set and CVE record on `cveprocess.apache.org` now reports state PUBLISHED (checked via `curl -s https://cveprocess.apache.org/cve5/<CVE-ID>.json` / the ASF CVE tool API, or an explicit release-manager comment on the issue stating the Vulnogram push is done) | Propose adding the `vendor-advisory` label, removing `vendor-advisory ready`, and closing the issue. This is the terminal transition. |
+| CVE record on `cveprocess.apache.org` has open **review comments / reviewer proposals** (checked at `https://cveprocess.apache.org/cve5/<CVE-ID>` — the JSON `CNA_private.todo[]` array and any reviewer-contributed notes on the record). Applies whenever the issue has a CVE ID allocated and the CVE is in `REVIEW`, `REVIEW_REQUESTED`, or similar pre-PUBLISHED state. | Surface each open review comment in Step 2a with a **clickable link** to the CVE record, verbatim-quoted; then for each one that maps cleanly to a tracking-issue body field (CWE, Affected versions, Reporter credited as, Public advisory URL, Short public summary), **propose the matching body-field update** as a numbered item in Step 2b. The body is the source of truth for the CVE JSON — regeneration in Step 5 will pull the update back into `cveprocess.apache.org` via the paste-ready attachment, and the release manager's only remaining action is the Vulnogram paste + comment-resolution click. Comments that do not map to a body field (severity/CVSS, out-of-scope challenges, free-form rewrites) are surfaced verbatim and flagged for human decision. See Step 1e for the full reviewer-comment-to-field mapping table. |
 | The referenced `apache/airflow` PR has been opened but is still in `open` state | Propose `pr created` label; update the *"PR with the fix"* body field with the PR URL. |
 | The referenced `apache/airflow` PR moved to `merged` | Propose swapping `pr created` → `pr merged`; update milestone to the shipping release if now known. |
 | A release carrying the fix has shipped (PR's milestone release is on PyPI / Helm registry, or an explicit *"fix shipped in X.Y.Z"* comment) | Propose swapping `pr merged` → `fix released` (Step 12). This is the release manager's cue to own Steps 13–15 (advisory send → URL capture → Vulnogram PUBLISHED → close). If the legacy `Not yet announced` label is still set, keep it and append `fix released` in parallel so the two signals do not contradict each other — prefer `fix released` going forward. |
@@ -452,7 +453,110 @@ Do **not** act on signals automatically; as always, each one becomes a
 numbered proposal item in Step 2 and only applies after user
 confirmation.
 
-### 1e. Locate the process step
+### 1e. Check the CVE record on `cveprocess.apache.org` for review comments
+
+Whenever the tracking issue has a CVE ID allocated (the *CVE tool link*
+body field is populated, or the `cve allocated` label is set), pull the
+CVE record from the ASF CVE tool and inspect its state and review
+comments. The record is publicly readable as JSON:
+
+```bash
+gh api "https://cveprocess.apache.org/cve5/<CVE-ID>.json" 2>/dev/null \
+  || curl -fsSL "https://cveprocess.apache.org/cve5/<CVE-ID>.json"
+```
+
+Record:
+
+- `cveMetadata.state` — `RESERVED`, `DRAFT`, `REVIEW`, `REVIEW_REQUESTED`,
+  `PUBLISHED`, `REJECTED`. The PUBLISHED transition is already handled
+  by the signal table in Step 1d. Most pre-PUBLISHED states are normal
+  mid-flight states and do not need a proposal by themselves — the
+  interesting thing is whether there are open reviewer proposals
+  (next bullet).
+- `CNA_private.todo[]` — an array of reviewer-contributed to-do items
+  on the record. A non-empty `todo[]` means a reviewer has flagged
+  something that needs addressing before PUBLISHED (typical examples:
+  wording tightens, missing CWE, affected-range clarification, a
+  missing `vendor-advisory` reference, or a request to move a credit
+  from `finder` to `reporter`).
+- Any other reviewer-surfaced notes that Vulnogram exposes on the
+  record (the shape evolves; treat unknown top-level keys as
+  informational and surface them verbatim).
+
+For every open item found, include the following in the **observed
+state** in Step 2a:
+
+- a clickable link to the CVE record — e.g. `[CVE-2026-40913](https://cveprocess.apache.org/cve5/CVE-2026-40913)`;
+- the CVE state (`REVIEW`, `DRAFT`, etc.);
+- a verbatim short quote of each open `todo[]` entry (or an
+  equivalent note summarising what the reviewer asked for).
+
+Then, for **each** open review comment, map it to a concrete
+proposal on the **tracking issue** (not the CVE record itself — see
+the next paragraph on why this matters) and surface it as a
+numbered item in Step 2b. The tracking issue body is the
+single source of truth for the CVE JSON, so the typical workflow
+is: *reviewer asks → update tracking-issue body field → regenerate
+CVE JSON attachment (Step 5 of this skill runs it automatically
+after apply) → release manager copy-pastes the updated JSON into
+Vulnogram's `#source` tab to address the reviewer's comment*. By
+proposing the body update directly, the sync saves the release
+manager from a round trip: they open the record once (to
+acknowledge / resolve the comment after pasting the new JSON),
+not twice (once to read the comment, once to paste after a
+separate human body edit).
+
+Map common review comments to body fields like this:
+
+| Reviewer comment shape | Proposed body update |
+|---|---|
+| *"CWE should be CWE-NNN, not CWE-MMM"* / *"This looks like CWE-NNN"* | Propose updating the issue's **CWE** field to the new value, with a quoted pointer back to the comment (*"per reviewer comment on `cveprocess.apache.org/cve5/<CVE-ID>`"*). |
+| *"Affected range looks wrong — should be `< X.Y.Z`"* / *"The fix first shipped in X.Y.Z, not the version listed"* | Propose updating the issue's **Affected versions** field to the range the reviewer asked for. |
+| *"Missing `vendor-advisory` reference"* / *"No public advisory URL in references"* | Propose populating the issue's **Public advisory URL** body field, using the Step 1d users@-archive-scan path (regeneration will automatically pick it up as a `vendor-advisory` reference — no manual edit of `references[]` needed). |
+| *"Credit line `X` is missing"* / *"Move `X` from `finder` to `reporter`"* / *"`Y` asked to be credited as `Z` — please update"* | Propose updating the **Reporter credited as** body field (one line per credit; the generator preserves order). For `remediation developer` credits added via CLI, propose updating the regeneration command's `--remediation-developer` argument in the Step 5 recipe. |
+| *"Severity score should be `<X>` / CVSS vector is wrong"* | Surface the comment in the observed state but **do not** auto-propose a body change. Severity/CVSS is a judgement call that requires independent scoring by a security-team member — per the "Reporter-supplied CVSS scores are informational only" rule in [`AGENTS.md`](../../../AGENTS.md), and the same rule extends to third-party reviewer asks. Flag it as *"needs security-team scoring before addressing"* in Step 2c. |
+| *"Fix the description wording — it should say …"* | Propose updating the **Short public summary for publish** body field with the reviewer's suggested text verbatim; flag explicitly in the proposal that it is a paste-as-is and the user should re-read before confirming. |
+| *"Mark this as duplicate of CVE-YYYY-NNNN"* / *"This is actually `out of scope` per the Security Model"* | Do **not** auto-propose closing / rejecting. Surface as a blocker requiring a human decision and link the security-team members who last commented on the issue. |
+| *"Please re-open for review — I've updated the …"* | No issue-body change; include in Step 2c as *"go back to Vulnogram and click Re-request Review"*. |
+
+For any review comment that does **not** fit one of the rows
+above, include it in Step 2a verbatim and flag it in Step 2c for
+human decision rather than guessing a body mapping. Being
+cautious here is cheap: a wrong auto-proposal costs one round of
+user rejection, but a silently-applied wrong change propagates
+through the regenerated CVE JSON into a broken PUBLISHED record.
+
+After the user confirms a body-update proposal and it lands,
+Step 5 of the apply loop runs `generate-cve-json --attach`
+automatically, so the attached CVE JSON is regenerated in the
+same sync run — the release manager's next action is just the
+Vulnogram paste.
+
+Also include the standard *"Open the CVE record at
+`<URL>` and resolve the review comment"* line in Step 2c so the
+user knows what the release manager still needs to do in
+Vulnogram after the body update lands (resolving the comment is
+a Vulnogram UI action that sync cannot drive).
+
+**Do not try to edit the CVE record from this skill.** Writes to
+`cveprocess.apache.org` itself stay with the release manager.
+Reviewer proposals that cannot be expressed as a body-field
+change (wholesale re-descriptions, duplicate-declarations,
+out-of-scope challenges) frequently require a judgement call
+that belongs with the security team member owning the issue.
+Sync's responsibility ends at surfacing the open comments **and**
+pre-staging any mechanical body updates so the RM's remaining
+work is one Vulnogram paste plus one comment-resolution click
+per reviewer ask.
+
+If the CVE record 404s (the ID was reserved but never saved a draft
+yet), treat that as a blocker: the CVE allocator needs to open the
+record and save at least a DRAFT so the review workflow exists. If
+the CVE record fetch times out, skip this subsection for this sync
+run and flag it as a retry in Step 2c (do not hold up the whole
+proposal for a transient network error).
+
+### 1f. Locate the process step
 
 Cross-reference the handling process in
 [`README.md`](../../../README.md) and determine which numbered step of the
