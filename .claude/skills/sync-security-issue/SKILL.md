@@ -187,7 +187,8 @@ Process for finding the real reporter and the original thread:
    `mcp__claude_ai_Gmail__gmail_read_thread <threadId>` and extract:
 
    - the reporter's **preferred credit** if they have already stated one
-     (name, affiliation, handle, or anonymous);
+     (name, affiliation, handle, or anonymous) — see the dedicated
+     subsection below;
    - any additional technical context or PoC the reporter supplied beyond
      what made it into the GitHub issue;
    - **all status updates already sent to the reporter by the security team**
@@ -196,12 +197,88 @@ Process for finding the real reporter and the original thread:
    - the latest message in the thread, *who* sent it, and whether the ball
      is in our court.
 
+5. **Sync a reporter-confirmed credit line into the issue body** whenever
+   the mail thread contains a clear credit confirmation from the reporter
+   that has not yet been reflected in the tracker's *"Reporter credited
+   as"* field. This is a dedicated check, not an afterthought — reporters
+   frequently reply with their preferred credit line only once, and if
+   that reply is not caught in the next sync run, the placeholder stays in
+   the issue body and may end up in the public advisory.
+
+   Scan every message **from the reporter** in the Gmail thread
+   (identified in steps 1–3), in reverse chronological order, for the
+   first message that contains any of the following patterns. Treat the
+   first hit as the authoritative credit:
+
+   - *"please credit me as \<X\>"* / *"credit: \<X\>"* / *"please
+     kindly include the following credit: \<X\>"*;
+   - *"use the handle \<X\>"* / *"use my GitHub handle \<X\>"*;
+   - a signature block that the reporter explicitly says should be used
+     verbatim for the advisory (*"credit line: \<full name\>, \<company\>
+     \[\<country\>\]"*);
+   - *"do not credit me"* / *"anonymous"* / *"I'd prefer to remain
+     anonymous"* — treat as a confirmed opt-out; set the body field to
+     `anonymous` and flag that the advisory must use that form.
+
+   If the extracted credit form differs from what the tracker currently
+   carries in *"Reporter credited as"*, propose the update as a concrete
+   numbered item in Step 2b. **Do not apply it silently** — the user must
+   confirm the exact form before it lands in the body, since the same
+   string ends up in the CVE record's `credits[]` and in the eventual
+   public advisory.
+
+   If the reporter has been *asked* the credit question but has not yet
+   responded, do not propose a change — leave the placeholder in place
+   and note in the proposal that the credit question is still pending a
+   reply.
+
+   The confirmed-credit check is one of the most load-bearing items in
+   the whole sync: a wrong credit line in the advisory is visible to the
+   world, hard to correct after publication, and directly undermines the
+   trust the reporter extended to us.
+
 5. **If you cannot find the original thread**, say so explicitly in the
    proposal and ask the user whether the GitHub issue author is also the
    reporter (which does happen for issues a security team member discovered
    themselves). Do not assume.
 
-### 1d. Locate the process step
+### 1d. Mine comments and mail messages for actionable signals
+
+The GitHub issue comments, the Gmail thread messages, and any cross-
+referenced thread (release-announcement emails on `announce@`, PR-review
+comments on the public fix PR, GHSA discussion) often contain facts
+that the tracker has not caught up with yet. **Read every message
+body, not just the headers**, and extract any of the following
+signals. Each one translates directly into a proposed body-field
+update, label change, or next-step recommendation in Step 2:
+
+| Signal in a message / comment | Translates to |
+|---|---|
+| Reporter reply with a confirmed credit line (*"please credit me as …"*, *"use handle X"*, *"anonymous is fine"*) | Replace the `Reporter credited as` placeholder with the confirmed form; mark the credit question as resolved so the next status-update draft does not re-ask it. |
+| Reporter explicit opt-out of credit (*"do not credit me"*, *"anonymous"*) | Set the field to `anonymous` and flag the advisory to use that form. |
+| Release manager's `[RESULT][VOTE] Release Airflow <version>` on `dev@airflow.apache.org` for a version that carries the fix | Record the release manager in the "Known release managers" subsection of [`AGENTS.md`](../../../AGENTS.md) if not already there; flag Step 12 (advisory) as assigned to that person. |
+| Advisory message sent to `announce@apache.org` / `users@airflow.apache.org` for the CVE on the tracker | Propose adding the `announced - emails sent` label, filling the `--advisory-url` for the next `generate-cve-json` run with the `lists.apache.org/thread/<id>?announce@apache.org` URL, and closing the issue. |
+| A comment saying *"merged"* / *"fix shipped in X.Y.Z"* on the private issue, or the referenced apache/airflow PR moving to `merged` | Propose `Not yet announced` if not set; update the `PR with the fix` body field with the merged PR URL; update the milestone to the shipping release if it is now known. |
+| GHSA state transition (opened, accepted, published, rejected) in a GHSA-forwarded email | If the GHSA is closed as "not accepted" but the security team accepted the report on `security@`, flag the divergence in the status comment so it is not lost. |
+| Team member saying *"let's also backport to v3-2-test"* / *"please mark X for backport"* | Note the requested backport label on the public PR as an item for Step 9 of the `fix-security-issue` workflow. |
+| Reporter flagging a second distinct vulnerability on the same thread | Surface as an explicit question to the user — it may warrant a separate tracking issue. |
+| Team member classifying severity or CWE independently (not copying the reporter) | Propose setting the `Severity` / `CWE` fields accordingly, with a pointer to the comment that established the assessment. |
+| Stale "pending" text from an earlier status update (e.g. the tracker still says *"CVE allocation pending"* but the issue body now has a CVE) | Propose removing the stale reference from the status-change comment trail. |
+
+**Scan the two most recent message bodies carefully** — that is where a
+freshly-landed signal most often lives. Older messages rarely produce
+actionable signals that have not already been applied, but still scan
+for the credit-preference keywords listed above whenever a credit
+question is still open. When a signal produces an edit to an existing
+draft (for example, a catch-up reply is stale because the reporter has
+since confirmed credit), surface the stale draft ID explicitly so the
+user knows to discard it in Gmail — there is no `draft-update` tool.
+
+Do **not** act on signals automatically; as always, each one becomes a
+numbered proposal item in Step 2 and only applies after user
+confirmation.
+
+### 1e. Locate the process step
 
 Cross-reference the handling process in
 [`README.md`](../../../README.md) and determine which numbered step of the
