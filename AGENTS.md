@@ -154,20 +154,25 @@ rotation rosters above whenever the Release Plan wiki page changes.
 The authoritative source for **who is a member of the Airflow security
 team** is the collaborator list of the private
 [`airflow-s/airflow-s`](https://github.com/airflow-s/airflow-s)
-repository — anyone with write access there is on the security team.
+repository — **anyone listed as a collaborator**, regardless of
+permission level (read, triage, write, maintain, admin), is on the
+security team. Do not filter by permission level; some members have
+triage or read access and still actively participate in assessments,
+fixes, and advisory coordination.
+
 Look it up with:
 
 ```bash
-gh api repos/airflow-s/airflow-s/collaborators \
-  --jq '.[] | select(.permissions.push == true) | .login'
+gh api repos/airflow-s/airflow-s/collaborators --jq '.[].login'
 ```
 
-Snapshot as of 2026-04-16 (GitHub handles): `ashb`, `raboof`, `potiuk`,
-`uranusjr`, `ephraimbuddy`, `Lee-W`, `kaxil`, `bugraoz93`, `ch4n3-yoon`,
-`pierrejeambrun`, `hussein-awala`, `amoghrajesh`, `happyhacking-k`,
-`vatsrahul1001`, `eladkal`, `shubhamraj-git`, `shahar1`, `jedcunningham`,
-`jscheffl`, `vincbeck` (plus the `airflow-sec` service account, which
-is not a person).
+Snapshot as of 2026-04-16 (GitHub handles, 24 people): `ashb`,
+`raboof`, `potiuk`, `uranusjr`, `ephraimbuddy`, `Lee-W`, `sunank200`,
+`kaxil`, `bugraoz93`, `ch4n3-yoon`, `pierrejeambrun`, `hussein-awala`,
+`aritra24`, `amoghrajesh`, `happyhacking-k`, `vatsrahul1001`,
+`eladkal`, `shubhamraj-git`, `shahar1`, `jedcunningham`, `sjyangkevin`,
+`jscheffl`, `vincbeck`, `pankajastro` (plus the `airflow-sec` service
+account, which is not a person).
 
 When this list becomes stale (a new member is added, someone rotates
 off), re-run the `gh api` call above and update the snapshot in the
