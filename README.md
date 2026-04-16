@@ -266,7 +266,7 @@ co-exist); each edge is a process step that moves the issue forward. Closing dis
 `needs triage`.
 
 ```mermaid
-flowchart LR
+flowchart TD
     A([report on security@]) -->|step 2: import-security-issue| B[needs triage]
     B -->|step 5: consensus invalid| X1([invalid / not CVE worthy / duplicate / wontfix])
     B -->|step 5: consensus valid| C[airflow / providers / chart]
