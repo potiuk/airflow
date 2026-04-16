@@ -449,6 +449,18 @@ draft (for example, a catch-up reply is stale because the reporter has
 since confirmed credit), surface the stale draft ID explicitly so the
 user knows to discard it in Gmail — there is no `draft-update` tool.
 
+**Verify the draft still exists before flagging it.** Before surfacing a
+stale-draft ID from a previous sync's comment trail, call
+`mcp__claude_ai_Gmail__list_drafts` (optionally narrowed by
+`query: 'security@airflow.apache.org'`) and check that the `id` is still
+in the result set. If the draft is gone (already discarded or already
+sent), **do not** repeat the "discard manually in Gmail" nag in the new
+status comment — the flag has self-replicated once and will keep going
+forever if every sync copies it forward blindly. If the verification
+step itself fails (Gmail 500, API timeout), say so explicitly rather
+than defaulting to "assume stale"; silent replication is the failure
+mode to avoid.
+
 Do **not** act on signals automatically; as always, each one becomes a
 numbered proposal item in Step 2 and only applies after user
 confirmation.
