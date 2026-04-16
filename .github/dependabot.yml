@@ -22,14 +22,14 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    # 4-day cooldown so a just-released action tag has a chance to
+    # 7-day cooldown so a just-released action tag has a chance to
     # settle (retags, withdrawal, CI incidents on the upstream) before
     # Dependabot proposes bumping to it.
     cooldown:
-      default-days: 4
-      semver-major-days: 4
-      semver-minor-days: 4
-      semver-patch-days: 4
+      default-days: 7
+      semver-major-days: 7
+      semver-minor-days: 7
+      semver-patch-days: 7
     groups:
       github-actions:
         patterns:
@@ -40,10 +40,10 @@ updates:
     schedule:
       interval: "weekly"
     cooldown:
-      default-days: 4
-      semver-major-days: 4
-      semver-minor-days: 4
-      semver-patch-days: 4
+      default-days: 7
+      semver-major-days: 7
+      semver-minor-days: 7
+      semver-patch-days: 7
     groups:
       pre-commit-hooks:
         patterns:
@@ -58,10 +58,10 @@ updates:
     schedule:
       interval: "weekly"
     cooldown:
-      default-days: 4
-      semver-major-days: 4
-      semver-minor-days: 4
-      semver-patch-days: 4
+      default-days: 7
+      semver-major-days: 7
+      semver-minor-days: 7
+      semver-patch-days: 7
     groups:
       generate-cve-json-deps:
         patterns:
