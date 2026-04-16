@@ -35,4 +35,9 @@ jobs:
         with:
           persist-credentials: false
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+      # `uv` is required by the `generate-cve-json` project's prek hooks,
+      # which invoke `uv run --directory .claude/skills/generate-cve-json ...`.
+      - uses: astral-sh/setup-uv@eac588ad8def6316056a12d4907a9d4d84ff7a3b  # v7.3.0
+        with:
+          enable-cache: true
       - uses: j178/prek-action@0bb87d7f00b0c99306c8bcb8b8beba1eb581c037  # v1.1.1
