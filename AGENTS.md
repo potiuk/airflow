@@ -645,7 +645,8 @@ Currently available:
   reconciles a security issue with its GitHub discussion, its
   `security@airflow.apache.org` mail thread, and any fixing PRs; proposes label,
   milestone, field, and draft-email updates; and prompts the user to confirm each
-  change before applying it. Prints the ASF CVE allocation link when a CVE is
+  change before applying it. Points the user at
+  [`allocate-cve`](.claude/skills/allocate-cve/SKILL.md) when a CVE is
   needed. **At the end of every run** it also invokes
   [`generate-cve-json`](.claude/skills/generate-cve-json/SKILL.md) with
   `--attach` to refresh the CVE JSON attachment on the tracking issue (auto-
@@ -653,6 +654,25 @@ Currently available:
   in the *PR with the fix* body field), so the attached JSON stays in
   lock-step with the issue body. Skipped only when no CVE has been allocated
   yet, or when the issue has been closed as invalid / not-CVE-worthy / duplicate.
+- [`allocate-cve`](.claude/skills/allocate-cve/SKILL.md) — walks the user
+  through allocating a CVE via the ASF Vulnogram form at
+  <https://cveprocess.apache.org/allocatecve>. **The allocation itself is
+  PMC-gated** — only Airflow PMC members can submit the Vulnogram form.
+  The skill asks up front whether the user is on the PMC; if not, it
+  reshapes the recipe into a ``@``-mention relay message the triager
+  forwards to a PMC member (on the tracker or on the
+  `security@airflow.apache.org` thread). Either way it reads the
+  tracking issue, strips redundant `Apache Airflow` / `[ Security Report ]`
+  / trailing version noise from the title to produce a CVE-ready title
+  for the Vulnogram form, and — once the allocated `CVE-YYYY-NNNNN` ID
+  is pasted back — updates the tracker in one coordinated pass: fills in
+  the *CVE tool link* body field, adds the `cve allocated` label, posts
+  a collapsed status-change comment, regenerates the CVE JSON attachment
+  in the body via `generate-cve-json --attach`, and (when relevant)
+  drafts a reporter status update on the original mail thread. **Always
+  hands off to `sync-security-issue`** at the end so the allocation-
+  triggered changes are reconciled with the milestone, assignee, fix-PR
+  state, and reporter-thread state in one continuous flow.
 - [`fix-security-issue`](.claude/skills/fix-security-issue/SKILL.md) — runs
   `sync-security-issue` first, then analyses the issue discussion to decide
   whether the reported problem is easily fixable (clear consensus, small scope,

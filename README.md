@@ -98,10 +98,21 @@ The process of handling an issue is as follows:
    `security@airflow.apache.org` list. The `needs triage` label should then be removed.
 
 6) If we agree the issue is invalid, a team member closes the issue and responds to the reporter with
-   that information. If the issue is valid, the team member [assigns a CVE via the ASF CVE tool](https://cveprocess.apache.org/allocatecve).
-   The team member then responds in the email thread to confirm creation of the CVE to the reporter, including
-   the CVE ID, asks the reporter how they would like to be credited, and updates the reporter name in the
-   issue description when the reporter answers.
+   that information. If the issue is valid, **an Airflow PMC member** [assigns a CVE via the ASF CVE
+   tool](https://cveprocess.apache.org/allocatecve). The Vulnogram allocation button is PMC-gated on
+   the server side, so a triager who is not on the PMC cannot complete the allocation themselves —
+   they prepare the request (using the [`allocate-cve`](.claude/skills/allocate-cve/SKILL.md) skill,
+   which strips the redundant `Apache Airflow` prefix from the title and builds a relay message) and
+   forward it to a PMC member via an ``@``-mention on the tracker or on the
+   `security@airflow.apache.org` thread. Once the PMC member has allocated and reported the
+   `CVE-YYYY-NNNNN` back, the skill can be re-invoked with the ID as an override to wire the
+   allocated CVE into the tracker: the *CVE tool link* body field, the `cve allocated` label, a
+   status-change comment, and a refreshed CVE-JSON body embed. The skill then hands off to
+   `sync-security-issue` to reconcile the rest of the tracker (milestone, assignee, fix-PR
+   state, reporter-thread drafts) in the same flow. The team member (triager or PMC,
+   whoever has the reporter's thread loaded) then responds in the email thread to confirm creation of
+   the CVE to the reporter, including the CVE ID, asks the reporter how they would like to be
+   credited, and updates the reporter name in the issue description when the reporter answers.
 
 7) One of the team members self-assigns the issue (not necessarily the person who originally started
    the discussion) and implements the fix.
@@ -260,7 +271,7 @@ flowchart LR
     A([report on security@]) -->|step 2: import-security-issue| B[needs triage]
     B -->|step 5: consensus invalid| X1([invalid / not CVE worthy / duplicate / wontfix])
     B -->|step 5: consensus valid| C[airflow / providers / chart]
-    C -->|step 6: CVE reserved| D[cve allocated]
+    C -->|step 6: CVE reserved by PMC member| D[cve allocated]
     D -->|step 10: public PR opened| E[pr created]
     E -->|step 11: PR merges| F[pr merged]
     F -->|step 12: release ships| G[fix released]
@@ -282,7 +293,7 @@ labels left-to-right:
 | --- | --- | --- | --- |
 | `needs triage` | Freshly filed; assessment not yet started. | 1 | 5 |
 | `airflow` / `providers` / `chart` | Scope of the vulnerability. Exactly one of these is set. | 5 | never (sticks for the lifetime of the issue) |
-| `cve allocated` | A CVE has been reserved for the issue. | 6 | never |
+| `cve allocated` | A CVE has been reserved for the issue. Allocation itself is PMC-gated (only Airflow PMC members can submit the Vulnogram allocation form); a non-PMC triager relays a request to a PMC member via the [`allocate-cve`](.claude/skills/allocate-cve/SKILL.md) skill. | 6 | never |
 | `pr created` | A public fix PR has been opened in `apache/airflow` but has not yet merged. | 10 | 11 (replaced by `pr merged`) |
 | `pr merged` | The fix PR has merged into `apache/airflow`; no release with the fix has shipped yet. | 11 | 12 (replaced by `fix released` when the release ships) |
 | `fix released` | A release containing the fix has shipped to users; advisory has not been sent yet. | 12 | 13 (replaced by `announced - emails sent`) |
@@ -306,6 +317,12 @@ they should use.
 ### Issue triager
 
 Owns **Steps 1–6**: from an inbound report on `security@airflow.apache.org` to a CVE allocation.
+Step 6 (the CVE allocation itself) is the one step in this range the triager may not be able to
+complete personally — **only Airflow PMC members can submit the Vulnogram allocation form**. If
+the triager is on the PMC they do the allocation directly; if not, they use the
+[`allocate-cve`](.claude/skills/allocate-cve/SKILL.md) skill to prepare a relay message and
+forward it to a PMC member, who clicks through. Either way the triager is the one who lands
+the resulting CVE ID back into the tracker.
 
 What a triager does:
 
@@ -324,8 +341,14 @@ What a triager does:
 - Applies exactly one scope label (`airflow` / `providers` / `chart`) when the report is confirmed
   valid; splits into per-scope trackers when a report affects more than one scope (the
   `sync-security-issue` skill surfaces this as a blocker).
-- Allocates the CVE via the [ASF CVE tool](https://cveprocess.apache.org/allocatecve) and pastes
-  the tool link into the body's *CVE tool link* field — this adds the `cve allocated` label.
+- Allocates the CVE via the [ASF CVE tool](https://cveprocess.apache.org/allocatecve), **or**
+  — if the triager is not on the Airflow PMC — prepares a relay request and forwards it to a PMC
+  member. The [`allocate-cve`](.claude/skills/allocate-cve/SKILL.md) skill handles both paths:
+  it strips the redundant `Apache Airflow` prefix from the title for the Vulnogram form,
+  produces either a self-service recipe or a ``@``-mention relay message depending on the
+  user's PMC status, and — once the allocated `CVE-YYYY-NNNNN` is reported back — wires it into
+  the tracker (body's *CVE tool link* field, the `cve allocated` label, a status-change comment,
+  and a fresh CVE-JSON body embed).
 
 Tools a triager uses most:
 
@@ -336,8 +359,12 @@ Tools a triager uses most:
 - [`sync-security-issue`](.claude/skills/sync-security-issue/SKILL.md) — *"sync \<issue-ref\>"* or
   *"sync all"* for a triage sweep. Surfaces stalled issues, missing fields, credit replies, and
   scope-split requirements in one combined proposal.
+- [`allocate-cve`](.claude/skills/allocate-cve/SKILL.md) — *"allocate a CVE for \<issue-ref\>"*
+  once the report is deemed valid. Prints the ASF Vulnogram form URL and a CVE-ready title, then
+  wires the allocated CVE ID back into the tracker.
 - [`generate-cve-json`](.claude/skills/generate-cve-json/SKILL.md) — after the CVE is allocated, to
-  attach a paste-ready JSON to the issue so the later review and publish steps are mechanical.
+  refresh the paste-ready JSON embedded in the issue body so the later review and publish steps
+  are mechanical.
 
 ### Remediation developer
 
