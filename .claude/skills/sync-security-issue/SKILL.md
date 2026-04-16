@@ -374,19 +374,36 @@ updates land, based on the process step. Examples:
 
 **Never guess the release manager.** When a next-step recommendation or a
 status-comment references "the release manager for `<version>`", look up
-the actual person from the `[RESULT][VOTE] Release Airflow <version>`
-thread on `dev@airflow.apache.org`: the sender of that email **is** the
-release manager. Check the "Current release managers" subsection of
-[`AGENTS.md`](../../../AGENTS.md) first — if the release is already
-listed there, use that name. If the release is not listed, fetch the
-`[RESULT][VOTE]` thread from Gmail (or from
-<https://lists.apache.org/list.html?dev@airflow.apache.org>), identify
-the sender, surface that name in the proposal, and propose appending it
-to the `AGENTS.md` list in the same change so future runs don't have to
-re-check. **Do not substitute a "plausible" name** (e.g. a frequent
-release manager from previous releases) — the release manager rotates,
-and a wrong name in a status update leads to the advisory sitting on
-nobody's desk.
+the actual person, in this order:
+
+1. **Check the "Known release managers" subsection of
+   [`AGENTS.md`](../../../AGENTS.md) first** — if the release is already
+   listed there, use that name. This is the cache; the next two sources
+   are how the cache was populated and how you refresh it.
+2. **Check the Airflow Release Plan wiki** at
+   <https://cwiki.apache.org/confluence/display/AIRFLOW/Release+Plan>.
+   This is the canonical forward-looking schedule for every release
+   train (core Airflow, Providers, Airflow Ctl, Helm Chart, Airflow 2)
+   and lists the release manager for each *upcoming* cut. Use this when
+   the relevant release hasn't been cut yet, or when you need the
+   rotation roster.
+3. **Check the `[RESULT][VOTE]` thread on `dev@airflow.apache.org`** —
+   the sender of the `[RESULT][VOTE] Release Airflow <version>` (or
+   `[RESULT][VOTE] Airflow Providers - release preparation date
+   <YYYY-MM-DD>`) message **is** the release manager for that specific
+   cut. Use this when the release has already shipped (the wiki only
+   tracks upcoming schedule, not past releases). Gmail search query
+   for providers:
+   `"[RESULT][VOTE]" "Airflow Providers" from:dev@airflow.apache.org`.
+   Narrow with a date range if needed.
+
+If the release manager is not yet in `AGENTS.md` after you look them up,
+surface that in the proposal and propose appending them (with the source
+link to the `[RESULT][VOTE]` thread and the release date) to the
+"Known release managers" subsection in the same sync run. **Do not
+substitute a "plausible" name** (e.g. a frequent release manager from
+previous releases) — the release manager rotates per cut, and a wrong
+name in a status update leads to the advisory sitting on nobody's desk.
 
 **If a CVE needs to be allocated**, always include the allocation link explicitly
 on its own line:
