@@ -376,9 +376,32 @@ For each confirmed `Report` / `ASF-security relay`:
    client threads it). **Never send.**
 
 4. Post a short status-change comment on the newly-created
-   `airflow-s/airflow-s` issue stating: *"Imported from Gmail thread
-   `<threadId>` on `<YYYY-MM-DD>`; receipt-of-confirmation reply
-   drafted — see `<draftId>`."*
+   `airflow-s/airflow-s` issue. Use the same short-headline +
+   collapsed-`<details>` shape described in the sibling
+   [`sync-security-issue`](../sync-security-issue/SKILL.md) skill's
+   *"Status update on the GitHub issue"* section — the scroller
+   sees two or three lines, the auditor clicks **Details of
+   update** for the full provenance trail:
+
+   ```markdown
+   **Imported from Gmail thread `<threadId>` on `<YYYY-MM-DD>`** (class: `<classification>`, reporter: `<reporter>`).
+
+   **Next:** Step 3 — start the validity / CVE-worthiness discussion; tag at least one other security-team member.
+
+   <details>
+   <summary>Details of update</summary>
+
+   Provenance: <ASF-relay chain if any, GHSA reference if any, PonyMail URL if recorded>.
+   Extracted fields: <summary of what landed in the template — Affected versions pre-filled, reporter-credited-as placeholder, Severity=Unknown, etc.>.
+   Receipt-of-confirmation reply: draft `<draftId>` waiting for user review in Gmail.
+
+   </details>
+   ```
+
+   Keep the visible part under ~6 rendered lines. Clickable
+   `airflow-s/airflow-s` references (Golden rule 2 from
+   [`AGENTS.md`](../../../AGENTS.md)) apply both above and inside
+   the `<details>` block.
 
 For each confirmed non-import (automated-scanner / consolidated /
 media / cross-thread-followup):

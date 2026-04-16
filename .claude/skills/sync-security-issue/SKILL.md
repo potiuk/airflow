@@ -897,10 +897,88 @@ will change and *why*. Group them by category:
   security team and the release manager informed without forcing them to
   reconstruct the state from labels and timestamps.
 
-  Whenever any of the trigger events listed above fires, propose a
-  `gh issue comment` that says, in one short paragraph: what changed, the
-  link to the artifact (PR URL, CVE ID, advisory link), the new label /
-  milestone state, and what is expected next. End the comment with one of:
+  **Comment shape — keep the scroll short.** The comment body has two
+  distinct audiences with two distinct needs: a triager scrolling the
+  issue timeline wants to know *what changed and what is next* in two
+  sentences, while a release manager or auditor reading the same issue
+  months later wants the full rationale. Satisfy both without making
+  the first audience scroll past a wall of text:
+
+  ```markdown
+  **Sync YYYY-MM-DD — <one-sentence bold headline of what happened>.**
+
+  - <Action 1: short, imperative, links only when load-bearing>
+  - <Action 2>
+  - <Action 3>
+
+  **Next:** <one sentence on the expected next step>.
+
+  <details>
+  <summary>Details of update</summary>
+
+  <everything else: verbatim reviewer comments, CVSS rationale,
+  RM-attribution trail, label-transition reasoning, stale-draft
+  flags, cross-links, prior-comment pointers, etc. All of the
+  context that helps the auditor but that the scroller does not
+  need.>
+
+  </details>
+  ```
+
+  Keep the visible part — everything above the `<details>` block —
+  under roughly **six lines** of rendered markdown. If a single
+  item cannot be compressed to one bullet, break it into an action
+  headline at the top and push the reasoning into `<details>`.
+  Clickable `airflow-s/airflow-s` references (Golden rule 2) apply
+  to both the visible part and the `<details>` interior.
+
+  **The first line of every status-change comment MUST be a bold-
+  markdown headline.** It starts with `**` and ends with `**` (or
+  `**...**.`), and it names the kind of change inline — `**Sync …`,
+  `**Status update …`, `**Merged [airflow-s/airflow-s#<drop>] …`,
+  `**Closing as duplicate of …`, `**Split for scope clarity …`,
+  `**Imported on YYYY-MM-DD …`. Do **not** open with a plain
+  `Sync status (sync-security-issue skill, YYYY-MM-DD)`-style line:
+  that form (no bold, no inline headline) is what the older
+  pre-collapse comments used, and it is easy for automated
+  detection passes to miss — every comment produced by this skill
+  has to follow the bold-headline + `<details>` shape so both
+  humans scrolling the timeline and future automation can
+  identify it unambiguously.
+
+  **Legacy flat-format comments.** Trackers created before the
+  collapsed-`<details>` shape was adopted carry sync-status comments
+  written as one long wall of text. Step 1d's comment-mining pass
+  MUST surface **every** legacy-format comment on the tracker being
+  synced — detection is a **content-anchored** sweep, not a
+  prefix-anchored one. Look for *any* comment whose body lacks a
+  `<details>` disclosure and whose first ~500 characters match any
+  of:
+
+  - a bold prefix — `**Sync `, `**Status update`, `**Merged `,
+    `**Closing as duplicate`, `**Split for scope clarity`,
+    `**Imported on `;
+  - a bare-text prefix (legacy, no `**`) — `Sync status (`,
+    `Sync YYYY-MM-DD`, `Status update`;
+  - a content tell that indicates a sync-style post even when the
+    prefix is idiosyncratic — `sync-security-issue skill`,
+    `re-triage`, `Reporter notification still pending`,
+    `Outstanding — Step `.
+
+  For each hit, propose a **body-rewrite** as one of the numbered
+  items in the Step 2 proposal: keep the original content verbatim
+  inside a new `<details>Details of update</details>` block, and
+  replace the opening with a short two- or three-line bold-headline
+  + `**Next:**` + reporter-notification line that matches the
+  current shape. Apply the rewrite with `gh api -X PATCH
+  repos/airflow-s/airflow-s/issues/comments/<id> --input <json>`
+  (where `<json>` is a `{"body": "..."}` payload — `--field
+  body=@file` URL-encodes the newlines). Do not silently rewrite
+  history: surface each rewrite as its own proposal item so the
+  user sees exactly which comment is being reshaped.
+
+  End the visible part with exactly one of the reporter-notification
+  status lines:
 
   - *"Reporter has been notified on the original mail thread."* — when a
     status-update draft has been created in the same sync, **or**
@@ -908,7 +986,9 @@ will change and *why*. Group them by category:
     — only if the real reporter is themselves a member of the security team
     and is already in the loop, **or**
   - *"Reporter notification still pending — see draft `<draftId>`."* — if a
-    draft was created but the user has not yet sent it.
+    draft was created but the user has not yet sent it, **or** simply
+    omit the line when no reporter notification is meaningful (for
+    example on a team-discovered issue with no reporter thread).
 
 - **Draft email to reporter (other reasons)** — whenever the ball is in our
   court on the email thread for any other reason (a question from the
@@ -1051,23 +1131,28 @@ how to proceed — do not guess.
 
 ---
 
-## Step 5 — Regenerate the CVE JSON attachment
+## Step 5 — Regenerate the CVE JSON attachment (embedded in the issue body)
 
 After the apply loop finishes — **every time**, not as a proposal — run the
 [`generate-cve-json`](../generate-cve-json/SKILL.md) script with `--attach`
-to refresh the CVE JSON attachment on the tracking issue. Re-running the
-generator is cheap and idempotent: the script's HTML-comment marker (the
-``<!-- generate-cve-json: cve=CVE-YYYY-NNNN+ version=v1 -->`` line in the
-attachment comment body) lets it find the existing attachment comment and
-**patch it in place**, so a refresh never spawns a duplicate comment. If
-there is no previous attachment comment yet, the script creates one.
+to refresh the CVE JSON attachment on the tracking issue. The attachment
+lives **embedded in the issue body** (at the very end, right after the
+*CVE tool link* field), not as a separate comment — this way it stays
+above every status-change comment in the timeline and reads as part of
+the tracker itself. Re-running the generator is cheap and idempotent: the
+script brackets its block with a pair of HTML-comment markers
+(``<!-- generate-cve-json: cve=CVE-YYYY-NNNN+ version=v1 -->`` …
+``<!-- generate-cve-json:end cve=CVE-YYYY-NNNN+ version=v1 -->``) and on
+every run **replaces the block between them in place**, leaving the rest
+of the body untouched. If there is no previous attachment block yet, the
+script appends a fresh one after the *CVE tool link* field.
 
 Keeping the attachment in lock-step with the tracking issue body has two
 payoffs:
 
 1. The release manager can always grab the most-current JSON straight from
    the issue at advisory-publication time, without having to remember to
-   regenerate.
+   regenerate, and without scrolling through the comment timeline.
 2. The `#source` paste URL is visible on every sync, so if a reviewer
    notices the issue body drifting from the Vulnogram record they can
    jump straight to the paste-ready JSON.
@@ -1079,10 +1164,10 @@ it out explicitly in the Step 6 recap:
 
 - **No CVE has been allocated yet** — the issue body's *CVE tool link*
   field is still `_No response_`. Running the generator in that state
-  would create an attachment comment with an `UNKNOWN` CVE marker, which
-  is not useful. Remind the user to allocate a CVE via
+  would embed a block with an `UNKNOWN` CVE marker, which is not useful.
+  Remind the user to allocate a CVE via
   <https://cveprocess.apache.org/allocatecve> and mention that the next
-  sync run will attach the JSON automatically once a CVE is set.
+  sync run will embed the JSON automatically once a CVE is set.
 - **The tracking issue was closed as `invalid` / `not CVE worthy` /
   `duplicate`** and there is nothing to attach.
 
@@ -1097,8 +1182,8 @@ uv run --project .claude/skills/generate-cve-json generate-cve-json <N> --attach
 ```
 
 That alone is enough. The script reads every template field from the
-issue body, emits the full CVE 5.x record, and posts or patches the
-attachment comment.
+issue body, emits the full CVE 5.x record, and patches (or appends to)
+the tracking issue body in place.
 
 ### Auto-resolve `--remediation-developer` from the fix PR
 
@@ -1124,7 +1209,7 @@ If the lookup fails for any reason (no PR URL yet in the body, URL is
 not a `pull/` URL, `gh` errors out), run the script **without**
 `--remediation-developer` — the attachment is still generated, just
 missing that one credit. A later manual run with the correct flag
-patches the comment in place.
+patches the embedded block in place.
 
 ### Don't override `--version-start`
 
@@ -1133,18 +1218,21 @@ If the *Affected versions* body field has a `>= X, < Y` shape, the script
 picks `X` automatically. If it has a bare `< Y` shape (the typical
 Airflow case), the script's default `"0"` is used, and the reviewer can
 tighten it later with a manual `--version-start 3.0.0` invocation that
-patches the same attachment comment.
+patches the same embedded attachment block.
 
 ### Report the result
 
 The script prints one of two lines on success:
 
-- `Created attachment comment on airflow-s/airflow-s#<N>` — first run.
-- `Updated attachment comment on airflow-s/airflow-s#<N>` — subsequent
-  run; the existing attachment was patched in place.
+- `Embedded CVE JSON in issue body on airflow-s/airflow-s#<N>` — first
+  run (or first run after the legacy comment-based attachment was
+  cleaned up).
+- `Replaced CVE JSON in issue body on airflow-s/airflow-s#<N>` —
+  subsequent run; the existing embedded block was replaced in place.
 
-Capture the printed `html_url` and include it in the Step 6 recap so
-the user has one-click access to the attached JSON.
+Capture the printed URL — it deep-links to the `## CVE JSON — paste-ready
+for <CVE>` heading anchor inside the body — and include it in the Step 6
+recap so the user has one-click access to the attached JSON.
 
 ---
 
@@ -1156,9 +1244,10 @@ After the regeneration step finishes, print a short recap:
 - the drafts that are now waiting in Gmail (with a link to the thread);
 - the next step from 2c, repeated so the user does not have to scroll;
 - the CVE allocation link, if applicable;
-- the CVE JSON attachment comment URL (newly created or just patched),
-  or an explicit note that regeneration was skipped because no CVE has
-  been allocated yet.
+- the embedded CVE JSON URL (deep-links to the
+  `## CVE JSON — paste-ready for <CVE>` heading anchor inside the
+  tracker body), or an explicit note that regeneration was skipped
+  because no CVE has been allocated yet.
 
 **Before presenting the recap**, apply the Golden rule 2 self-check to
 the entire recap text: any mention of the tracking issue, any
@@ -1173,8 +1262,9 @@ Concrete minimum that every recap must include as clickable links:
   [`airflow-s/airflow-s#233`](https://github.com/airflow-s/airflow-s/issues/233)"*);
 - the **status-change comment** the sync just posted, as a
   `#issuecomment-<C>` anchor link;
-- the **CVE JSON attachment comment** from Step 5, as a
-  `#issuecomment-<C>` anchor link;
+- the **embedded CVE JSON section** from Step 5, deep-linked via the
+  body's heading anchor (e.g.
+  `https://github.com/airflow-s/airflow-s/issues/<N>#cve-json--paste-ready-for-<cve-id-slug>`);
 - any **cross-referenced issues** mentioned by the proposal (for
   example *"similar to [`airflow-s/airflow-s#214`](…)"*);
 - any **milestone** the sync moved the issue to, as a
