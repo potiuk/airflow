@@ -1002,7 +1002,14 @@ finalising the recap.
     so the advisory owner is visible from the milestones list.
   - `Chart-X.Y.Z` for Helm chart releases.
 - **Scope label is mandatory once triage is complete** — exactly one of
-  `airflow`, `providers`, or `chart`.
+  `airflow`, `providers`, or `chart`. *Note on Task SDK*: through
+  Airflow 3.2.x the Task SDK ships bundled into `apache-airflow`, so a
+  Task SDK-only vulnerability is classified under the `airflow` scope.
+  Starting with Airflow 3.3 the Task SDK ships as a separately-released
+  component (see the "Release branches currently in flight" section of
+  [`AGENTS.md`](../../../AGENTS.md)) and will need its own `task-sdk`
+  scope label; add it here and in the scope lists above the first time
+  a 3.3+ Task SDK report is triaged.
 - **Multi-scope reports must be split into one tracking issue per
   scope.** When an incoming report turns out to affect more than one
   scope (for example a bug whose root cause lives in

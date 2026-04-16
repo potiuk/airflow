@@ -71,6 +71,14 @@ if a hook is failing, fix the underlying issue or update the hook configuration 
 As of 2026-04-16, the Airflow release trains are:
 
 - **Airflow `main`** — becomes the next minor release (3.3.x eventually).
+  Note: as of Airflow 3.3 the **Task SDK** ships as a separately-released
+  component rather than being bundled into `apache-airflow` (the `Task
+  SDK 1.2.0` release alongside `3.2.0` was the last one shipped jointly).
+  Through 3.2.x, Task SDK code is part of the `apache-airflow` package and
+  a security report that only touches the Task SDK is therefore classified
+  under the `airflow` scope. Once a Task SDK-specific report lands against
+  3.3+, introduce a new `task-sdk` scope label and extend the
+  sync-security-issue skill's scope list accordingly.
 - **`v3-2-test`** — patch branch for the **Airflow 3.2.x** series. 3.2.1
   has already been cut; the **next patch release from this branch is
   `3.2.2`**. New security fixes that need a patch release target this
