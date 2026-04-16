@@ -142,7 +142,10 @@ verbatim. Structure:
 
 ---
 
-### Second independent report (merged from [airflow-s/airflow-s#<drop>](https://github.com/airflow-s/airflow-s/issues/<drop>) on <YYYY-MM-DD>)
+**Second independent report: [airflow-s/airflow-s#<drop>](https://github.com/airflow-s/airflow-s/issues/<drop>) — merged on <YYYY-MM-DD>.** <one-sentence headline: same root-cause bug, different attack vector / affected process.>
+
+<details>
+<summary>Full report from <drop.reporter> (click to expand)</summary>
 
 <one-paragraph summary of WHY the two reports are the same root-cause
 bug — same function, same file, same allowlist fix — but describe
@@ -150,9 +153,11 @@ different attack vectors / affected processes / threat-model
 boundaries. This paragraph is the skill's own analysis, written
 for a future triager who wants to understand why the two were
 merged; write it so it reads naturally even after the duplicate
-tracker has been closed for months.>
+tracker has been closed for months.
 
 <drop.issue_description verbatim>
+
+</details>
 
 ### Short public summary for publish
 
@@ -211,60 +216,98 @@ the same way it applies to a single reporter's content>
 <keep's value>
 ```
 
-The **Second independent report** section is the load-bearing part
-of the merge. It lets every future triager read both reports in one
+The **Second independent report** block is the load-bearing part of
+the merge. It lets every future triager read both reports in one
 place without having to chase the closed duplicate's content.
-Append the drop side's body **verbatim** — preserve the reporter's
-wording, code blocks, and PoC text. Do not paraphrase; paraphrasing
-a security report is how credits get subtly wrong before publication.
+Append the drop side's body **verbatim** inside the `<details>`
+disclosure — preserve the reporter's wording, code blocks, and PoC
+text. Do not paraphrase; paraphrasing a security report is how
+credits get subtly wrong before publication. The short headline that
+stays visible at the top of the `<details>` block is a one-sentence
+summary for scroll-readers; clicking expands to the full verbatim
+report. This is the same short-headline-over-collapsed-details
+pattern the status-change comments use, applied to the body so a
+long secondary report does not push every other body field below
+the fold.
 
 If the drop-side body already had a *"Second independent report"*
-section (chain-merge case — rare), append that section's content
-recursively under a nested sub-heading so the chain of merges is
-visible. Never flatten or rewrite earlier merges.
+`<details>` block (chain-merge case — rare), nest its content
+inside the new outer block (or append as a sibling sub-block) so
+the chain of merges stays visible. Never flatten or rewrite earlier
+merges.
 
 ---
 
 ## Step 4 — Build the status-comment proposals
 
-Two comments, one per tracker:
+Two comments, one per tracker. Follow the same short-headline +
+collapsed-`<details>` shape described in the *"Status update on
+the GitHub issue"* section of
+[`sync-security-issue`](../sync-security-issue/SKILL.md): the
+scrolling reader sees two or three lines, the auditor clicks
+**Details of update** for the full rationale.
 
 ### On the kept tracker
 
 ```markdown
-**Merged [airflow-s/airflow-s#<drop>](https://github.com/airflow-s/airflow-s/issues/<drop>) into this tracker.** <one-paragraph analysis of why — same bug, different vector — matching the rationale in the merged body's section.>
+**Merged [airflow-s/airflow-s#<drop>](https://github.com/airflow-s/airflow-s/issues/<drop>) into this tracker.** <one-sentence headline: same root-cause bug, different attack vector / affected process.>
 
-Sync actions applied:
+- Body: <keep.reporter>'s original report preserved; <drop.reporter>'s report appended as *"Second independent report"*.
+- Credits: **<keep credit>** + **<drop credit>**.
+- Mailing threads: both listed.
+- CVE: [<CVE-N>-<M>](https://cveprocess.apache.org/cve5/<CVE-N>-<M>) stays allocated here; [airflow-s/airflow-s#<drop>](...) being closed as duplicate.
 
-1. Body updated — <keep.reporter>'s original report preserved verbatim; <drop.reporter>'s report appended as a "Second independent report" section.
-2. *Reporter credited as* field now lists both finders: **<keep credit>** and **<drop credit>**.
-3. *Security mailing list thread* field now lists both threads.
-4. *Short public summary for publish* <kept as-is | seeded with a merged draft>.
-5. *CWE* <set to <value> | kept as _No response_ | BLOCKER: conflict between <keep.cwe> and <drop.cwe> — triager to resolve>.
-6. *Affected versions* widened to <value>.
+**Next:** <one-line next step — e.g. credit-preference confirmation for both, or Step 6 CVE refinement>.
 
-<CVE-N>-<M> stays allocated on this tracker. [airflow-s/airflow-s#<drop>](...) is being closed as duplicate; its CVE JSON attachment will no longer be regenerated there.
+<details>
+<summary>Details of update</summary>
 
-**Reporter notification still pending** for <each side whose credit is not yet confirmed>.
+Full analysis of why the two reports are the same root-cause bug
+(same function, same file, same allowlist fix) but describe
+different attack vectors / affected processes / threat-model
+boundaries. Per-field hand-off details:
+
+- *Reporter credited as*: <full before → after>.
+- *Security mailing list thread*: <full before → after, including PonyMail URLs and Gmail thread IDs>.
+- *Short public summary for publish*: <kept as-is | seeded with a merged draft starting "..."/>.
+- *CWE*: <set to <value> | kept as _No response_ | BLOCKER: conflict between <keep.cwe> and <drop.cwe> — triager to resolve>.
+- *Affected versions*: widened to <value>.
+- CVE JSON attachment regenerated: <comment URL>.
+
+Reporter notification status: <full state per reporter — draft IDs,
+pending questions, relay-channel notes>.
+
+</details>
 ```
 
 ### On the dropped tracker
 
 ```markdown
-**Closing as duplicate of [airflow-s/airflow-s#<keep>](https://github.com/airflow-s/airflow-s/issues/<keep>).**
+**Closing as duplicate of [airflow-s/airflow-s#<keep>](https://github.com/airflow-s/airflow-s/issues/<keep>).** <one-sentence headline.>
 
-<one-paragraph analysis>.
+Full content merged into [airflow-s/airflow-s#<keep>](...) as *"Second independent report"*; <drop.reporter> credited alongside <keep.reporter> there.
 
-Full content of this report has been merged into [airflow-s/airflow-s#<keep>](...) as a "Second independent report" section, including <specific artifacts: CVSS scoring, attack chain, PoC, remediation options>. <drop.reporter> is credited alongside <keep.reporter> in the *Reporter credited as* field there.
+**Next:** all triage and advisory work continues on [#<keep>](...).
 
-See [the merge comment on airflow-s/airflow-s#<keep>](...) for the detailed hand-off. This tracker has no further work items — all subsequent triage and advisory work continues on [#<keep>](...).
+<details>
+<summary>Details of update</summary>
 
-Reporter notification <state> — see [#<keep>](...).
+<one-paragraph analysis matching the kept-side details>.
+
+Specific artifacts merged: <CVSS scoring, attack chain, PoC, remediation options, etc.>.
+
+See [the merge comment on airflow-s/airflow-s#<keep>](…) for the full hand-off record.
+
+Reporter notification status: <full state — draft IDs, pending questions>.
+
+</details>
 ```
 
 Both comments must render every cross-issue reference as a
 clickable markdown link per the *Linking `airflow-s/airflow-s`
 issues and PRs* convention in [`AGENTS.md`](../../../AGENTS.md).
+The six-line visible-cap rule from the sync skill applies here
+too: the scroller-facing part should fit on one screen.
 
 ---
 
