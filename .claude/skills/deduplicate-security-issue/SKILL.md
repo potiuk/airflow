@@ -1,0 +1,386 @@
+---
+name: deduplicate-security-issue
+description: |
+  Merge two airflow-s/airflow-s tracking issues that describe the same
+  root-cause vulnerability (typically discovered independently by two
+  reporters, arriving via different channels), preserving every
+  reporter's credit, every mailing-list thread reference, and every
+  independent attack-vector description. Updates the kept issue's body
+  in place, closes the duplicate with the `duplicate` label, and
+  regenerates the CVE JSON attachment so both finders land in
+  `credits[]`.
+when_to_use: |
+  Invoke when a security team member says "dedupe #NNN and #MMM",
+  "merge #MMM into #NNN", "#MMM is a duplicate of #NNN", or when the
+  import-security-issue skill's Step 2a surfaces a STRONG match (GHSA
+  ID collision) between a new report and an existing tracker. Also
+  appropriate as a periodic cleanup action when a triager spots two
+  open trackers describing the same bug from different angles.
+---
+
+# deduplicate-security-issue
+
+Merges two `airflow-s/airflow-s` tracking issues that describe the
+same underlying vulnerability. The output is a single tracker
+("the **kept** issue") that carries every reporter's credit, every
+mailing-list thread, and every independent report's body, with the
+other tracker ("the **dropped** issue") closed and labelled
+`duplicate`.
+
+This is **one of the few places in the security workflow** where a
+piece of reporter-supplied content (the dropped issue's body) moves
+from one tracker to another. Since the target tracker is private to
+`airflow-s/airflow-s`, no confidentiality boundary is crossed, but
+the skill must still preserve every reporter's credit verbatim and
+surface the merge in a status comment on both trackers so the audit
+trail stays complete.
+
+**Golden rule — propose before applying.** Every merge is a
+proposal: the skill computes the merged body, the two status
+comments, the label/close-issue actions, and the CVE-JSON regen
+command, and shows all of them to the user. Nothing is applied
+until the user confirms. There is no fast-path.
+
+**Golden rule — never merge across scopes.** Two trackers with
+different **scope labels** (`airflow` vs. `providers`, `airflow`
+vs. `chart`, etc.) must not be merged. If an external reporter
+rediscovers the same bug in two different products' surfaces, that
+is a multi-scope report and the resolution is a
+**scope split** handled by the `sync-security-issue` skill, not a
+dedupe. This skill refuses to operate when the two candidate
+trackers have different scope labels, and the proposal says so
+explicitly.
+
+---
+
+## Inputs
+
+| Selector | Resolves to |
+|---|---|
+| `dedupe #<keep> <drop>` | merge the `<drop>` tracker into `<keep>`; `<keep>` stays open, `<drop>` closes as duplicate |
+| `dedupe <keep> <drop>` | same, without the `#` |
+| `dedupe #NNN` (single argument) | ambiguous — ask the user which one is kept; do not guess |
+
+Picking which is kept vs. dropped is a user decision; the skill
+does **not** auto-pick. Practical guidance to offer when asked:
+
+- If one tracker has a **CVE allocated** and the other does not,
+  keep the one with the CVE (preserves the allocation).
+- If one tracker is older, keep the older one (preserves the
+  audit-trail timestamp).
+- If one tracker has richer body content (more attack vectors,
+  CVSS scoring, PoC code), merge *into* the one with the CVE but
+  keep all the rich content via the "Second independent report"
+  section described in Step 3 below.
+
+---
+
+## Step 1 — Fetch and classify both trackers
+
+```bash
+gh issue view <keep>  --repo airflow-s/airflow-s --json number,title,state,body,labels,milestone,assignees,author,comments
+gh issue view <drop>  --repo airflow-s/airflow-s --json number,title,state,body,labels,milestone,assignees,author,comments
+```
+
+Verify:
+
+- Both trackers are in state `open` (merging into or out of a closed
+  tracker is almost always a mistake; surface as a blocker if
+  either side is already closed and ask the user to confirm).
+- Both have the **same scope label** — `airflow` vs. `airflow`,
+  or `providers` vs. `providers`, or `chart` vs. `chart`. If the
+  scope labels differ, refuse the merge and tell the user this is
+  a multi-scope report to be handled by `sync-security-issue`'s
+  scope-split flow instead.
+- Neither tracker is already labelled `duplicate` (that would
+  indicate a partial-merge already happened and someone left it
+  half-done; surface as a blocker and let the user decide how to
+  recover).
+
+---
+
+## Step 2 — Extract the per-field values from both
+
+For each tracker, extract the template fields:
+
+- *The issue description* — typically the reporter's full message.
+  In older trackers the field may not have an explicit heading
+  (everything above *"Short public summary for publish"* is the
+  description by convention).
+- *Short public summary for publish*
+- *Affected versions*
+- *Security mailing list thread*
+- *Public advisory URL*
+- *Reporter credited as*
+- *PR with the fix*
+- *CWE*
+- *Severity*
+- *CVE tool link*
+
+Also capture:
+
+- Each tracker's **labels** (scope, `cve allocated`, `pr *`,
+  `announced - emails sent`, etc.).
+- Each tracker's **milestone** (Airflow version / Providers wave /
+  Chart version).
+- Each tracker's **assignees**.
+- Whether each tracker has a **CVE JSON attachment** comment (from
+  `generate-cve-json --attach`) — only the kept side's attachment
+  will be regenerated in Step 5.
+
+---
+
+## Step 3 — Build the merged body proposal
+
+The output is a single body that preserves both reporters' content
+verbatim. Structure:
+
+```markdown
+### The issue description
+
+<keep.issue_description verbatim>
+
+---
+
+### Second independent report (merged from [airflow-s/airflow-s#<drop>](https://github.com/airflow-s/airflow-s/issues/<drop>) on <YYYY-MM-DD>)
+
+<one-paragraph summary of WHY the two reports are the same root-cause
+bug — same function, same file, same allowlist fix — but describe
+different attack vectors / affected processes / threat-model
+boundaries. This paragraph is the skill's own analysis, written
+for a future triager who wants to understand why the two were
+merged; write it so it reads naturally even after the duplicate
+tracker has been closed for months.>
+
+<drop.issue_description verbatim>
+
+### Short public summary for publish
+
+<merged summary covering both vectors; if either side was `_No
+response_`, use the populated side; if both were populated,
+combine them with a leading sentence that covers both attack
+vectors explicitly — the release manager will refine at Step 13>
+
+### Affected versions
+
+<widen the range to the broader of the two — take the lower `version
+`-bound and the higher `lessThan` upper bound from both sides>
+
+### Security mailing list thread
+
+<keep.reporter> (<keep.context>): <keep's thread URL or Gmail threadId note>
+<drop.reporter> (<drop.context>): <drop's thread URL or Gmail threadId note>
+```
+(one line per reporter; keep them in chronological order of the
+original report, earliest first)
+
+```markdown
+### Public advisory URL
+
+<keep's value; normally _No response_ at the time of merge>
+
+### Reporter credited as
+
+<keep.credit line verbatim>
+<drop.credit line verbatim>
+```
+(one line per credit; preserve the *exact* form each reporter
+confirmed, or the placeholder form when unconfirmed; the merge
+does not silently re-synthesize credits)
+
+```markdown
+### PR with the fix
+
+<keep's value, or merge if both are populated>
+
+### CWE
+
+<the more specific of the two values; if they disagree on the
+primary CWE, surface the disagreement as a blocker for the
+triager rather than silently picking one>
+
+### Severity
+
+<keep's value; do NOT propagate a reporter-supplied CVSS from the
+dropped tracker into the kept tracker's Severity field — the
+independent-scoring rule in AGENTS.md applies to merged content
+the same way it applies to a single reporter's content>
+
+### CVE tool link
+
+<keep's value>
+```
+
+The **Second independent report** section is the load-bearing part
+of the merge. It lets every future triager read both reports in one
+place without having to chase the closed duplicate's content.
+Append the drop side's body **verbatim** — preserve the reporter's
+wording, code blocks, and PoC text. Do not paraphrase; paraphrasing
+a security report is how credits get subtly wrong before publication.
+
+If the drop-side body already had a *"Second independent report"*
+section (chain-merge case — rare), append that section's content
+recursively under a nested sub-heading so the chain of merges is
+visible. Never flatten or rewrite earlier merges.
+
+---
+
+## Step 4 — Build the status-comment proposals
+
+Two comments, one per tracker:
+
+### On the kept tracker
+
+```markdown
+**Merged [airflow-s/airflow-s#<drop>](https://github.com/airflow-s/airflow-s/issues/<drop>) into this tracker.** <one-paragraph analysis of why — same bug, different vector — matching the rationale in the merged body's section.>
+
+Sync actions applied:
+
+1. Body updated — <keep.reporter>'s original report preserved verbatim; <drop.reporter>'s report appended as a "Second independent report" section.
+2. *Reporter credited as* field now lists both finders: **<keep credit>** and **<drop credit>**.
+3. *Security mailing list thread* field now lists both threads.
+4. *Short public summary for publish* <kept as-is | seeded with a merged draft>.
+5. *CWE* <set to <value> | kept as _No response_ | BLOCKER: conflict between <keep.cwe> and <drop.cwe> — triager to resolve>.
+6. *Affected versions* widened to <value>.
+
+<CVE-N>-<M> stays allocated on this tracker. [airflow-s/airflow-s#<drop>](...) is being closed as duplicate; its CVE JSON attachment will no longer be regenerated there.
+
+**Reporter notification still pending** for <each side whose credit is not yet confirmed>.
+```
+
+### On the dropped tracker
+
+```markdown
+**Closing as duplicate of [airflow-s/airflow-s#<keep>](https://github.com/airflow-s/airflow-s/issues/<keep>).**
+
+<one-paragraph analysis>.
+
+Full content of this report has been merged into [airflow-s/airflow-s#<keep>](...) as a "Second independent report" section, including <specific artifacts: CVSS scoring, attack chain, PoC, remediation options>. <drop.reporter> is credited alongside <keep.reporter> in the *Reporter credited as* field there.
+
+See [the merge comment on airflow-s/airflow-s#<keep>](...) for the detailed hand-off. This tracker has no further work items — all subsequent triage and advisory work continues on [#<keep>](...).
+
+Reporter notification <state> — see [#<keep>](...).
+```
+
+Both comments must render every cross-issue reference as a
+clickable markdown link per the *Linking `airflow-s/airflow-s`
+issues and PRs* convention in [`AGENTS.md`](../../../AGENTS.md).
+
+---
+
+## Step 5 — Confirm with the user, then apply sequentially
+
+Present the proposal:
+
+- Numbered items for the body update, each status comment, the
+  `duplicate` label application on the dropped side, the
+  close-issue action on the dropped side, and the CVE-JSON regen
+  on the kept side.
+- The resulting merged body rendered in full (not a diff), so the
+  user can proofread end to end before confirming.
+
+Confirmation forms:
+
+- `all` — apply every proposed action.
+- `1,3,5` — apply selected items only (for example, *"apply body
+  update and status comment but don't close the duplicate yet — I
+  want to triple-check"*).
+- `none` / `cancel` — bail.
+- Free-form edits — regenerate only the specified item and
+  re-confirm.
+
+After confirmation, apply **sequentially** (never in parallel):
+
+1. `gh issue edit <keep> --body-file <tmpfile>` — updated body
+2. `gh issue comment <keep> --body-file <tmpfile>` — merge status
+   comment
+3. `gh issue comment <drop> --body-file <tmpfile>` — duplicate
+   status comment
+4. `gh issue edit <drop> --repo airflow-s/airflow-s --add-label duplicate`
+5. `gh issue close <drop> --repo airflow-s/airflow-s --reason "not planned"`
+   (GitHub's `duplicate` close-reason is not exposed by `gh` on
+   all versions; `not planned` combined with the `duplicate` label
+   carries the same signal)
+6. `uv run --project .claude/skills/generate-cve-json generate-cve-json <keep> --attach`
+   with the standard remediation-developer auto-resolution
+
+If any step fails, stop and ask the user how to proceed — do not
+guess. Partial merges are recoverable as long as the body update
+(step 1) succeeded; the rest is bookkeeping on top.
+
+---
+
+## Step 6 — Recap
+
+After the apply loop, print a short recap:
+
+- The kept tracker as a clickable
+  [`airflow-s/airflow-s#<keep>`](...) link with a short summary of
+  its new state (label set, credit list, both threads).
+- The dropped tracker as a clickable link with its new closed
+  state.
+- The regenerated CVE JSON attachment URL.
+- Any blockers surfaced during the merge (CWE conflict, unconfirmed
+  credits, stale drafts, etc.) repeated here so the user does not
+  have to scroll.
+
+Apply the `airflow-s/airflow-s` link-form self-check to the entire
+recap before presenting.
+
+---
+
+## Hard rules
+
+- **Never merge across scopes.** Different scope labels → scope
+  split (via `sync-security-issue`), not dedupe.
+- **Never re-synthesize credits.** Copy each reporter's credit line
+  verbatim from their tracker.
+- **Never propagate a reporter-supplied CVSS** from the dropped
+  tracker into the kept tracker's `Severity` field. The
+  independent-scoring rule in [`AGENTS.md`](../../../AGENTS.md)
+  applies to merged content.
+- **Never paraphrase a reporter's body.** Paraphrasing is how
+  credits and vulnerability details go subtly wrong before
+  publication; append verbatim under the *Second independent
+  report* heading.
+- **Never close the wrong side.** The kept issue stays open; the
+  dropped issue closes. Before running the `close` command,
+  re-check the mapping one last time.
+- **Never delete the dropped tracker.** GitHub issues are
+  effectively immutable audit trail; closing + labelling as
+  `duplicate` is the right ending state.
+
+---
+
+## When dedupe is **not** appropriate
+
+- The two trackers are in **different scopes** → use the scope-split
+  flow in `sync-security-issue` instead.
+- The two trackers describe the same code surface but **different
+  bugs** with **different fixes** (for example, two separate
+  allowlist gaps in the same file, each requiring its own
+  advisory) → leave them as separate trackers and cross-link in
+  comments, but do not merge.
+- One tracker has already moved past Step 13 (advisory sent) — the
+  advisory has already gone out citing one reporter; retroactively
+  merging a second reporter into the sent advisory requires an
+  errata announcement via the missing-credits follow-up (Step 16
+  of the handling process), not a tracker-body merge.
+
+---
+
+## References
+
+- [`README.md`](../../../README.md) — the handling process;
+  duplicates are resolved here at various steps rather than at a
+  single numbered step.
+- [`import-security-issue`](../import-security-issue/SKILL.md) —
+  Step 2a surfaces potential duplicates before a new tracker is
+  even created, so in the ideal case this skill is never needed
+  on a fresh import.
+- [`sync-security-issue`](../sync-security-issue/SKILL.md) — runs
+  on the kept tracker after the merge to reconcile labels /
+  milestone / credit-preference drafts for both reporters.
+- [`generate-cve-json`](../generate-cve-json/SKILL.md) —
+  regenerates the kept tracker's CVE JSON attachment so both
+  finders land in `credits[]`.

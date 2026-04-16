@@ -617,6 +617,30 @@ commit message or an ad-hoc comment.
 
 Currently available:
 
+- [`import-security-issue`](.claude/skills/import-security-issue/SKILL.md) —
+  the on-ramp of the process. Scans `security@airflow.apache.org` for threads
+  that have not yet been copied into `airflow-s/airflow-s` as tracking issues,
+  classifies each candidate (real report vs. automated-scan / consolidated /
+  media / spam), extracts the issue-template fields from the root email, and —
+  after user confirmation — creates one tracker per valid report plus a Gmail
+  draft of the receipt-of-confirmation reply (from
+  [`canned-responses.md`](canned-responses.md), including the credit-preference
+  question). Deduplicates against existing tracker bodies by searching for the
+  Gmail `threadId`. This is Step 2 of the handling process in
+  [`README.md`](README.md) and the first skill a triager runs in a morning
+  sweep.
+- [`deduplicate-security-issue`](.claude/skills/deduplicate-security-issue/SKILL.md) —
+  merges two tracking issues that describe the same root-cause
+  vulnerability discovered independently by different reporters. Copies
+  the dropped tracker's body verbatim into the kept tracker as a
+  *"Second independent report"* section, concatenates the reporters'
+  credit lines and mailing-list thread references, regenerates the kept
+  tracker's CVE JSON attachment so both finders land in `credits[]`, and
+  closes the dropped tracker with the `duplicate` label. Refuses to
+  operate across different scope labels (those require a scope split
+  via `sync-security-issue`, not a dedupe). Typically invoked after
+  `import-security-issue` Step 2a surfaces a STRONG GHSA-ID match with
+  an existing tracker.
 - [`sync-security-issue`](.claude/skills/sync-security-issue/SKILL.md) —
   reconciles a security issue with its GitHub discussion, its
   `security@airflow.apache.org` mail thread, and any fixing PRs; proposes label,
