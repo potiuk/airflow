@@ -252,8 +252,19 @@ will change and *why*. Group them by category:
   propose clearing a stale assignment if the person is no longer active on the issue.
 - **Description fields** — if the issue body is missing any of the fields the
   release manager will eventually need (CWE, product, affected versions, severity,
-  CVE ID, credits, links to PRs), propose a patched description. Show the full
-  replacement body in the proposal, not a diff, so the user can review it.
+  CVE ID, credits, links to PRs, short public summary for publish), propose a
+  patched description. Show the full replacement body in the proposal, not a
+  diff, so the user can review it.
+
+  **Every `_No response_` field must be explicitly reviewed in every sync
+  run.** Before presenting the proposal, scan the issue body for remaining
+  `_No response_` placeholders. For each one, either propose a concrete
+  value (if the discussion, the mail thread, the PR, or the GHSA provides
+  enough information to fill it in) or flag it explicitly in the proposal
+  as *"still `_No response_` — needs \<what\> before it can be filled"*.
+  Do not silently leave fields empty across multiple sync runs — the
+  release manager at Step 12 needs **every** field filled in to send the
+  advisory.
 
   **Special case for the `Severity` field — never propagate reporter-supplied
   CVSS scores.** If the reporter attached a CVSS vector or a qualitative label

@@ -385,10 +385,16 @@ gh pr create --web --repo apache/airflow --base <base-branch> \
   --body "$(cat /tmp/pr-body-<issue>.md)"
 ```
 
-If a backport label is needed, tell the user to add it via the GitHub
-UI once the PR is open. Do not add the backport label programmatically
-from the skill — it may race with CI and is best done by a human
-reviewer who can judge the backport strategy.
+If a backport label is needed, apply it via `gh` after the PR is
+created:
+
+```bash
+gh pr edit <PR-NUMBER> --repo apache/airflow --add-label "backport-to-v3-2-test"
+```
+
+This is safe to do immediately after PR creation — the backport bot
+only fires on merge, not on label application, so there is no race
+with CI. Applying the label early ensures it is not forgotten.
 
 **Grep the PR body one more time for forbidden terms** (`CVE`,
 `airflow-s`, `vulnerability`, `security fix`, `advisory`, private
@@ -566,7 +572,7 @@ Print a short recap:
 - the list of files changed,
 - the tests that were run and their results,
 - the comment posted on the `airflow-s` issue,
-- any backport label that still needs to be applied manually,
+- the backport label that was applied (or a note that none was needed),
 - the next step — typically *"wait for review; re-run
   sync-security-issue after the PR merges to transition the issue
   to `Not yet announced` and update the milestone"*.
