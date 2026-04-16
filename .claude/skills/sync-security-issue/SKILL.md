@@ -391,7 +391,8 @@ update, label change, or next-step recommendation in Step 2:
 | Reporter reply with a confirmed credit line (*"please credit me as …"*, *"use handle X"*, *"anonymous is fine"*) | Replace the `Reporter credited as` placeholder with the confirmed form; mark the credit question as resolved so the next status-update draft does not re-ask it. |
 | Reporter explicit opt-out of credit (*"do not credit me"*, *"anonymous"*) | Set the field to `anonymous` and flag the advisory to use that form. |
 | Release manager's `[RESULT][VOTE] Release Airflow <version>` on `dev@airflow.apache.org` for a version that carries the fix | Record the release manager in the "Known release managers" subsection of [`AGENTS.md`](../../../AGENTS.md) if not already there; flag Step 12 (advisory) as assigned to that person. |
-| Advisory message sent to `announce@apache.org` / `users@airflow.apache.org` for the CVE on the tracker | Propose adding the `announced - emails sent` label, removing `fix released`, filling the `--advisory-url` for the next `generate-cve-json` run with the `lists.apache.org/thread/<id>?announce@apache.org` URL, and closing the issue. |
+| Advisory message sent to `announce@apache.org` / `users@airflow.apache.org` for the CVE on the tracker | Propose adding the `announced - emails sent` label and removing `fix released`. **Do not propose closing the issue here** — per the 2026-04-16 process update, closing is gated on the archived public advisory URL being captured (see the next row). |
+| Advisory archived on `users@airflow.apache.org` (the announcement message is now visible in `lists.apache.org/list.html?users@airflow.apache.org` — scan the archive with the CVE ID when `announced - emails sent` is set and the *"Public advisory URL"* body field is empty) | Propose populating the *"Public advisory URL"* body field with the archive URL, regenerating the CVE JSON attachment (the generator picks the URL up automatically and tags it `vendor-advisory`), adding the `vendor-advisory` label, and closing the issue in the same apply batch. |
 | The referenced `apache/airflow` PR has been opened but is still in `open` state | Propose `pr created` label; update the *"PR with the fix"* body field with the PR URL. |
 | The referenced `apache/airflow` PR moved to `merged` | Propose swapping `pr created` → `pr merged`; update milestone to the shipping release if now known. |
 | A release carrying the fix has shipped (PR's milestone release is on PyPI / Helm registry, or an explicit *"fix shipped in X.Y.Z"* comment) | Propose swapping `pr merged` → `fix released`; this is the release manager's cue to own Step 12 (advisory). If the legacy `Not yet announced` label is still set, keep it and append `fix released` in parallel so the two signals do not contradict each other — prefer `fix released` going forward. |
@@ -431,7 +432,8 @@ process the issue is currently at:
 | Fix PR open, not merged (`pr created` label should be set) | 7 / 8 / 9 / 10 |
 | Fix PR merged, no release with the fix has shipped yet (swap `pr created` → `pr merged`) | 11 |
 | Release with the fix has shipped, advisory not sent (swap `pr merged` → `fix released`) | 11 / 12 |
-| Advisory sent, `announced - emails sent` set, `vendor-advisory` reference not recorded | 12 / 13 |
+| Advisory sent, `announced - emails sent` set, *Public advisory URL* body field still empty (issue stays open) | 12 → 13 |
+| *Public advisory URL* populated, `vendor-advisory` label set → close the issue | 13 |
 | Closed, credits missing | 14 |
 
 The `pr created`, `pr merged`, and `fix released` labels describe the
@@ -539,21 +541,43 @@ will change and *why*. Group them by category:
   release manager at Step 12 needs **every** field filled in to send the
   advisory.
 
-  **Special case for the "Security mailing list thread" field.** The
-  default value of this field on a new issue is a placeholder
-  `lists.apache.org/thread/<hash>` URL that *looks* like a public
-  archive link but points at a non-publicly-archived
-  `security@airflow.apache.org` thread. Those URLs **must not** survive
-  into the CVE record as `vendor-advisory` references — they 404 for
-  everyone outside the security team. Every sync run must either:
-  (a) replace the placeholder with a short textual note naming the
-  private Gmail thread ID (e.g. *"No public archive URL — tracked
-  privately on thread `19d24534972f9686`"*), or (b) replace it with
-  the **real** public advisory URL on `users@airflow.apache.org` once
-  that advisory has been sent. Never leave the field with a fake
-  `lists.apache.org/thread/<hash>` placeholder. See the "CVE references
-  must never point at non-public mailing-list threads" section of
-  [`AGENTS.md`](../../../AGENTS.md) for the full rationale.
+  **Special case for the "Security mailing list thread" field — leave
+  it alone.** This field holds the internal navigation reference to
+  the private `security@airflow.apache.org` thread that originated the
+  report. The URL is expected to 404 for anyone outside the security
+  team; that is the intended behaviour. **Do not scrub this field,
+  do not replace the URL with a textual note, do not "clean it up".**
+  The `generate-cve-json` script no longer exports URLs from this
+  field to `references[]`, so the 404-risk it used to carry is gone.
+  Keep whatever the reporter or triager put there so the team can
+  navigate back to the original thread from the tracker.
+
+  **New field as of 2026-04-16 — "Public advisory URL".** This is the
+  separate body field that carries the archived public advisory URL
+  on `lists.apache.org/list.html?users@airflow.apache.org` (or
+  `announce@apache.org`). Empty until Step 12 — the release manager
+  fills it in **after** the advisory email has been sent and archived.
+  Every sync run must:
+
+  1. If `announced - emails sent` is set and the field is still
+     empty, **scan the users@ archive for the CVE ID**:
+     ```
+     gh api "https://lists.apache.org/api/thread.lua?list=users&domain=airflow.apache.org&q=<CVE-ID>" 2>/dev/null \
+       || curl -s "https://lists.apache.org/list.html?users@airflow.apache.org:2026:<CVE-ID>"
+     ```
+     If the archive returns a hit, propose populating the field with
+     the `lists.apache.org/thread/<id>?users@airflow.apache.org` URL.
+  2. If the field is already populated, treat it as authoritative —
+     no scan needed. Regenerate the CVE JSON attachment so the URL
+     flows into `references[]` as `vendor-advisory`.
+  3. Close-the-issue proposals (`gh issue close`) **must be gated on
+     this field being populated**. Never propose closing an issue
+     whose advisory URL is still empty, even if `announced - emails
+     sent` is set. See Step 1e for the updated process-step table.
+
+  See the "CVE references must never point at non-public mailing-list
+  threads" section of [`AGENTS.md`](../../../AGENTS.md) for the full
+  rationale of the two-field split.
 
   **Special case for the `Severity` field — never propagate reporter-supplied
   CVSS scores.** If the reporter attached a CVSS vector or a qualitative label

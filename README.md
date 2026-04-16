@@ -168,11 +168,30 @@ The process of handling an issue is as follows:
 
     The release manager also generates the CVE description, sets the CVE to REVIEW if feedback is needed and
     then to READY, and eventually sends the announcement emails from the ASF CVE tool. The release manager
-    then adds the `announced - emails sent` label, removes the `fix released` label, and closes the issue.
+    then adds the `announced - emails sent` label and removes the `fix released` label. **The issue stays
+    open** at this point — it is closed only at Step 13 below, after the public archive URL has been
+    captured. This gives the `sync-security-issue` skill one more handoff where it can notice a missing
+    archive URL and prompt for it before the issue is forgotten.
 
-13) After the emails have been delivered, the release manager updates the issue with information about the
-    announcement, adding the `vendor-advisory` tag with a link to the `users@airflow.apache.org` mailing list
-    retrieved via the [user list archive](https://lists.apache.org/list.html?users@airflow.apache.org).
+13) **Capture the public advisory URL, record `vendor-advisory`, close the issue.** Once the announcement
+    email has been delivered and archived, the release manager (or the next `sync-security-issue` run):
+
+    * retrieves the archive URL from the
+      [users@ list archive](https://lists.apache.org/list.html?users@airflow.apache.org) — the
+      `sync-security-issue` skill scans the archive for the CVE ID on every run and proposes the URL
+      automatically once it finds a match;
+    * pastes the URL into the tracking issue's **Public advisory URL** body field (the field was added
+      to the issue template specifically for this handoff — never reuse the *"Security mailing list
+      thread"* field, which holds the private `security@` thread);
+    * regenerates the CVE JSON attachment — `generate-cve-json` now picks up the URL from the body
+      automatically and tags it as `vendor-advisory` in `references[]`, so the public CVE record
+      carries a resolvable `vendor-advisory` link;
+    * adds the `vendor-advisory` label to the tracking issue and then **closes** the issue.
+
+    Until the *Public advisory URL* field is populated, the `sync-security-issue` skill will not
+    propose closing the issue — this is deliberate: an issue closed without the archive URL leaks a
+    tracker into the "done" column without the public artefact, and nobody notices the gap until
+    someone tries to cite the CVE later.
 
 14) If we need to add missing credits (which sometimes happens due to copy-and-paste errors and the
     brittleness of the process), the release manager:
@@ -197,8 +216,8 @@ flowchart LR
     E -->|step 11: PR merges| F[pr merged]
     F -->|step 11: release ships| G[fix released]
     G -->|step 12: advisory sent| H[announced - emails sent]
-    H -->|step 13: archive URL| I[vendor-advisory]
-    H --> Z([issue closed])
+    H -->|step 13: archive URL captured| I[vendor-advisory]
+    I -->|step 13: close| Z([issue closed])
 
     classDef closed fill:#f8d7da,stroke:#842029,color:#000;
     classDef done fill:#d1e7dd,stroke:#0f5132,color:#000;
@@ -217,9 +236,9 @@ labels left-to-right:
 | `pr created` | A public fix PR has been opened in `apache/airflow` but has not yet merged. | 10 | 11 (replaced by `pr merged`) |
 | `pr merged` | The fix PR has merged into `apache/airflow`; no release with the fix has shipped yet. | 11 | 11 (replaced by `fix released` when the release ships) |
 | `fix released` | A release containing the fix has shipped to users; advisory has not been sent yet. | 11 | 12 (replaced by `announced - emails sent`) |
-| `announced - emails sent` | The public advisory has been sent to `announce@apache.org` / `users@airflow.apache.org`. | 12 | never (the issue is closed at the same time) |
+| `announced - emails sent` | The public advisory has been sent to `announce@apache.org` / `users@airflow.apache.org`. The issue **stays open** after this label is applied; closing is gated on `vendor-advisory` being set in Step 13. | 12 | never (stays on the issue after closing for audit history) |
 | `Not yet announced` | **Legacy** synonym of `fix released`. New issues should use `fix released`; existing `Not yet announced` labels are still honoured by the skills during sync. | — | — |
-| `vendor-advisory` | Marker used while recording the archived `users@` URL in the CVE tool. | 13 | — |
+| `vendor-advisory` | The public advisory has been archived on `users@airflow.apache.org` and its URL is recorded in the tracking issue's *Public advisory URL* body field (and hence as a `vendor-advisory` reference in the CVE JSON). Applied in the same step that closes the issue. | 13 | never |
 | `wontfix` / `invalid` / `not CVE worthy` / `duplicate` | Closing dispositions for reports that are not valid or not CVE-worthy. | 5 / 6 | — |
 
 The [`sync-security-issue`](.claude/skills/sync-security-issue/SKILL.md) skill keeps these labels
