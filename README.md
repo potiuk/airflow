@@ -60,12 +60,23 @@ The process of handling an issue is as follows:
    case, the security team of the Apache Software Foundation will forward the issue to the Airflow security
    mailing list).
 
-2) A security team member picks it up and [creates an issue](https://github.com/airflow-s/airflow-s/issues/new/choose).
-   The issue should have a label set — one of `airflow`, `providers`, or `chart`. The team member replies
-   by email to the reporter to let them know we are looking at the report. The issue automatically receives
-   the `needs triage` label. If the issue is "obviously invalid" (we've seen such issues before and triaged or
-   responded to them), the response may simply explain why and clearly state that the issue is invalid; in
-   that case this step (and all the following steps) may be skipped, and no issue needs to be created.
+2) **Import the report into `airflow-s/airflow-s` as a tracking issue.** The
+   [`import-security-issue`](.claude/skills/import-security-issue/SKILL.md)
+   skill is the on-ramp of the process: it scans `security@airflow.apache.org` for threads that have not
+   yet been imported, classifies each candidate (real report vs. automated-scan / consolidated / media /
+   spam), extracts the issue-template fields from the root message, and proposes one tracker per valid
+   report plus a receipt-of-confirmation Gmail draft for each. Nothing is applied without explicit user
+   confirmation. A security team member runs the skill (*"import new reports"*) as the first action of
+   a triage sweep; the newly-created issue lands with the `needs triage` label set automatically by
+   the issue template, and the draft reply is ready in Gmail for the triager to review and send.
+
+   If the report is "obviously invalid" (we've seen such issues before and triaged or responded to them)
+   — for example an automated-scanner dump or a consolidated multi-issue report — the skill proposes the
+   matching canned response from [`canned-responses.md`](canned-responses.md) as a Gmail draft and does
+   **not** create a tracker, so the invalid class never enters the board.
+
+   The tracker still has no scope label at this point — that is applied at Step 5 when validity is
+   confirmed.
 
 3) In the issue, we discuss and agree on whether it is worth having a CVE for it.
 
@@ -246,7 +257,7 @@ co-exist); each edge is a process step that moves the issue forward. Closing dis
 
 ```mermaid
 flowchart LR
-    A([report on security@]) --> B[needs triage]
+    A([report on security@]) -->|step 2: import-security-issue| B[needs triage]
     B -->|step 5: consensus invalid| X1([invalid / not CVE worthy / duplicate / wontfix])
     B -->|step 5: consensus valid| C[airflow / providers / chart]
     C -->|step 6: CVE reserved| D[cve allocated]
@@ -298,12 +309,15 @@ Owns **Steps 1–6**: from an inbound report on `security@airflow.apache.org` to
 
 What a triager does:
 
-- Pulls the latest report off the `security@` thread and opens (or updates) the corresponding
-  tracking issue in [`airflow-s/airflow-s`](https://github.com/airflow-s/airflow-s) using the
-  [issue template](.github/ISSUE_TEMPLATE/issue_report.yml).
-- Sends the confirmation-of-receipt reply from [`canned-responses.md`](canned-responses.md),
-  **including the credit-preference question**, so the reporter's credit form is on record before
-  the fix lands.
+- Runs [`import-security-issue`](.claude/skills/import-security-issue/SKILL.md) at the start of
+  a triage sweep to scan `security@airflow.apache.org` for reports not yet imported. The skill
+  classifies candidates (real report vs. automated-scan / consolidated / media / spam),
+  extracts the issue-template fields from the root email, and proposes one tracker per valid
+  report plus a receipt-of-confirmation Gmail draft for each — all behind a single
+  user-confirmation step.
+- Reviews and sends the confirmation-of-receipt reply that `import-security-issue` drafted from
+  [`canned-responses.md`](canned-responses.md), **including the credit-preference question**, so
+  the reporter's credit form is on record before the fix lands.
 - Drives the valid / invalid / not-CVE-worthy assessment in the tracking-issue comments, pulling
   at least one other security-team member into the discussion. Uses the canned-response templates
   for negative assessments so the tone stays polite-but-firm.
@@ -315,6 +329,10 @@ What a triager does:
 
 Tools a triager uses most:
 
+- [`import-security-issue`](.claude/skills/import-security-issue/SKILL.md) — *"import new
+  reports"* at the start of each triage sweep. Converts un-tracked `security@` threads into
+  `airflow-s/airflow-s` trackers and drafts the first reply. This is the entry point into the
+  process — every other tool runs on the trackers this one creates.
 - [`sync-security-issue`](.claude/skills/sync-security-issue/SKILL.md) — *"sync \<issue-ref\>"* or
   *"sync all"* for a triage sweep. Surfaces stalled issues, missing fields, credit replies, and
   scope-split requirements in one combined proposal.
