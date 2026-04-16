@@ -84,6 +84,140 @@ If the user does not supply an issue number, ask for it before doing anything el
 
 ---
 
+## Bulk mode — syncing many issues in parallel
+
+When the user asks for a bulk sync (*"sync all open issues"*, *"sync
+#212, #214 and #218"*, *"refresh state of everything that is still
+`cve allocated`"*, or a triage-sweep variant), switch into **bulk
+mode**: each issue is assessed by a **separate subagent** running in
+parallel, and the orchestrator merges the results into a single
+combined proposal for the user to confirm once.
+
+Running the full single-issue flow 20 times in the main agent would
+blow the context window with mail threads, PR diffs, and comment
+bodies the user does not need to see. Delegating per-issue gathering
+to subagents keeps the main context clean and runs the reads
+concurrently, which is exactly what the sync needs.
+
+### Orchestrator responsibilities
+
+1. **Pick the issue list.** If the user named specific issues, use
+   those numbers verbatim. Otherwise list open issues with
+   `gh issue list --repo airflow-s/airflow-s --state open --limit 100
+   --json number,title,labels` and let the user confirm the set
+   before spawning subagents. For a plain "sync all", default to all
+   open issues — do not include closed issues unless explicitly asked.
+
+2. **Spawn one subagent per issue, in a single message.** Use the
+   `general-purpose` subagent type and send all `Agent` tool calls in
+   the **same assistant message** so they run concurrently. For 20
+   issues, that is 20 parallel `Agent` calls in one turn.
+
+   Each subagent prompt must be self-contained and must instruct the
+   subagent to:
+
+   - Do **only Step 1** (gather state) from this skill — no
+     confirmations, no edits, no draft emails, no label changes, no
+     milestone creation, no comments. The subagent is a read-only
+     assessor.
+   - Read the issue, its closing-PR references, the fixing PR state
+     and milestone, the originating Gmail thread, and mine comments
+     and mail for the signals in the table in Step 1d.
+   - Return a **compact structured report** — not a freeform
+     narrative. The exact shape is below.
+
+3. **Aggregate and present one combined proposal.** Once all
+   subagents return, fold their reports into one table / numbered
+   proposal covering every issue, grouped so the user can confirm
+   with `all`, `NN:all`, `NN:1,3`, or per-issue subsets (see the
+   existing apply-loop conventions). Only after the user confirms
+   does the orchestrator apply changes.
+
+4. **Apply sequentially, not in parallel.** Even though assessment
+   ran in parallel, the apply phase must be sequential so
+   `gh`-rate-limit surprises, partial failures, and user interrupts
+   stay legible. Do not spawn subagents for the apply phase.
+
+### Subagent report shape
+
+Each subagent must return a single code block (or JSON) with exactly
+these fields so the orchestrator can merge deterministically:
+
+```
+issue: <N>
+title: <one line>
+scope_label: airflow | providers | chart | <missing>
+current_labels: [<label>, ...]
+current_milestone: <title or null>
+current_assignees: [<login>, ...]
+fix_pr:
+  url: <apache/airflow PR URL or null>
+  state: open | merged | closed | null
+  author: <login or null>
+  author_is_security_team: true | false | null
+  merged_at: <ISO8601 or null>
+  milestone: <PR milestone title or null>
+release_shipped: true | false | unknown
+reporter:
+  name: <name or null>
+  email: <email or null>
+  gmail_thread_id: <id or null>
+  credit_confirmed_as: <string or null>
+  credit_question_pending: true | false
+cve_id: <CVE-YYYY-NNNNN or null>
+process_step: <number from the README table>
+proposed_label_add: [<label>, ...]
+proposed_label_remove: [<label>, ...]
+proposed_milestone: <title or null, with note "(create)" if it does not yet exist>
+proposed_assignees_add: [<login>, ...]
+proposed_body_field_updates: [<one-line description>, ...]
+proposed_status_comment: <one-line summary or null>
+proposed_reporter_email: <one-line summary or null>
+blockers: [<short reason the orchestrator or user must resolve before apply>, ...]
+notes: <free-form one-to-three sentences, only if something does not fit above>
+```
+
+The orchestrator uses the structured fields to produce the merged
+proposal table and relies on `blockers` to flag issues that cannot
+be resolved without user input (for example a missing Gmail thread
+or an ambiguous credit line).
+
+### Hard rules for bulk mode
+
+- **No mutations in subagents.** Subagents must not call
+  `gh issue edit`, `gh issue comment`, `gh api … -X PATCH/POST`,
+  `gh label create`, `gh api …/milestones` (create), or any Gmail
+  send / draft-create tool. They are read-only. If a subagent
+  reports it did mutate something, the orchestrator must surface
+  that as a bug and stop.
+- **No new CVE allocations in subagents.** Printing the CVE
+  allocation URL is fine; actually allocating is a human step
+  anyway.
+- **Gmail drafts are created by the orchestrator**, only after user
+  confirmation, and only from the orchestrator's main context. This
+  keeps the drafts queue linear and auditable.
+- **Confidentiality still applies.** Subagents are bound by the
+  same rule: no `airflow-s/airflow-s` content may leak into any
+  public surface. This is a no-op for read-only subagents but worth
+  stating.
+- **Link-form self-check still applies** to the orchestrator's
+  merged output — every `#NNN` must be rendered as a clickable link
+  per Golden rule 2.
+
+### When bulk mode is **not** appropriate
+
+- The user asked for a single issue (`sync #216`). Run the normal
+  flow in the main agent — spawning one subagent for one issue is
+  pure overhead.
+- The user wants to *drive* the sync interactively ("walk me
+  through #216, I want to review each signal as we go"). Bulk mode
+  collapses the per-issue detail; use single-issue mode instead.
+- The proposed action requires deep multi-turn conversation with
+  the user (for example "help me decide whether this is even valid").
+  Single-issue mode is the right tool there.
+
+---
+
 ## Step 1 — Gather the current state
 
 Run these reads in parallel where possible. Do **not** make any changes yet.
