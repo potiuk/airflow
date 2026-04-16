@@ -96,7 +96,7 @@ who prepares the release candidate, calls the VOTE on `dev@airflow.apache.org`,
 closes the vote with `[RESULT][VOTE]`, and pushes the final artefacts. That
 same person is also the one who sends the security advisories for every CVE
 that shipped in their release to `announce@apache.org` and
-`users@airflow.apache.org` (Step 12 of the security process).
+`users@airflow.apache.org` (Step 13 of the security process).
 
 **Do not assume or guess the release manager.** Two authoritative sources,
 in the order they should be consulted:
@@ -357,7 +357,7 @@ Concretely, the issue template has two separate fields for this:
   team-member put there — do **not** scrub it during sync.
 - The *"Public advisory URL"* field (new as of 2026-04-16) holds the
   archive URL on `lists.apache.org/list.html?users@airflow.apache.org`
-  once the public advisory has been sent (Step 12 of the process).
+  once the public advisory has been sent (Step 13 of the process).
   This is the URL that ends up as the `vendor-advisory` reference on
   the public CVE record. Before the advisory is sent the field stays
   empty; the `sync-security-issue` skill scans the users@ archive

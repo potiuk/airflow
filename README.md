@@ -4,6 +4,7 @@
 
 - [Handling security issues for Apache Airflow](#handling-security-issues-for-apache-airflow)
 - [Label lifecycle](#label-lifecycle)
+- [Roles and responsibilities](#roles-and-responsibilities)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -120,10 +121,10 @@ The process of handling an issue is as follows:
     link to the PR in the description of the issue and mark the issue with the `pr created` label in
     `airflow-s`.
 
-11) When the `apache/airflow` PR merges, the security team member merging it should move the issue from
-    `pr created` to `pr merged`. If there is a private variant of the PR in the `airflow-s/airflow-s`
-    repository, it should be closed. The milestone of the issue should be set to the milestone when it
-    is planned to be released. Milestones follow these formats:
+11) **PR merged.** When the `apache/airflow` PR merges, the security team member merging it should
+    move the issue from `pr created` to `pr merged`. If there is a private variant of the PR in the
+    `airflow-s/airflow-s` repository, it should be closed. The milestone of the issue should be set
+    to the milestone when it is planned to be released. Milestones follow these formats:
 
     * **`Airflow-X.Y.Z`** — core Airflow releases (e.g. `Airflow-2.6.2`, `3.2.2`).
     * **`Providers YYYY-MM-DD`** — provider-wave cuts, keyed by the cut date listed on the
@@ -138,13 +139,28 @@ The process of handling an issue is as follows:
     correlated with other changes. In such cases, the milestone in the issue and the corresponding PR
     should be set to the next minor release rather than the next patch-level release.
 
-    When the release containing the fix actually ships to users (the final `apache/airflow` /
-    `apache-airflow-providers-*` / `apache-airflow-helm-chart-*` version is on PyPI / the Helm
-    registry), the issue is moved from `pr merged` to `fix released`. This is the cue that the
-    release manager for that release owns Step 12 — the advisory is blocked only on the CVE-tool
-    fields being complete.
+    **The issue stays at `pr merged` until the release containing the fix actually ships.** That
+    may be hours (for core patch releases cut on a fast cadence) or weeks (for providers waves on
+    a fixed monthly schedule). During that window the issue is waiting on the release train, not
+    on any action from the security team — the next transition fires automatically when the
+    release hits PyPI / the Helm registry (Step 12).
 
-12) During releases, the release manager looks through `fix released` issues in `airflow-s`
+12) **Fix released.** When the release carrying the fix actually ships to users — the final
+    `apache/airflow` / `apache-airflow-providers-*` / `apache-airflow-helm-chart-*` version is live
+    on PyPI or on the Helm registry — the issue moves from `pr merged` to `fix released`. The
+    `sync-security-issue` skill detects the release (by curling PyPI / the Helm registry for the
+    milestone version) and proposes the label swap on the next run, so in practice this transition
+    is automatic; a security team member only needs to confirm the sync proposal.
+
+    **Why this is its own step.** The `pr merged` → `fix released` swap is the cue that ownership
+    of the issue has transferred from the fix author / triager to the **release manager** for that
+    release. Before `fix released`, the issue is a code-change artifact; after `fix released`, it
+    is an advisory-coordination artifact and the release manager is responsible for steps 13–15
+    below. Combining the two into one step made this ownership hand-off implicit; splitting them
+    makes it explicit and surfaces an `fix released` backlog the release manager can drive from
+    the board.
+
+13) During releases, the release manager looks through `fix released` issues in `airflow-s`
     (historically marked `Not yet announced` — the new `fix released` label is the preferred
     form), updates the [ASF CVE tool](https://cveprocess.apache.org), and updates the following
     fields, taking them from the issue:
@@ -169,12 +185,14 @@ The process of handling an issue is as follows:
     The release manager also generates the CVE description, sets the CVE to REVIEW if feedback is needed and
     then to READY, and eventually sends the announcement emails from the ASF CVE tool. The release manager
     then adds the `announced - emails sent` label and removes the `fix released` label. **The issue stays
-    open** at this point — it is closed only at Step 13 below, after the public archive URL has been
-    captured. This gives the `sync-security-issue` skill one more handoff where it can notice a missing
-    archive URL and prompt for it before the issue is forgotten.
+    open** at this point — it is closed only at Step 15 below, after the public archive URL has been
+    captured (Step 14) and the CVE record has been pushed to PUBLISHED in Vulnogram (Step 15). This
+    gives the `sync-security-issue` skill one more handoff where it can notice a missing archive URL
+    and prompt for it before the issue is forgotten.
 
-13) **Capture the public advisory URL, record `vendor-advisory`, close the issue.** Once the announcement
-    email has been delivered and archived, the release manager (or the next `sync-security-issue` run):
+14) **Capture the public advisory URL and move the tracker to `vendor-advisory ready`.** Once the
+    announcement email has been delivered and archived, this is done by the next
+    `sync-security-issue` run (or the release manager, if they want to drive it by hand):
 
     * retrieves the archive URL from the
       [users@ list archive](https://lists.apache.org/list.html?users@airflow.apache.org) — the
@@ -184,16 +202,36 @@ The process of handling an issue is as follows:
       to the issue template specifically for this handoff — never reuse the *"Security mailing list
       thread"* field, which holds the private `security@` thread);
     * regenerates the CVE JSON attachment — `generate-cve-json` now picks up the URL from the body
-      automatically and tags it as `vendor-advisory` in `references[]`, so the public CVE record
-      carries a resolvable `vendor-advisory` link;
-    * adds the `vendor-advisory` label to the tracking issue and then **closes** the issue.
+      automatically and tags it as `vendor-advisory` in `references[]`, so the attached CVE record
+      carries a resolvable `vendor-advisory` link ready to paste into the ASF CVE tool;
+    * **adds the `vendor-advisory ready` label** to the tracking issue. The issue **stays open** at
+      this point — closing is the release manager's job in Step 15 below, after they have pushed the
+      CVE record to PUBLISHED in Vulnogram.
 
     Until the *Public advisory URL* field is populated, the `sync-security-issue` skill will not
-    propose closing the issue — this is deliberate: an issue closed without the archive URL leaks a
-    tracker into the "done" column without the public artefact, and nobody notices the gap until
-    someone tries to cite the CVE later.
+    propose moving the issue to `vendor-advisory ready` — this is deliberate: the field is what the
+    CVE record's public `vendor-advisory` reference will point at, and publishing a CVE with an empty
+    reference leaks a broken record into `cve.org`.
 
-14) If we need to add missing credits (which sometimes happens due to copy-and-paste errors and the
+15) **Push the final CVE record and close the issue.** For every issue carrying the
+    `vendor-advisory ready` label, the release manager (the same person who sent the advisory in
+    Step 13):
+
+    * opens the Vulnogram `#source` tab at `https://cveprocess.apache.org/cve5/<CVE-ID>#source`;
+    * copies the latest CVE JSON attachment from the tracking issue (the one regenerated in Step 14,
+      now carrying the `vendor-advisory` URL) and pastes it into the `#source` form;
+    * saves and moves the record from `REVIEW` to `PUBLISHED` in the ASF CVE tool — **this is the
+      final action** that propagates the record to [`cve.org`](https://cve.org);
+    * adds the `vendor-advisory` label to the tracking issue, removes the `vendor-advisory ready`
+      label, and **closes the issue**. That closes the lifecycle.
+
+    This two-step hand-off (sync captures the URL → RM publishes the record) means nobody has to
+    remember both halves: the sync skill's responsibility ends when the label is `vendor-advisory
+    ready`, and the RM's responsibility is scoped to taking a `vendor-advisory ready` issue to the
+    closed state. An issue that sits on `vendor-advisory ready` for more than a day or two is a
+    signal to ping the RM.
+
+16) If we need to add missing credits (which sometimes happens due to copy-and-paste errors and the
     brittleness of the process), the release manager:
     * responds to the announcement emails and mentions the missing credits
     * updates the [ASF CVE tool](https://cveprocess.apache.org) with the missing credits
@@ -214,15 +252,16 @@ flowchart LR
     C -->|step 6: CVE reserved| D[cve allocated]
     D -->|step 10: public PR opened| E[pr created]
     E -->|step 11: PR merges| F[pr merged]
-    F -->|step 11: release ships| G[fix released]
-    G -->|step 12: advisory sent| H[announced - emails sent]
-    H -->|step 13: archive URL captured| I[vendor-advisory]
-    I -->|step 13: close| Z([issue closed])
+    F -->|step 12: release ships| G[fix released]
+    G -->|step 13: advisory sent| H[announced - emails sent]
+    H -->|step 14: archive URL captured| J[vendor-advisory ready]
+    J -->|step 15: RM pushes CVE PUBLISHED| I[vendor-advisory]
+    I -->|step 15: close| Z([issue closed])
 
     classDef closed fill:#f8d7da,stroke:#842029,color:#000;
     classDef done fill:#d1e7dd,stroke:#0f5132,color:#000;
     class X1,Z closed;
-    class H,I done;
+    class H,J,I done;
 ```
 
 The table below repeats the same flow in tabular form. An issue typically moves through these
@@ -234,13 +273,113 @@ labels left-to-right:
 | `airflow` / `providers` / `chart` | Scope of the vulnerability. Exactly one of these is set. | 5 | never (sticks for the lifetime of the issue) |
 | `cve allocated` | A CVE has been reserved for the issue. | 6 | never |
 | `pr created` | A public fix PR has been opened in `apache/airflow` but has not yet merged. | 10 | 11 (replaced by `pr merged`) |
-| `pr merged` | The fix PR has merged into `apache/airflow`; no release with the fix has shipped yet. | 11 | 11 (replaced by `fix released` when the release ships) |
-| `fix released` | A release containing the fix has shipped to users; advisory has not been sent yet. | 11 | 12 (replaced by `announced - emails sent`) |
-| `announced - emails sent` | The public advisory has been sent to `announce@apache.org` / `users@airflow.apache.org`. The issue **stays open** after this label is applied; closing is gated on `vendor-advisory` being set in Step 13. | 12 | never (stays on the issue after closing for audit history) |
+| `pr merged` | The fix PR has merged into `apache/airflow`; no release with the fix has shipped yet. | 11 | 12 (replaced by `fix released` when the release ships) |
+| `fix released` | A release containing the fix has shipped to users; advisory has not been sent yet. | 12 | 13 (replaced by `announced - emails sent`) |
+| `announced - emails sent` | The public advisory has been sent to `announce@apache.org` / `users@airflow.apache.org`. The issue **stays open** after this label is applied; closing is gated on `vendor-advisory` being set in Step 15. | 13 | never (stays on the issue after closing for audit history) |
 | `Not yet announced` | **Legacy** synonym of `fix released`. New issues should use `fix released`; existing `Not yet announced` labels are still honoured by the skills during sync. | — | — |
-| `vendor-advisory` | The public advisory has been archived on `users@airflow.apache.org` and its URL is recorded in the tracking issue's *Public advisory URL* body field (and hence as a `vendor-advisory` reference in the CVE JSON). Applied in the same step that closes the issue. | 13 | never |
+| `vendor-advisory ready` | The public advisory URL has been captured in the tracking issue's *Public advisory URL* body field and the attached CVE JSON has been regenerated so its `references[]` now carries the `vendor-advisory` URL. The tracking issue is waiting for the release manager to paste the CVE JSON into Vulnogram's `#source` tab, move the record to PUBLISHED, and close the issue (Step 15). | 14 | 15 (replaced by `vendor-advisory`) |
+| `vendor-advisory` | The release manager has pushed the CVE record to PUBLISHED in the ASF CVE tool and closed the tracking issue. This is the terminal state of the lifecycle. | 15 | never |
 | `wontfix` / `invalid` / `not CVE worthy` / `duplicate` | Closing dispositions for reports that are not valid or not CVE-worthy. | 5 / 6 | — |
 
 The [`sync-security-issue`](.claude/skills/sync-security-issue/SKILL.md) skill keeps these labels
 honest: on every run it detects the current state of the issue, the fix PR, and the release train,
 and proposes the label transitions the process requires.
+
+## Roles and responsibilities
+
+Three roles share this process. Any security-team member can take on any of them for a given
+issue, and in practice people rotate, but at any moment a given tracking issue has exactly one
+person who owns the next move. These sections describe what each role owns and which tools
+they should use.
+
+### Issue triager
+
+Owns **Steps 1–6**: from an inbound report on `security@airflow.apache.org` to a CVE allocation.
+
+What a triager does:
+
+- Pulls the latest report off the `security@` thread and opens (or updates) the corresponding
+  tracking issue in [`airflow-s/airflow-s`](https://github.com/airflow-s/airflow-s) using the
+  [issue template](.github/ISSUE_TEMPLATE/issue_report.yml).
+- Sends the confirmation-of-receipt reply from [`canned-responses.md`](canned-responses.md),
+  **including the credit-preference question**, so the reporter's credit form is on record before
+  the fix lands.
+- Drives the valid / invalid / not-CVE-worthy assessment in the tracking-issue comments, pulling
+  at least one other security-team member into the discussion. Uses the canned-response templates
+  for negative assessments so the tone stays polite-but-firm.
+- Applies exactly one scope label (`airflow` / `providers` / `chart`) when the report is confirmed
+  valid; splits into per-scope trackers when a report affects more than one scope (the
+  `sync-security-issue` skill surfaces this as a blocker).
+- Allocates the CVE via the [ASF CVE tool](https://cveprocess.apache.org/allocatecve) and pastes
+  the tool link into the body's *CVE tool link* field — this adds the `cve allocated` label.
+
+Tools a triager uses most:
+
+- [`sync-security-issue`](.claude/skills/sync-security-issue/SKILL.md) — *"sync \<issue-ref\>"* or
+  *"sync all"* for a triage sweep. Surfaces stalled issues, missing fields, credit replies, and
+  scope-split requirements in one combined proposal.
+- [`generate-cve-json`](.claude/skills/generate-cve-json/SKILL.md) — after the CVE is allocated, to
+  attach a paste-ready JSON to the issue so the later review and publish steps are mechanical.
+
+### Remediation developer
+
+Owns **Steps 7–11**: from CVE allocated to a merged public fix PR in `apache/airflow` (including
+the `pr merged` hand-off, where the tracker sits waiting for the release train to ship). The role
+name matches the `remediation developer` credit the person receives in the published CVE record
+(see `credits[]` with `type: "remediation developer"` in the generated CVE JSON).
+
+What a remediation developer does:
+
+- Picks up a tracking issue that has a scope label, `cve allocated`, and clear consensus on the
+  fix shape.
+- Writes the code change in their local `apache/airflow` clone, runs the local checks and tests,
+  and opens the fix PR via `gh pr create --web`. The PR description **must not** reveal the
+  security nature of the change or link back to `airflow-s/airflow-s`.
+- Once the PR is open, makes sure the `sync-security-issue` skill has picked it up and moved the
+  tracker to `pr created`. On merge, the same sync moves the tracker to `pr merged`.
+- Requests a `backport-to-v3-2-test` (or equivalent) label on the public PR when the fix should
+  ship on a patch train.
+
+Tools a remediation developer uses most:
+
+- [`fix-security-issue`](.claude/skills/fix-security-issue/SKILL.md) — runs a pre-fix sync, analyses
+  the discussion for a fix plan, drafts the code change, runs local tests, and opens a `--web` PR.
+  Refuses to proceed if the issue is not triaged yet.
+- [`sync-security-issue`](.claude/skills/sync-security-issue/SKILL.md) — to keep the tracker's
+  labels, milestone, and assignee aligned with the PR state as the PR moves through review and
+  merge.
+
+### Release manager
+
+Owns **Steps 12–15**: from the moment the fix actually ships (Step 12, `fix released`) to a
+closed tracking issue with a PUBLISHED CVE record. The hand-off from the remediation developer
+is the `pr merged` → `fix released` swap, which fires automatically when the
+`sync-security-issue` skill detects the milestone version on PyPI / the Helm registry.
+
+What a release manager does:
+
+- Watches `fix released` issues on their milestone — once the release containing the fix has
+  shipped to PyPI / the Helm registry, the `sync-security-issue` skill swaps `pr merged` →
+  `fix released` and assigns the advisory-send to the release manager. Until that swap fires,
+  the issue is still the remediation developer's (Step 11 territory); once it fires, it is the
+  release manager's.
+- Reviews the attached CVE JSON on the tracking issue, fills any missing body fields (CWE,
+  severity, affected versions), and sends the advisory emails to
+  `announce@apache.org` / `users@airflow.apache.org` from the ASF CVE tool. Adds
+  `announced - emails sent` and removes `fix released`. **Does not close the issue yet.**
+- Waits for the `sync-security-issue` skill to detect the archived URL on the `users@` list,
+  populate the *Public advisory URL* body field, regenerate the CVE JSON attachment, and move
+  the label to `vendor-advisory ready`.
+- **Performs the final Vulnogram push** for every `vendor-advisory ready` issue: opens
+  `https://cveprocess.apache.org/cve5/<CVE-ID>#source`, pastes the latest attached CVE JSON,
+  saves, and moves the record from REVIEW to PUBLISHED. Then adds the `vendor-advisory` label,
+  removes `vendor-advisory ready`, and closes the issue. That closes the lifecycle.
+
+Tools a release manager uses most:
+
+- [`sync-security-issue`](.claude/skills/sync-security-issue/SKILL.md) — *"sync vendor-advisory
+  ready"* at the start of each release window, to see the `vendor-advisory ready` backlog
+  needing a Vulnogram push. Also *"sync CVE-YYYY-NNNN"* to drill into one specific CVE before
+  sending the advisory.
+- [`generate-cve-json`](.claude/skills/generate-cve-json/SKILL.md) — to regenerate the attachment
+  on demand when a body field changes after the URL has been captured.
