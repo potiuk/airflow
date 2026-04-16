@@ -433,7 +433,7 @@ update, label change, or next-step recommendation in Step 2:
 | CVE record has open **review comments / reviewer proposals** (detected via the Gmail-search path in Step 1e — reviewer-comment notifications from Vulnogram land on `security@airflow.apache.org` with the CVE ID in the subject line; the `cveprocess.apache.org/cve5/<CVE-ID>.json` endpoint is behind ASF OAuth and is not readable from this skill's context, so Gmail is the load-bearing signal source). | Surface each open review comment in Step 2a with **clickable links** to the Gmail thread and to the CVE record on `cveprocess.apache.org` (the reader can authenticate in-browser to see live state), verbatim-quoted; then for each one that maps cleanly to a tracking-issue body field (CWE, Affected versions, Reporter credited as, Public advisory URL, Short public summary), **propose the matching body-field update** as a numbered item in Step 2b. The body is the source of truth for the CVE JSON — regeneration in Step 5 will pull the update back into the paste-ready attachment, and the release manager's only remaining action is the Vulnogram paste + comment-resolution click. Comments that do not map to a body field (severity/CVSS, out-of-scope challenges, free-form rewrites) are surfaced verbatim and flagged for human decision. See Step 1e for the full Gmail-search recipe and the reviewer-comment-to-field mapping table. |
 | The referenced `apache/airflow` PR has been opened but is still in `open` state | Propose `pr created` label; update the *"PR with the fix"* body field with the PR URL. |
 | The referenced `apache/airflow` PR moved to `merged` | Propose swapping `pr created` → `pr merged`; update milestone to the shipping release if now known. |
-| A release carrying the fix has shipped (PR's milestone release is on PyPI / Helm registry, or an explicit *"fix shipped in X.Y.Z"* comment) | Propose swapping `pr merged` → `fix released` (Step 12). This is the release manager's cue to own Steps 13–15 (advisory send → URL capture → Vulnogram PUBLISHED → close). |
+| A release carrying the fix has shipped (PR's milestone release is on PyPI / Helm registry, or an explicit *"fix shipped in X.Y.Z"* comment) | Propose swapping `pr merged` → `fix released` (Step 12). This is the release manager's cue to own Steps 13–15 (advisory send → URL capture → Vulnogram PUBLISHED → close). **Also propose swapping the assignee from the remediation developer to the release manager** (looked up via the three-source cascade in Step 2c — `AGENTS.md` "Known release managers" → Release Plan wiki → `[RESULT][VOTE]` thread on `dev@`), so the issue list reflects ownership hand-off. See the *Assignee hand-off at the `fix released` transition* paragraph under **Assignees** in Step 2b for the full rule. |
 | GHSA state transition (opened, accepted, published, rejected) in a GHSA-forwarded email | If the GHSA is closed as "not accepted" but the security team accepted the report on `security@`, flag the divergence in the status comment so it is not lost. |
 | Team member saying *"let's also backport to v3-2-test"* / *"please mark X for backport"* | Note the requested backport label on the public PR as an item for Step 9 of the `fix-security-issue` workflow. |
 | Reporter flagging a second distinct vulnerability on the same thread | Surface as an explicit question to the user — it may warrant a separate tracking issue. |
@@ -723,6 +723,33 @@ will change and *why*. Group them by category:
   Also propose clearing a stale assignment if the person is no longer
   active on the issue, and propose self-assigning a team member only
   if the user explicitly asks.
+
+  **Assignee hand-off at the `fix released` transition.** When the
+  sync transitions an issue to `fix released` (Step 12 — the fix has
+  shipped to PyPI / the Helm registry), ownership moves from the
+  remediation developer to the release manager for Steps 13–15
+  (advisory send → URL capture → Vulnogram PUBLISHED → close).
+  **Propose swapping the assignee from the remediation developer to
+  the release manager** in the same sync run that flips
+  `pr merged` → `fix released`, so the issue list reflects who is
+  actually on the hook next. Look up the release manager using the
+  three-source cascade from Step 2c (the "Known release managers"
+  subsection of [`AGENTS.md`](../../../AGENTS.md), then the
+  [Release Plan wiki](https://cwiki.apache.org/confluence/display/AIRFLOW/Release+Plan),
+  then the `[RESULT][VOTE] Release Airflow <version>` thread on
+  `dev@airflow.apache.org`), and propose the swap as a concrete
+  numbered item in Step 2b. If the release manager is not a
+  collaborator on `airflow-s/airflow-s` yet, surface that as a
+  blocker and ask the user whether to invite them before assigning
+  — GitHub silently ignores assignee writes for non-collaborators.
+
+  This swap is **only** appropriate at the `fix released`
+  transition. Earlier transitions (`pr created`, `pr merged`) keep
+  the remediation developer as assignee because the fix PR is still
+  their responsibility. Later transitions
+  (`announced - emails sent`, `vendor-advisory ready`,
+  `vendor-advisory`) keep the release manager because the advisory
+  lifecycle is theirs. Do **not** shuffle assignees back and forth.
 - **Description fields** — if the issue body is missing any of the fields the
   release manager will eventually need (CWE, product, affected versions, severity,
   CVE ID, credits, links to PRs, short public summary for publish), propose a
