@@ -291,6 +291,48 @@ This rule applies equally to CVSS 3.x and 4.0 vectors, to qualitative labels
 (*"Low"*, *"High"*, *"Critical"*), and to any self-assigned CWE the reporter
 attaches alongside.
 
+### CVE references must never point at non-public mailing-list threads
+
+When populating the CVE record's ``references[]`` array (via the
+`generate-cve-json` script or directly in the Vulnogram UI), **never
+tag a URL as ``vendor-advisory`` if the URL points to a non-publicly
+archived list**. The Airflow lists fall into two groups:
+
+- **Publicly archived** on `lists.apache.org`: `users@airflow.apache.org`,
+  `dev@airflow.apache.org`, `announce@apache.org`,
+  `commits@airflow.apache.org`. Thread URLs on these lists resolve
+  correctly for the whole world and are the right target for a
+  ``vendor-advisory`` reference on the public CVE record.
+- **Private**, not publicly archived: `security@airflow.apache.org`,
+  `private@airflow.apache.org`. `lists.apache.org/thread/<id>` URLs
+  that come from an inbound report on `security@` look identical in
+  shape to public-list URLs, but they 404 for everyone outside the
+  security team. They must **never** appear in the public CVE record.
+
+Concretely:
+
+- The tracking-issue's *"Security mailing list thread"* field is an
+  **internal** reference; the URL there is almost always a stale
+  placeholder or a pointer at the private `security@` thread. Do not
+  copy it into CVE references. Either clear the field to a short
+  textual note (*"No public archive URL — tracked privately on thread
+  `<threadId>`"*) or leave it blank — never leave a fake
+  `lists.apache.org/thread/<hash>` URL in it.
+- The CVE record's ``vendor-advisory`` reference should only be set
+  **after the public advisory has been sent to
+  `announce@apache.org` / `users@airflow.apache.org`**, and it should
+  point at the actual `lists.apache.org/thread/<id>?users@airflow.apache.org`
+  URL of that archived message. Before the advisory is sent, the
+  reference does not exist yet and must not be fabricated.
+- The `generate-cve-json` script enforces this by **not** pulling URLs
+  from the *"Security mailing list thread"* field automatically. The
+  public advisory URL, once available, is passed in explicitly via
+  the `--advisory-url` flag (or added as an `extra_urls` entry).
+
+Putting it differently: if a reader clicks a `vendor-advisory` link on
+the public CVE record and gets a 404, the CVE record is broken.
+Avoid shipping broken CVE records.
+
 ## Writing and editing documentation
 
 The documents in this repository are short and opinionated. When editing them, prefer small,
