@@ -149,6 +149,31 @@ the date the release went out and the archive link to the
 `[RESULT][VOTE]` thread so the attribution is auditable. Update the
 rotation rosters above whenever the Release Plan wiki page changes.
 
+### Security team roster
+
+The authoritative source for **who is a member of the Airflow security
+team** is the collaborator list of the private
+[`airflow-s/airflow-s`](https://github.com/airflow-s/airflow-s)
+repository — anyone with write access there is on the security team.
+Look it up with:
+
+```bash
+gh api repos/airflow-s/airflow-s/collaborators \
+  --jq '.[] | select(.permissions.push == true) | .login'
+```
+
+Snapshot as of 2026-04-16 (GitHub handles): `ashb`, `raboof`, `potiuk`,
+`uranusjr`, `ephraimbuddy`, `Lee-W`, `kaxil`, `bugraoz93`, `ch4n3-yoon`,
+`pierrejeambrun`, `hussein-awala`, `amoghrajesh`, `happyhacking-k`,
+`vatsrahul1001`, `eladkal`, `shubhamraj-git`, `shahar1`, `jedcunningham`,
+`jscheffl`, `vincbeck` (plus the `airflow-sec` service account, which
+is not a person).
+
+When this list becomes stale (a new member is added, someone rotates
+off), re-run the `gh api` call above and update the snapshot in the
+same change. The snapshot is the fast lookup; the `gh api` call is the
+authoritative truth.
+
 **What this means for sync and fix skills**
 
 - When selecting a milestone for a newly-triaged security issue, default to
