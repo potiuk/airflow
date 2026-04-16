@@ -254,6 +254,22 @@ will change and *why*. Group them by category:
   release manager will eventually need (CWE, product, affected versions, severity,
   CVE ID, credits, links to PRs), propose a patched description. Show the full
   replacement body in the proposal, not a diff, so the user can review it.
+
+  **Special case for the `Severity` field — never propagate reporter-supplied
+  CVSS scores.** If the reporter attached a CVSS vector or a qualitative label
+  (*"Low"*, *"High"*, *"Critical"*) to the mail thread, a GHSA draft, or the
+  issue body, surface it in the *observed state* dump as informational context
+  (e.g. *"reporter estimated CVSS 4.0 = 7.2 per the GHSA"*) but **do not** use
+  it as the proposed value for the `Severity` field. The Airflow security team
+  scores every accepted vulnerability independently during the CVE-allocation
+  step; the independent score is the one that ends up in the CVE record and
+  the public advisory. The `Severity` field on the tracking issue must either
+  stay `_No response_` until a security-team member scores it independently
+  (in-thread or in an issue comment), or reflect that independent score —
+  never the reporter's. Apply the same rule to a self-assigned CWE the
+  reporter attaches alongside. Full rationale: the
+  "Reporter-supplied CVSS scores are informational only" subsection of
+  [`AGENTS.md`](../../../AGENTS.md).
 - **Status transitions** — e.g. *"close the issue as invalid"*, *"add `Not yet
   announced` now that apache/airflow#NNNN has merged"*, *"add `vendor-advisory`
   and link to lists.apache.org archive entry"*.
@@ -355,6 +371,22 @@ updates land, based on the process step. Examples:
 - *"Step 6: allocate a CVE. Open the ASF CVE tool: https://cveprocess.apache.org/allocatecve"*
 - *"Step 10: close the private PR at airflow-s/airflow-s#NNN now that apache/airflow#NNNN has merged."*
 - *"Step 11: the release manager should now fill in the CVE tool fields taken from the issue — CWE, product, versions, severity, patch link, credits — and move the CVE to REVIEW → READY."*
+
+**Never guess the release manager.** When a next-step recommendation or a
+status-comment references "the release manager for `<version>`", look up
+the actual person from the `[RESULT][VOTE] Release Airflow <version>`
+thread on `dev@airflow.apache.org`: the sender of that email **is** the
+release manager. Check the "Current release managers" subsection of
+[`AGENTS.md`](../../../AGENTS.md) first — if the release is already
+listed there, use that name. If the release is not listed, fetch the
+`[RESULT][VOTE]` thread from Gmail (or from
+<https://lists.apache.org/list.html?dev@airflow.apache.org>), identify
+the sender, surface that name in the proposal, and propose appending it
+to the `AGENTS.md` list in the same change so future runs don't have to
+re-check. **Do not substitute a "plausible" name** (e.g. a frequent
+release manager from previous releases) — the release manager rotates,
+and a wrong name in a status update leads to the advisory sitting on
+nobody's desk.
 
 **If a CVE needs to be allocated**, always include the allocation link explicitly
 on its own line:
@@ -559,6 +591,14 @@ finalising the recap.
   never close or reopen an issue without confirmation.**
 - **Never fabricate** a CVE ID, CWE, severity score, or reporter name. If a field
   is missing, mark it as *unknown* in the proposal and ask the user to supply it.
+- **Never propagate a reporter-supplied CVSS score or qualitative severity
+  label** into the `Severity` field, the proposed body patch, the CVE JSON,
+  the status-change comment, the draft email reply, or any other
+  user-visible surface. Surface it in the *observed state* only, tagged as
+  informational. The Airflow security team scores every accepted
+  vulnerability independently during the CVE-allocation step. See the
+  "Reporter-supplied CVSS scores are informational only" section of
+  [`AGENTS.md`](../../../AGENTS.md) for the full rationale.
 - **Never paraphrase the Security Model** in the draft email. Link to the
   relevant chapter on
   `https://airflow.apache.org/docs/apache-airflow/stable/security/security_model.html`
