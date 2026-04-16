@@ -22,8 +22,14 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # 4-day cooldown so a just-released action tag has a chance to
+    # settle (retags, withdrawal, CI incidents on the upstream) before
+    # Dependabot proposes bumping to it.
     cooldown:
-      default-days: 7
+      default-days: 4
+      semver-major-days: 4
+      semver-minor-days: 4
+      semver-patch-days: 4
     groups:
       github-actions:
         patterns:
@@ -33,7 +39,30 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 4
+      semver-major-days: 4
+      semver-minor-days: 4
+      semver-patch-days: 4
     groups:
       pre-commit-hooks:
+        patterns:
+          - "*"
+
+  # uv lock for the generate-cve-json Python project. Dependabot reads
+  # pyproject.toml + uv.lock and opens PRs that update pinned versions.
+  # Runtime deps are empty today (stdlib-only); the dev group (ruff,
+  # mypy, pytest) is what this ecosystem actually tracks.
+  - package-ecosystem: "uv"
+    directory: "/.claude/skills/generate-cve-json"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 4
+      semver-major-days: 4
+      semver-minor-days: 4
+      semver-patch-days: 4
+    groups:
+      generate-cve-json-deps:
         patterns:
           - "*"
