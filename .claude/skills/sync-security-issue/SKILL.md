@@ -430,7 +430,7 @@ update, label change, or next-step recommendation in Step 2:
 | Advisory message sent to `announce@apache.org` / `users@airflow.apache.org` for the CVE on the tracker | Propose adding the `announced - emails sent` label and removing `fix released`. **Do not propose closing the issue here** — per the 2026-04-16 process update, closing is gated on the archived public advisory URL being captured (see the next row). |
 | Advisory archived on `users@airflow.apache.org` (the announcement message is now visible in `lists.apache.org/list.html?users@airflow.apache.org` — scan the archive with the CVE ID when `announced - emails sent` is set and the *"Public advisory URL"* body field is empty) | Propose populating the *"Public advisory URL"* body field with the archive URL, regenerating the CVE JSON attachment (the generator picks the URL up automatically and tags it `vendor-advisory`), and adding the `vendor-advisory ready` label. **Do not close the issue and do not add the `vendor-advisory` label** — that is Step 15, owned by the release manager after they push the record to PUBLISHED in Vulnogram. |
 | `vendor-advisory ready` label set and CVE record on `cveprocess.apache.org` now reports state PUBLISHED (checked via `curl -s https://cveprocess.apache.org/cve5/<CVE-ID>.json` / the ASF CVE tool API, or an explicit release-manager comment on the issue stating the Vulnogram push is done) | Propose adding the `vendor-advisory` label, removing `vendor-advisory ready`, and closing the issue. This is the terminal transition. |
-| CVE record on `cveprocess.apache.org` has open **review comments / reviewer proposals** (checked at `https://cveprocess.apache.org/cve5/<CVE-ID>` — the JSON `CNA_private.todo[]` array and any reviewer-contributed notes on the record). Applies whenever the issue has a CVE ID allocated and the CVE is in `REVIEW`, `REVIEW_REQUESTED`, or similar pre-PUBLISHED state. | Surface each open review comment in Step 2a with a **clickable link** to the CVE record, verbatim-quoted; then for each one that maps cleanly to a tracking-issue body field (CWE, Affected versions, Reporter credited as, Public advisory URL, Short public summary), **propose the matching body-field update** as a numbered item in Step 2b. The body is the source of truth for the CVE JSON — regeneration in Step 5 will pull the update back into `cveprocess.apache.org` via the paste-ready attachment, and the release manager's only remaining action is the Vulnogram paste + comment-resolution click. Comments that do not map to a body field (severity/CVSS, out-of-scope challenges, free-form rewrites) are surfaced verbatim and flagged for human decision. See Step 1e for the full reviewer-comment-to-field mapping table. |
+| CVE record has open **review comments / reviewer proposals** (detected via the Gmail-search path in Step 1e — reviewer-comment notifications from Vulnogram land on `security@airflow.apache.org` with the CVE ID in the subject line; the `cveprocess.apache.org/cve5/<CVE-ID>.json` endpoint is behind ASF OAuth and is not readable from this skill's context, so Gmail is the load-bearing signal source). | Surface each open review comment in Step 2a with **clickable links** to the Gmail thread and to the CVE record on `cveprocess.apache.org` (the reader can authenticate in-browser to see live state), verbatim-quoted; then for each one that maps cleanly to a tracking-issue body field (CWE, Affected versions, Reporter credited as, Public advisory URL, Short public summary), **propose the matching body-field update** as a numbered item in Step 2b. The body is the source of truth for the CVE JSON — regeneration in Step 5 will pull the update back into the paste-ready attachment, and the release manager's only remaining action is the Vulnogram paste + comment-resolution click. Comments that do not map to a body field (severity/CVSS, out-of-scope challenges, free-form rewrites) are surfaced verbatim and flagged for human decision. See Step 1e for the full Gmail-search recipe and the reviewer-comment-to-field mapping table. |
 | The referenced `apache/airflow` PR has been opened but is still in `open` state | Propose `pr created` label; update the *"PR with the fix"* body field with the PR URL. |
 | The referenced `apache/airflow` PR moved to `merged` | Propose swapping `pr created` → `pr merged`; update milestone to the shipping release if now known. |
 | A release carrying the fix has shipped (PR's milestone release is on PyPI / Helm registry, or an explicit *"fix shipped in X.Y.Z"* comment) | Propose swapping `pr merged` → `fix released` (Step 12). This is the release manager's cue to own Steps 13–15 (advisory send → URL capture → Vulnogram PUBLISHED → close). If the legacy `Not yet announced` label is still set, keep it and append `fix released` in parallel so the two signals do not contradict each other — prefer `fix released` going forward. |
@@ -453,43 +453,88 @@ Do **not** act on signals automatically; as always, each one becomes a
 numbered proposal item in Step 2 and only applies after user
 confirmation.
 
-### 1e. Check the CVE record on `cveprocess.apache.org` for review comments
+### 1e. Check Gmail for CVE review comments sent to `security@airflow.apache.org`
 
 Whenever the tracking issue has a CVE ID allocated (the *CVE tool link*
-body field is populated, or the `cve allocated` label is set), pull the
-CVE record from the ASF CVE tool and inspect its state and review
-comments. The record is publicly readable as JSON:
+body field is populated, or the `cve allocated` label is set), look for
+reviewer comments on the CVE record in Gmail.
 
-```bash
-gh api "https://cveprocess.apache.org/cve5/<CVE-ID>.json" 2>/dev/null \
-  || curl -fsSL "https://cveprocess.apache.org/cve5/<CVE-ID>.json"
+**Why Gmail and not `cveprocess.apache.org`.** The CVE-record JSON on
+`https://cveprocess.apache.org/cve5/<CVE-ID>.json` is gated behind ASF
+OAuth and returns an HTML login page to anonymous `curl` or `gh api`,
+so an automated read from this skill's context is not viable. Vulnogram
+instead notifies the CNA mailing list
+(`security@airflow.apache.org`) by email whenever a reviewer leaves a
+comment / TODO on the record, and those emails are readable from Gmail
+through the normal `mcp__claude_ai_Gmail__*` tools the skill already
+uses for reporter threads. That is the load-bearing signal path.
+
+**Search recipe.** Use Gmail's `search_threads` with the CVE ID in the
+subject line and `security@airflow.apache.org` as a recipient, and
+exclude the GitHub-notification mirror so the tracker's own comments do
+not pollute the results:
+
+```
+<CVE-ID> -from:notifications@github.com -from:noreply@github.com -from:airflow-s@noreply.github.com list:security.airflow.apache.org
 ```
 
-Record:
+That narrows to messages where the CVE ID appears (Vulnogram puts the
+CVE ID in the subject of every review-comment notification) and the
+`security@` list is in `To:` / `Cc:`. Also search once without the list
+filter (some ASF-CNA tooling emails go to individual security-team
+members first), using just the CVE ID plus the GitHub-notification
+exclusions:
 
-- `cveMetadata.state` — `RESERVED`, `DRAFT`, `REVIEW`, `REVIEW_REQUESTED`,
-  `PUBLISHED`, `REJECTED`. The PUBLISHED transition is already handled
-  by the signal table in Step 1d. Most pre-PUBLISHED states are normal
-  mid-flight states and do not need a proposal by themselves — the
-  interesting thing is whether there are open reviewer proposals
-  (next bullet).
-- `CNA_private.todo[]` — an array of reviewer-contributed to-do items
-  on the record. A non-empty `todo[]` means a reviewer has flagged
-  something that needs addressing before PUBLISHED (typical examples:
-  wording tightens, missing CWE, affected-range clarification, a
-  missing `vendor-advisory` reference, or a request to move a credit
-  from `finder` to `reporter`).
-- Any other reviewer-surfaced notes that Vulnogram exposes on the
-  record (the shape evolves; treat unknown top-level keys as
-  informational and surface them verbatim).
+```
+<CVE-ID> -from:notifications@github.com -from:noreply@github.com -from:airflow-s@noreply.github.com
+```
 
-For every open item found, include the following in the **observed
-state** in Step 2a:
+Stay inside the skill's Gmail budget: **≤ 2 extra searches per issue**
+for the CVE-review path (on top of the Step 1c reporter-thread search
+budget).
 
-- a clickable link to the CVE record — e.g. `[CVE-2026-40913](https://cveprocess.apache.org/cve5/CVE-2026-40913)`;
-- the CVE state (`REVIEW`, `DRAFT`, etc.);
-- a verbatim short quote of each open `todo[]` entry (or an
-  equivalent note summarising what the reviewer asked for).
+**Filtering the results.** Not every hit is a reviewer comment. Discard:
+
+- The GitHub-notifications mirror of the tracking issue (already
+  excluded by the `-from:` filters above, but double-check the `From:`
+  on each hit).
+- The original reporter's thread (the sender is in Step 1c's
+  `reporter.email`) — these messages mention the CVE but are not
+  reviewer comments.
+- `[RESULT][VOTE]` or other `dev@airflow.apache.org` release-train
+  messages that happen to list the CVE in the advisory body — these
+  are post-publication announcements, not review comments.
+- Our own outbound messages to `security@` announcing the CVE or
+  pasting the JSON — the sender here is a security-team member.
+
+What **is** a reviewer comment: a message sent to
+`security@airflow.apache.org` with the CVE ID in the subject, whose
+sender is **not** the reporter, not a security-team collaborator, and
+not `@apache.org` tooling (typical senders include ASF Security's
+CNA-team reviewers, `cve@mitre.org`, or an individual ASF Security
+PMC member). The body usually contains explicit proposals — *"Please
+update the CWE to CWE-NNN"*, *"The affected range should be `< X.Y.Z`"*,
+*"Credits are missing a remediation-developer entry"*, etc.
+
+Read each matching thread **once** with `mcp__claude_ai_Gmail__get_thread`
+to extract the comment bodies verbatim.
+
+**Fallback when no CVE-review emails are found.** Absence of signal is
+the common case — most CVEs go through REVIEW and PUBLISHED with no
+reviewer pushback. Just record `cve_review_comments: []` and move on;
+do **not** retry the `cveprocess.apache.org` curl from this skill.
+
+If a reader wants to double-check against the live Vulnogram record,
+link to it in the proposal (`https://cveprocess.apache.org/cve5/<CVE-ID>`)
+and note that the human can open it in a browser with their ASF login.
+
+For every actionable review comment found, include the following in
+the **observed state** in Step 2a:
+
+- a clickable link to the Gmail thread where the comment landed;
+- a clickable link to the CVE record on `cveprocess.apache.org`
+  (the reader can authenticate in the browser to see the live state);
+- a verbatim short quote of the reviewer's ask.
 
 Then, for **each** open review comment, map it to a concrete
 proposal on the **tracking issue** (not the CVE record itself — see
@@ -549,12 +594,12 @@ pre-staging any mechanical body updates so the RM's remaining
 work is one Vulnogram paste plus one comment-resolution click
 per reviewer ask.
 
-If the CVE record 404s (the ID was reserved but never saved a draft
-yet), treat that as a blocker: the CVE allocator needs to open the
-record and save at least a DRAFT so the review workflow exists. If
-the CVE record fetch times out, skip this subsection for this sync
-run and flag it as a retry in Step 2c (do not hold up the whole
-proposal for a transient network error).
+If no CVE ID is allocated yet (the *CVE tool link* body field is
+`_No response_` and `cve allocated` is not set), skip this
+subsection entirely — there is no record to review-check yet. If
+Gmail search 500s or times out, skip this subsection for this sync
+run and flag it as a retry in Step 2c; do not hold up the whole
+proposal for a transient Gmail error.
 
 ### 1f. Locate the process step
 
