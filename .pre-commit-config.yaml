@@ -39,7 +39,7 @@ repos:
         exclude: ^\.claude/skills/.*$
         args:
           - "--maxlevel"
-          - "2"
+          - "3"
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
     hooks:
