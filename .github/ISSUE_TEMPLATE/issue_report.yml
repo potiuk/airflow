@@ -52,7 +52,7 @@ body:
       description: >
         Link to the archived public advisory on
         [`users@airflow.apache.org`](https://lists.apache.org/list.html?users@airflow.apache.org)
-        (or `announce@apache.org`). Leave empty until Step 12 of the handling process —
+        (or `announce@apache.org`). Leave empty until Step 13 of the handling process —
         the release manager fills this in **after** sending the advisory, once the
         message is archived on `lists.apache.org`. The `generate-cve-json` tool
         exports this URL to the public CVE record as a `vendor-advisory` reference.
