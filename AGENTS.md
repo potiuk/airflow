@@ -339,25 +339,33 @@ archived list**. The Airflow lists fall into two groups:
   shape to public-list URLs, but they 404 for everyone outside the
   security team. They must **never** appear in the public CVE record.
 
-Concretely:
+Concretely, the issue template has two separate fields for this:
 
-- The tracking-issue's *"Security mailing list thread"* field is an
-  **internal** reference; the URL there is almost always a stale
-  placeholder or a pointer at the private `security@` thread. Do not
-  copy it into CVE references. Either clear the field to a short
-  textual note (*"No public archive URL — tracked privately on thread
-  `<threadId>`"*) or leave it blank — never leave a fake
-  `lists.apache.org/thread/<hash>` URL in it.
-- The CVE record's ``vendor-advisory`` reference should only be set
-  **after the public advisory has been sent to
-  `announce@apache.org` / `users@airflow.apache.org`**, and it should
-  point at the actual `lists.apache.org/thread/<id>?users@airflow.apache.org`
-  URL of that archived message. Before the advisory is sent, the
-  reference does not exist yet and must not be fabricated.
-- The `generate-cve-json` script enforces this by **not** pulling URLs
-  from the *"Security mailing list thread"* field automatically. The
-  public advisory URL, once available, is passed in explicitly via
-  the `--advisory-url` flag (or added as an `extra_urls` entry).
+- The *"Security mailing list thread"* field is the **internal**
+  reference for the security team: it holds the URL (or Gmail thread
+  ID) of the original `security@airflow.apache.org` thread so
+  triagers can navigate back to the report. It is expected to 404 for
+  anyone outside the security team. Keep whatever the reporter /
+  team-member put there — do **not** scrub it during sync.
+- The *"Public advisory URL"* field (new as of 2026-04-16) holds the
+  archive URL on `lists.apache.org/list.html?users@airflow.apache.org`
+  once the public advisory has been sent (Step 12 of the process).
+  This is the URL that ends up as the `vendor-advisory` reference on
+  the public CVE record. Before the advisory is sent the field stays
+  empty; the `sync-security-issue` skill scans the users@ archive
+  for the CVE ID and proposes populating the field automatically
+  once the advisory lands.
+
+The `generate-cve-json` script enforces this split:
+
+- It **never** pulls URLs from the *"Security mailing list thread"*
+  field into `references[]`. That field is private by construction
+  and stays in the issue for team navigation only.
+- It **does** pull URLs from the *"Public advisory URL"* field
+  automatically and tags them as `vendor-advisory`. The
+  `--advisory-url` CLI flag still exists for ad-hoc overrides but
+  in the normal flow the release manager populates the body field
+  once, and every re-run of the generator picks it up.
 
 Putting it differently: if a reader clicks a `vendor-advisory` link on
 the public CVE record and gets a 404, the CVE record is broken.

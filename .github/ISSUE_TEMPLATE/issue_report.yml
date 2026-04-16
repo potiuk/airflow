@@ -36,10 +36,32 @@ body:
       label: Security mailing list thread
       description: >
         Type in the link to the
-        [thread in the security mailing list](https://lists.apache.org/list.html?security@airflow.apache.org)
-      placeholder: "Please paste the link to the discussion in the security@airlfow.apache.org mailing list"
+        [thread in the security mailing list](https://lists.apache.org/list.html?security@airflow.apache.org).
+        **This is an internal reference** — the `security@airflow.apache.org` archive is not publicly
+        accessible, so the URL you paste here is expected to 404 for anyone outside the security team.
+        Keep it in the issue for the team's internal navigation; the `generate-cve-json` tool
+        **does not** export URLs from this field to the public CVE record. The public-facing advisory
+        URL (once the announcement is archived on `users@airflow.apache.org`) goes in the separate
+        *Public advisory URL* field below.
+      placeholder: "Please paste the link to the discussion in the security@airflow.apache.org mailing list"
     validations:
       required: true
+  - type: input
+    attributes:
+      label: Public advisory URL
+      description: >
+        Link to the archived public advisory on
+        [`users@airflow.apache.org`](https://lists.apache.org/list.html?users@airflow.apache.org)
+        (or `announce@apache.org`). Leave empty until Step 12 of the handling process —
+        the release manager fills this in **after** sending the advisory, once the
+        message is archived on `lists.apache.org`. The `generate-cve-json` tool
+        exports this URL to the public CVE record as a `vendor-advisory` reference.
+        The `sync-security-issue` skill scans the public archive for the CVE ID and
+        proposes populating this field automatically when the advisory lands;
+        closing the tracker is gated on this field being set.
+      placeholder: "https://lists.apache.org/thread/<id>?users@airflow.apache.org — filled after advisory send"
+    validations:
+      required: false
   - type: input
     attributes:
       label: Reporter credited as
