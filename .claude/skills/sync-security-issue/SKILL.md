@@ -257,8 +257,10 @@ update, label change, or next-step recommendation in Step 2:
 | Reporter reply with a confirmed credit line (*"please credit me as …"*, *"use handle X"*, *"anonymous is fine"*) | Replace the `Reporter credited as` placeholder with the confirmed form; mark the credit question as resolved so the next status-update draft does not re-ask it. |
 | Reporter explicit opt-out of credit (*"do not credit me"*, *"anonymous"*) | Set the field to `anonymous` and flag the advisory to use that form. |
 | Release manager's `[RESULT][VOTE] Release Airflow <version>` on `dev@airflow.apache.org` for a version that carries the fix | Record the release manager in the "Known release managers" subsection of [`AGENTS.md`](../../../AGENTS.md) if not already there; flag Step 12 (advisory) as assigned to that person. |
-| Advisory message sent to `announce@apache.org` / `users@airflow.apache.org` for the CVE on the tracker | Propose adding the `announced - emails sent` label, filling the `--advisory-url` for the next `generate-cve-json` run with the `lists.apache.org/thread/<id>?announce@apache.org` URL, and closing the issue. |
-| A comment saying *"merged"* / *"fix shipped in X.Y.Z"* on the private issue, or the referenced apache/airflow PR moving to `merged` | Propose `Not yet announced` if not set; update the `PR with the fix` body field with the merged PR URL; update the milestone to the shipping release if it is now known. |
+| Advisory message sent to `announce@apache.org` / `users@airflow.apache.org` for the CVE on the tracker | Propose adding the `announced - emails sent` label, removing `fix released`, filling the `--advisory-url` for the next `generate-cve-json` run with the `lists.apache.org/thread/<id>?announce@apache.org` URL, and closing the issue. |
+| The referenced `apache/airflow` PR has been opened but is still in `open` state | Propose `pr created` label; update the *"PR with the fix"* body field with the PR URL. |
+| The referenced `apache/airflow` PR moved to `merged` | Propose swapping `pr created` → `pr merged`; update milestone to the shipping release if now known. |
+| A release carrying the fix has shipped (PR's milestone release is on PyPI / Helm registry, or an explicit *"fix shipped in X.Y.Z"* comment) | Propose swapping `pr merged` → `fix released`; this is the release manager's cue to own Step 12 (advisory). If the legacy `Not yet announced` label is still set, keep it and append `fix released` in parallel so the two signals do not contradict each other — prefer `fix released` going forward. |
 | GHSA state transition (opened, accepted, published, rejected) in a GHSA-forwarded email | If the GHSA is closed as "not accepted" but the security team accepted the report on `security@`, flag the divergence in the status comment so it is not lost. |
 | Team member saying *"let's also backport to v3-2-test"* / *"please mark X for backport"* | Note the requested backport label on the public PR as an item for Step 9 of the `fix-security-issue` workflow. |
 | Reporter flagging a second distinct vulnerability on the same thread | Surface as an explicit question to the user — it may warrant a separate tracking issue. |
@@ -291,12 +293,20 @@ process the issue is currently at:
 | Discussion stalled for more than 30 days | 4 (wider audience) |
 | Consensus, invalid → close | 5 / 6 |
 | Consensus, valid, no CVE yet | 6 (allocate CVE) |
-| CVE allocated, no fix yet | 7 |
-| Fix in progress (PR exists, not merged) | 7 / 8 / 9 |
-| apache/airflow PR merged, `Not yet announced` not set | 10 (set label + milestone, close private PR if any) |
-| `Not yet announced`, release pending | 11 |
-| Released, announcement emails sent, `vendor-advisory` not set | 12 |
-| Closed, credits missing | 13 |
+| CVE allocated, no fix PR yet | 7 |
+| Fix PR open, not merged (`pr created` label should be set) | 7 / 8 / 9 / 10 |
+| Fix PR merged, no release with the fix has shipped yet (swap `pr created` → `pr merged`) | 11 |
+| Release with the fix has shipped, advisory not sent (swap `pr merged` → `fix released`) | 11 / 12 |
+| Advisory sent, `announced - emails sent` set, `vendor-advisory` reference not recorded | 12 / 13 |
+| Closed, credits missing | 14 |
+
+The `pr created`, `pr merged`, and `fix released` labels describe the
+fix-side flow; `cve allocated` and `announced - emails sent` describe
+the advisory-side flow. Both can coexist on the same issue — for
+example, a typical mid-flight issue carries `airflow`, `cve allocated`
+and `pr merged` at the same time. `Not yet announced` is the legacy
+synonym of `fix released` and is still honoured during sync, but new
+transitions should use `fix released`.
 
 ---
 
@@ -316,14 +326,43 @@ Each proposed change is a **numbered item** and must be explicit about *what*
 will change and *why*. Group them by category:
 
 - **Labels to add / remove** — e.g. *"remove `needs triage`; add `airflow`"*. Reason: one scope label is required by the process once triage is complete.
-- **Milestone** — if a linked apache/airflow PR is merged into a release with a
-  milestone, propose the matching `Airflow-X.Y.Z` / `Providers-…` / `Chart-…`
-  milestone on the issue. **If the milestone does not yet exist**, the proposal
-  must say so and include the exact `gh api` command to create it:
+- **Milestone** — propose the matching release milestone on the
+  issue. The milestone format depends on the scope label:
+
+  - `airflow` → `Airflow-X.Y.Z` or the bare version (e.g. `3.2.2`).
+    Take the version from the linked PR's own milestone when the PR
+    is merged; otherwise default to the next patch release from the
+    *"Release branches currently in flight"* section of
+    [`AGENTS.md`](../../../AGENTS.md).
+  - `providers` → **`Providers YYYY-MM-DD`**, keyed by the **cut
+    date** on the
+    [Release Plan wiki](https://cwiki.apache.org/confluence/display/AIRFLOW/Release+Plan)
+    (not the PyPI publish date). Fetch the wiki page to find the
+    next-upcoming cut date; for an already-released fix, use the
+    cut date that corresponds to the release that carried the fix.
+  - `chart` → `Chart-X.Y.Z`, taken from the Helm-chart release that
+    will carry the fix.
+
+  **If the milestone does not yet exist**, the proposal must say
+  so and include the exact `gh api` command to create it. For a
+  provider-wave milestone the description should name the release
+  manager so the advisory owner is visible at a glance:
 
   ```bash
-  gh api repos/airflow-s/airflow-s/milestones -f title='<Milestone>' -f description='<optional>'
+  # Core or chart:
+  gh api repos/airflow-s/airflow-s/milestones \
+    -f title='<Milestone>' -f state=open \
+    -f description='<optional>'
+
+  # Provider wave (cut date + RM from the Release Plan wiki):
+  gh api repos/airflow-s/airflow-s/milestones \
+    -f title='Providers YYYY-MM-DD' -f state=open \
+    -f description='Providers release cut on YYYY-MM-DD, RM: <Name>'
   ```
+
+  After the create call, assign the milestone to the issue via
+  `gh issue edit <N> --milestone 'Providers YYYY-MM-DD'` (or by
+  milestone number via the REST API if the milestone is closed).
 
 - **Assignees** — when a fix PR exists in `apache/airflow` (found in
   Step 1b or named in the *"PR with the fix"* body field) **and the
@@ -791,8 +830,19 @@ finalising the recap.
   instead, following the editorial guidance in [`AGENTS.md`](../../../AGENTS.md).
 - **Tone of any drafted email must be polite but firm** — see the "Tone: polite
   but firm — no room to wiggle" section of [`AGENTS.md`](../../../AGENTS.md).
-- **Milestone naming** must follow the process document exactly: `Airflow-2.6.2`,
-  `Providers-June-2023-1`, `Chart-1.9.0`.
+- **Milestone naming** must follow the process document exactly:
+  - `Airflow-X.Y.Z` or bare `3.2.2` for core releases.
+  - `Providers YYYY-MM-DD` for provider-wave cuts. The date is the
+    **cut date** from the
+    [Release Plan wiki](https://cwiki.apache.org/confluence/display/AIRFLOW/Release+Plan),
+    not the PyPI publish date. If the needed milestone does not yet
+    exist in `airflow-s/airflow-s`, the sync proposal creates it via
+    `gh api repos/airflow-s/airflow-s/milestones -f title='Providers
+    YYYY-MM-DD' -f state=open -f description='Providers release cut
+    on YYYY-MM-DD, RM: <Name>'` and then assigns the issue. The
+    description should carry the rotation-roster release-manager name
+    so the advisory owner is visible from the milestones list.
+  - `Chart-X.Y.Z` for Helm chart releases.
 - **Scope label is mandatory once triage is complete** — exactly one of
   `airflow`, `providers`, or `chart`.
 

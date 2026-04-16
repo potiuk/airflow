@@ -3,6 +3,7 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Handling security issues for Apache Airflow](#handling-security-issues-for-apache-airflow)
+- [Label lifecycle](#label-lifecycle)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -115,22 +116,38 @@ The process of handling an issue is as follows:
    be pushed to the Airflow repository and the PR should be re-opened in the Airflow repository by pushing
    the branch to public `apache/airflow` and merging it there.
 
-10) Once the PR is created in the Airflow repository, the team member who creates it should link to the PR
-    in the description of the issue.
+10) Once the PR is created in the `apache/airflow` repository, the team member who creates it should
+    link to the PR in the description of the issue and mark the issue with the `pr created` label in
+    `airflow-s`.
 
-11) The security team member merging the `apache/airflow` PR should mark the issue with the `Not yet announced`
-    label in `airflow-s`. If there is a private variant of the PR in the `airflow-s/airflow-s` repository, it
-    should be closed. The milestone of the issue should be set to the milestone when it is planned to be released.
-    The milestones are in the format `Airflow-2.6.2`, `Providers-June-2023-1`
-    (first June providers batch), or `Chart-1.9.0`. New milestones are created when needed.
-    Sometimes, as a result of the triage discussions, the fix should not be applied in the next patch-level
-    release — for example, because of high risk involved or because it needs to be correlated with other changes.
-    In such cases, the milestone in the issue and the corresponding PR should be set to the next minor release
-    rather than the next patch-level release.
+11) When the `apache/airflow` PR merges, the security team member merging it should move the issue from
+    `pr created` to `pr merged`. If there is a private variant of the PR in the `airflow-s/airflow-s`
+    repository, it should be closed. The milestone of the issue should be set to the milestone when it
+    is planned to be released. Milestones follow these formats:
 
-12) During releases, the release manager looks through "Not yet announced" issues in `airflow-s`
-    with the corresponding milestones, updates the [ASF CVE tool](https://cveprocess.apache.org), and
-    updates the following fields, taking them from the issue:
+    * **`Airflow-X.Y.Z`** — core Airflow releases (e.g. `Airflow-2.6.2`, `3.2.2`).
+    * **`Providers YYYY-MM-DD`** — provider-wave cuts, keyed by the cut date listed on the
+      [Release Plan wiki](https://cwiki.apache.org/confluence/display/AIRFLOW/Release+Plan). The
+      cut date, not the publish date on PyPI, is used as the milestone title.
+    * **`Chart-X.Y.Z`** — Airflow Helm Chart releases (e.g. `Chart-1.9.0`).
+
+    New milestones are created when needed. The `sync-security-issue` skill will create a missing
+    provider-wave milestone via `gh api` and assign the issue to it in the same proposal.
+    Sometimes, as a result of the triage discussions, the fix should not be applied in the next
+    patch-level release — for example, because of high risk involved or because it needs to be
+    correlated with other changes. In such cases, the milestone in the issue and the corresponding PR
+    should be set to the next minor release rather than the next patch-level release.
+
+    When the release containing the fix actually ships to users (the final `apache/airflow` /
+    `apache-airflow-providers-*` / `apache-airflow-helm-chart-*` version is on PyPI / the Helm
+    registry), the issue is moved from `pr merged` to `fix released`. This is the cue that the
+    release manager for that release owns Step 12 — the advisory is blocked only on the CVE-tool
+    fields being complete.
+
+12) During releases, the release manager looks through `fix released` issues in `airflow-s`
+    (historically marked `Not yet announced` — the new `fix released` label is the preferred
+    form), updates the [ASF CVE tool](https://cveprocess.apache.org), and updates the following
+    fields, taking them from the issue:
 
     * CWE (Common Weakness Enumeration) — possible CWEs are available [here](https://cwe.mitre.org/data/index.html)
     * Product name (Airflow, affected Airflow Provider, or Airflow Helm Chart)
@@ -151,7 +168,7 @@ The process of handling an issue is as follows:
 
     The release manager also generates the CVE description, sets the CVE to REVIEW if feedback is needed and
     then to READY, and eventually sends the announcement emails from the ASF CVE tool. The release manager
-    then closes the issue.
+    then adds the `announced - emails sent` label, removes the `fix released` label, and closes the issue.
 
 13) After the emails have been delivered, the release manager updates the issue with information about the
     announcement, adding the `vendor-advisory` tag with a link to the `users@airflow.apache.org` mailing list
@@ -162,3 +179,49 @@ The process of handling an issue is as follows:
     * responds to the announcement emails and mentions the missing credits
     * updates the [ASF CVE tool](https://cveprocess.apache.org) with the missing credits
     * asks the ASF security team to push the information to [cve.org](https://cve.org)
+
+## Label lifecycle
+
+The diagram below shows the typical state flow. Each node is a label (or a cluster of labels that
+co-exist); each edge is a process step that moves the issue forward. Closing dispositions
+(`invalid`, `not CVE worthy`, `duplicate`, `wontfix`) can terminate the flow at any point after
+`needs triage`.
+
+```mermaid
+flowchart LR
+    A([report on security@]) --> B[needs triage]
+    B -->|step 5: consensus invalid| X1([invalid / not CVE worthy / duplicate / wontfix])
+    B -->|step 5: consensus valid| C[airflow / providers / chart]
+    C -->|step 6: CVE reserved| D[cve allocated]
+    D -->|step 10: public PR opened| E[pr created]
+    E -->|step 11: PR merges| F[pr merged]
+    F -->|step 11: release ships| G[fix released]
+    G -->|step 12: advisory sent| H[announced - emails sent]
+    H -->|step 13: archive URL| I[vendor-advisory]
+    H --> Z([issue closed])
+
+    classDef closed fill:#f8d7da,stroke:#842029,color:#000;
+    classDef done fill:#d1e7dd,stroke:#0f5132,color:#000;
+    class X1,Z closed;
+    class H,I done;
+```
+
+The table below repeats the same flow in tabular form. An issue typically moves through these
+labels left-to-right:
+
+| Label | Meaning | Added at step | Removed at step |
+| --- | --- | --- | --- |
+| `needs triage` | Freshly filed; assessment not yet started. | 1 | 5 |
+| `airflow` / `providers` / `chart` | Scope of the vulnerability. Exactly one of these is set. | 5 | never (sticks for the lifetime of the issue) |
+| `cve allocated` | A CVE has been reserved for the issue. | 6 | never |
+| `pr created` | A public fix PR has been opened in `apache/airflow` but has not yet merged. | 10 | 11 (replaced by `pr merged`) |
+| `pr merged` | The fix PR has merged into `apache/airflow`; no release with the fix has shipped yet. | 11 | 11 (replaced by `fix released` when the release ships) |
+| `fix released` | A release containing the fix has shipped to users; advisory has not been sent yet. | 11 | 12 (replaced by `announced - emails sent`) |
+| `announced - emails sent` | The public advisory has been sent to `announce@apache.org` / `users@airflow.apache.org`. | 12 | never (the issue is closed at the same time) |
+| `Not yet announced` | **Legacy** synonym of `fix released`. New issues should use `fix released`; existing `Not yet announced` labels are still honoured by the skills during sync. | — | — |
+| `vendor-advisory` | Marker used while recording the archived `users@` URL in the CVE tool. | 13 | — |
+| `wontfix` / `invalid` / `not CVE worthy` / `duplicate` | Closing dispositions for reports that are not valid or not CVE-worthy. | 5 / 6 | — |
+
+The [`sync-security-issue`](.claude/skills/sync-security-issue/SKILL.md) skill keeps these labels
+honest: on every run it detects the current state of the issue, the fix PR, and the release train,
+and proposes the label transitions the process requires.
