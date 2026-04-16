@@ -561,6 +561,19 @@ before moving on to the next item. Use:
 - **Description:** `gh issue edit <N> --repo airflow-s/airflow-s --body-file <tmpfile>` — write the
   new body to a temporary file first so nothing is lost to shell quoting.
 - **Comments:** `gh issue comment <N> --repo airflow-s/airflow-s --body-file <tmpfile>`.
+  Before posting, **scrub the comment body for bare-name mentions** of
+  anyone on the "Current release managers" or rotation-roster lists in
+  [`AGENTS.md`](../../../AGENTS.md), and of known security-team members.
+  Replace each bare name with the corresponding ``@``-handle (or
+  `"<Full Name> (@handle)"` when readability warrants keeping the
+  plain name too) so GitHub actually notifies the person. See the
+  "Mentioning Airflow maintainers and security-team members" section
+  of [`AGENTS.md`](../../../AGENTS.md). Concrete grep-list to check
+  against: `Jarek Potiuk`, `Jens Scheffler`, `Vincent BECK`,
+  `Shahar Epstein`, `Buğra Öztürk`, `Jedidiah Cunningham`,
+  `Rahul Vats`, `Aritra Basu`, `Pierre Jeambrun`, `Kaxil Naik`,
+  `Amogh Desai`, plus any name that appears in a `Reporter credited
+  as` field without a confirmed external-credit decision.
 - **Close / reopen:** `gh issue close <N> --repo airflow-s/airflow-s --reason completed` (or `not planned`).
 - **Gmail draft:** `mcp__claude_ai_Gmail__gmail_create_draft` with the thread ID
   from Step 1c so the draft lands in the correct thread. **Never send.** Tell

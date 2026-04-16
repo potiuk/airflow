@@ -113,10 +113,10 @@ in the order they should be consulted:
 The Airflow Release Plan wiki page records the active rotation rosters
 for each release train. As of 2026-04-16 they are:
 
-- **Providers** — Jens Scheffler, Jarek Potiuk, Vincent BECK, Shahar Epstein
-- **Airflow Ctl** — Buğra Öztürk, Jarek Potiuk
-- **Helm Chart** — Jedidiah Cunningham, Jens Scheffler, Buğra Öztürk, Jarek Potiuk
-- **Airflow 2 (core)** — Jarek Potiuk (single maintainer, no rotation)
+- **Providers** — Jens Scheffler (@jscheffl), Jarek Potiuk (@potiuk), Vincent BECK (@vincbeck), Shahar Epstein (@shahar1)
+- **Airflow Ctl** — Buğra Öztürk (@bugraoz93), Jarek Potiuk (@potiuk)
+- **Helm Chart** — Jedidiah Cunningham (@jedcunningham), Jens Scheffler (@jscheffl), Buğra Öztürk (@bugraoz93), Jarek Potiuk (@potiuk)
+- **Airflow 2 (core)** — Jarek Potiuk (@potiuk) (single maintainer, no rotation)
 
 Airflow 3 (core) release managers are not yet on a fixed rotation at
 the time of writing — each release is picked up individually; check
@@ -492,6 +492,56 @@ When editing an existing document in this repo that contains a bare
 the same edit. Skill-generated output (sync proposals, issue comments,
 email drafts to reporters on the `security@` thread) must emit the
 linked form from the start — bare references are a miss.
+
+### Mentioning Airflow maintainers and security-team members
+
+When writing text that lands on a GitHub issue or PR and refers to a
+specific Airflow maintainer, committer, release manager, or
+security-team member, **use the person's GitHub handle with the
+leading ``@`` so GitHub notifies them**. Simply writing their name in
+plain text does not fire a notification, and the whole point of
+mentioning the person is usually that they own the next step or are
+the right reviewer. Agent-generated status comments, PR bodies, sync
+recaps, fix-PR follow-up comments, and draft-advisory text should all
+follow the rule.
+
+Concretely:
+
+- **GitHub handle, not plain name**: write ``@jscheffl``, not
+  *"Jens Scheffler"*, in a GitHub surface. It is fine to keep the
+  plain name in the same sentence for readability as long as the
+  ``@``-mention is present somewhere: *"The next providers wave is
+  cut by Jens Scheffler (@jscheffl)"*.
+- **Which people the rule applies to**: Airflow PMC members,
+  committers, release managers listed in
+  [the "Current release managers" section above](#current-release-managers),
+  and members of the security team. Current release managers and the
+  providers / Airflow Ctl / Helm Chart rotation rosters are listed in
+  that section with their GitHub handles — use those as the
+  authoritative source.
+- **Which surfaces the rule applies to**: public ``apache/airflow`` PR
+  comments/bodies; private ``airflow-s/airflow-s`` issue comments and
+  status comments; sync recaps printed back to the user that call out
+  a specific person. It does **not** apply to email text on
+  ``security@airflow.apache.org`` (those go to the reporter and the
+  list, not through GitHub's notification system).
+- **Public-surface caveat**: the confidentiality rules in
+  [the "Confidentiality of ``airflow-s/airflow-s``" section](#confidentiality-of-airflow-sairflow-s)
+  still bind. In a **public** ``apache/airflow`` PR or comment, a
+  mention must stand on its own — it must not be accompanied by any
+  of the forbidden terms (``CVE-``, ``airflow-s``, *"security fix"*,
+  etc.) that would reveal the private nature of the coordination.
+- **External reporters**: when referring to an external reporter who
+  has a known GitHub handle and whose handle the team has agreed to
+  credit publicly, the same rule applies. When the reporter has not
+  confirmed their GitHub handle or has opted out of credit, use their
+  confirmed credit form in plain text and do not ``@``-mention them.
+
+The sync-security-issue and fix-security-issue skills should render
+every maintainer / security-team / release-manager reference in the
+status comments they post as an ``@`` handle. Before publishing a
+status comment, the skills must grep for names of known people and
+flag any bare-name occurrence to the user.
 
 ### Other editorial guidelines
 

@@ -419,6 +419,18 @@ Now that a public PR exists, update the private tracking issue:
    inside the private repo so it may freely contain the
    `apache/airflow` PR URL, the branch name, and the CVE reference.
 
+   Before posting, **scrub the comment body for bare-name mentions**
+   of Airflow maintainers, release managers, and security-team
+   members, and replace them with the corresponding ``@``-handle so
+   GitHub actually notifies the person. See the "Mentioning Airflow
+   maintainers and security-team members" section of
+   [`AGENTS.md`](../../../AGENTS.md) for the full rule and the
+   authoritative list of handles. The public ``apache/airflow`` PR
+   description and any follow-up public comments must also obey the
+   rule, but under the usual public-surface confidentiality
+   constraints (no ``CVE-``, ``airflow-s``, *"security fix"*, etc.
+   alongside the mention).
+
 2. **Update the issue body "PR with the fix" field** if it is empty
    or points to a stale PR. Use `gh issue view --json body`, patch
    only that field, and apply via `gh issue edit --body-file`, as
