@@ -325,8 +325,29 @@ will change and *why*. Group them by category:
   gh api repos/airflow-s/airflow-s/milestones -f title='<Milestone>' -f description='<optional>'
   ```
 
-- **Assignees** — propose self-assigning a team member only if the user asks, or
-  propose clearing a stale assignment if the person is no longer active on the issue.
+- **Assignees** — when a fix PR exists in `apache/airflow` (found in
+  Step 1b or named in the *"PR with the fix"* body field) **and the
+  PR author is a member of the Airflow security team** (their GitHub
+  handle appears in the roster in the *"Security team roster"*
+  subsection of [`AGENTS.md`](../../../AGENTS.md) — when in doubt,
+  run `gh api repos/airflow-s/airflow-s/collaborators --jq '.[] |
+  select(.permissions.push == true) | .login'` as the authoritative
+  check), **propose setting the tracking issue's assignee to that PR
+  author**. The PR author is the natural owner for driving the issue
+  through the rest of the process (review, merge, backport label,
+  advisory coordination), and setting them as assignee gives the
+  whole team a fast "who is on this?" answer in the issue list.
+
+  If the PR author is **not** on the security-team roster (for
+  example, an external contributor who submitted the fix via the
+  public process), do **not** assign them — they are not part of the
+  internal handling process and do not need the tracking-issue
+  notifications. Instead, leave the assignee empty or propose a
+  security-team member who is already engaged in the discussion.
+
+  Also propose clearing a stale assignment if the person is no longer
+  active on the issue, and propose self-assigning a team member only
+  if the user explicitly asks.
 - **Description fields** — if the issue body is missing any of the fields the
   release manager will eventually need (CWE, product, affected versions, severity,
   CVE ID, credits, links to PRs, short public summary for publish), propose a
