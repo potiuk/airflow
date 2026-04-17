@@ -123,12 +123,11 @@ for three very different message types — CVE-tool bookkeeping
 **ASF Security Team forwarding of inbound reports** (*"Dear PMC, The
 security vulnerability report has been received by the Apache Security
 Team and is being passed to you for action …"*), and ad-hoc ASF
-Security discussion / advice. Blanket-excluding the sender drops the
-forwarded reports along with the bookkeeping noise; an ASF-relayed
-report that landed on 2026-04-16 was silently dropped by exactly this
-filter before the skill was corrected. The bookkeeping emails are
-filtered out at Step 3 instead, by subject pattern — see the
-`cve-tool-bookkeeping` row of the classification table.
+Security discussion / advice. Blanket-excluding the sender would drop
+the forwarded reports along with the bookkeeping noise, so the
+bookkeeping emails are filtered out at Step 3 by subject pattern
+instead — see the `cve-tool-bookkeeping` row of the classification
+table.
 
 Adjust the time window per the user's selector (`since:` → `newer_than:`
 or `after:`; `import all` → `newer_than:90d`).
@@ -462,8 +461,7 @@ For each confirmed `Report` / `ASF-security relay`:
      knows all of that. See the
      "ASF-security-relay reports: a special case for drafting"
      section in [`AGENTS.md`](../../../AGENTS.md) for the full
-     rationale and the 2026-04-16 incident the rule was written
-     against.
+     rationale.
 
    **Never send.** Always create a draft; the triager reviews in
    Gmail before sending.
