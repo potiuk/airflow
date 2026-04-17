@@ -164,10 +164,30 @@ a few times a week are:
 - **`allocate CVE for issue #N`** — when a report is assessed as valid.
   See [Step 6](README.md#step-6--allocate-the-cve).
 
+There is also a fourth command for anyone willing to take on a
+remediation-developer turn:
+
+- **`try to fix issue #N`** —
+  [`fix-security-issue`](.claude/skills/fix-security-issue/SKILL.md)
+  attempts to land the fix for a triaged tracker in one go. It runs a
+  pre-fix sync, reads the discussion on the tracker to build a fix
+  plan, shows you the plan, and — only after you confirm — writes the
+  change in your local `apache/airflow` clone, runs the local checks
+  and tests, and opens a public `gh pr create --web` PR from your fork.
+  Every public surface (commit message, branch name, PR title, PR
+  body, newsfragment) is scrubbed for CVE / `airflow-s` /
+  `vulnerability` / `security fix` leakage before being written or
+  pushed. The skill refuses to operate on reports that are still being
+  assessed, or on issues that need the private-PR fallback of
+  [Step 9](README.md#step-9--open-a-private-pr-exceptional-cases). See
+  [For remediation developers — Steps 7–11](README.md#for-remediation-developers--steps-711)
+  for the full expectations around a fix PR.
+
 Every skill is a **proposal engine**, not an auto-pilot — it reads the
 world, proposes changes, and waits for your explicit confirmation
 before applying anything. This is deliberate: you stay in the loop
-for every label change, every body edit, every email draft.
+for every label change, every body edit, every email draft, and
+every line of code the fix skill writes.
 
 The full list of skills, and what each one does, is in
 [`AGENTS.md` — Reusable skills](AGENTS.md#reusable-skills).

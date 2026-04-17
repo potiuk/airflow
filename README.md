@@ -15,7 +15,8 @@
   - [Tools you use most](#tools-you-use-most)
 - [For remediation developers — Steps 7–11](#for-remediation-developers--steps-711)
   - [Picking up a tracker](#picking-up-a-tracker)
-  - [Opening the public fix PR](#opening-the-public-fix-pr)
+  - [Attempting an automated fix](#attempting-an-automated-fix)
+  - [Opening the public fix PR manually](#opening-the-public-fix-pr-manually)
   - [Private-PR fallback](#private-pr-fallback)
   - [Handoff to the release manager](#handoff-to-the-release-manager)
   - [Tools you use most](#tools-you-use-most-1)
@@ -243,13 +244,52 @@ Pick a tracker that has a scope label, `cve allocated`, and clear consensus
 on the fix shape. Self-assign yourself on GitHub so the board reflects
 ownership. See [Step 7](#step-7--self-assign-and-implement-the-fix).
 
-### Opening the public fix PR
+### Attempting an automated fix
 
-Write the code change in your local `apache/airflow` clone, run the local
-checks and tests, and open the PR via `gh pr create --web`. The PR
-description **must not** reveal the CVE, the security nature of the change,
-or link back to `airflow-s/airflow-s` — see
-[Step 8](#step-8--open-a-public-pr-straightforward-cases) and the
+Before writing the fix by hand, consider letting the
+[`fix-security-issue`](.claude/skills/fix-security-issue/SKILL.md) skill try
+it first. Invoked as *"try to fix issue #N"* (or *"draft a PR for #N"*), the
+skill:
+
+- runs `sync-security-issue` first to make sure the tracker's state is
+  current;
+- reads the full tracker discussion and the linked `security@` mail
+  thread and decides whether the issue is *easily fixable* — clear
+  consensus on the fix shape, small scope, known location in
+  `apache/airflow`. If it is not, the skill stops and tells you what
+  more the tracker needs before it is safe to attempt;
+- if it is, proposes an implementation plan (which file(s) to touch,
+  what to change, what tests to add) and **waits for your explicit
+  confirmation** before making any edits;
+- writes the change in your local `apache/airflow` clone, runs the
+  local static checks and tests, and iterates on failures;
+- opens the public PR from your fork via `gh pr create --web` with a
+  scrubbed title and body — every public surface (commit message,
+  branch name, PR title, PR body, newsfragment) is grep-checked for
+  `CVE-`, `airflow-s`, `vulnerability`, *"security fix"* and similar
+  leakage before being written or pushed;
+- updates the `airflow-s/airflow-s` tracking issue with the new PR
+  link and applies the `pr created` label, handing back off to
+  `sync-security-issue`.
+
+The skill refuses to proceed in cases where a human decision still
+needs to happen: reports that are still being assessed, reports not
+yet classified as valid vulnerabilities, and changes that require the
+private-PR fallback in
+[Step 9](#step-9--open-a-private-pr-exceptional-cases). If it refuses,
+fall back to the manual flow below.
+
+Even when the skill succeeds end-to-end, you remain the PR's author
+and reviewer-facing contact on the public `apache/airflow` PR. Stay
+on the PR through review and merge.
+
+### Opening the public fix PR manually
+
+If you are writing the fix by hand, write the code change in your local
+`apache/airflow` clone, run the local checks and tests, and open the PR
+via `gh pr create --web`. The PR description **must not** reveal the CVE,
+the security nature of the change, or link back to `airflow-s/airflow-s` —
+see [Step 8](#step-8--open-a-public-pr-straightforward-cases) and the
 confidentiality rules in
 [`AGENTS.md`](AGENTS.md#confidentiality-of-airflow-sairflow-s).
 
@@ -276,10 +316,11 @@ becomes the release manager's responsibility. See
 
 ### Tools you use most
 
-- [`fix-security-issue`](.claude/skills/fix-security-issue/SKILL.md) — runs
-  a pre-fix sync, analyses the discussion for a fix plan, drafts the code
-  change, runs local tests, and opens a `--web` PR. Refuses to proceed if
-  the issue is not triaged yet.
+- [`fix-security-issue`](.claude/skills/fix-security-issue/SKILL.md) —
+  *"try to fix issue #N"*. Proposes a plan, writes the code, runs local
+  tests, and opens a `--web` PR with a scrubbed title/body. See
+  [Attempting an automated fix](#attempting-an-automated-fix) above for
+  the full flow and the cases where the skill refuses to proceed.
 - [`sync-security-issue`](.claude/skills/sync-security-issue/SKILL.md) — to
   keep the tracker's labels, milestone, and assignee aligned with the PR
   state as it moves through review and merge.
