@@ -1285,24 +1285,49 @@ the tracking issue body in place.
 
 For the regenerated JSON to carry a `remediation developer` credit
 alongside the `finder` credits, the sync skill should look up the author
-of the first PR mentioned in the *PR with the fix* field and pass it via
-`--remediation-developer`. One viable shell recipe:
+of the PR mentioned in the *PR with the fix* body field and pass it via
+`--remediation-developer`.
+
+**Scope the URL extraction to the *PR with the fix* section only** —
+the issue body routinely mentions unrelated `apache/airflow/pull/NNN`
+URLs elsewhere (prior-art references, cross-link to sibling
+scope-split trackers, "similar to…" context). A naive
+`grep … | head -n1` against the whole body will happily pick the
+first of those and credit the wrong person. Caught on
+[airflow-s/airflow-s#241](https://github.com/airflow-s/airflow-s/issues/241)
+where the body mentioned `apache/airflow#44322` as context before the
+actual fix `apache/airflow#63028` — the CVE JSON ended up with the
+wrong author on the first regen and had to be re-run with
+`--remediation-developer` passed explicitly.
 
 ```bash
+# Extract the PR URL from the "PR with the fix" body section only —
+# awk keeps lines from the "### PR with the fix" heading up to the
+# next "### " heading, and the grep then scopes to apache/airflow PRs.
 pr_url=$(gh issue view <N> --repo airflow-s/airflow-s --json body --jq .body \
+  | awk '/^### PR with the fix$/{flag=1; next} /^### /{flag=0} flag' \
   | grep -oE 'https://github\.com/apache/airflow/pull/[0-9]+' | head -n1)
+
+author_name=""
 if [[ -n "$pr_url" ]]; then
   pr_number=${pr_url##*/}
   author_name=$(gh pr view "$pr_number" --repo apache/airflow \
     --json author --jq '(.author.name // "") | select(length > 0) // .author.login' 2>/dev/null || echo "")
 fi
 
-uv run --project .claude/skills/generate-cve-json generate-cve-json <N> --attach \
-  ${author_name:+--remediation-developer "$author_name"}
+# Pass --remediation-developer conditionally — never use the
+# ${var:+--flag "$var"} trick, it breaks quoting when the name has
+# spaces (e.g. "Amogh Desai" splits into two arg words).
+if [[ -n "$author_name" ]]; then
+  uv run --project .claude/skills/generate-cve-json generate-cve-json <N> --attach \
+    --remediation-developer "$author_name"
+else
+  uv run --project .claude/skills/generate-cve-json generate-cve-json <N> --attach
+fi
 ```
 
 If the lookup fails for any reason (no PR URL yet in the body, URL is
-not a `pull/` URL, `gh` errors out), run the script **without**
+not a `pull/` URL, `gh` errors out), the script runs **without**
 `--remediation-developer` — the attachment is still generated, just
 missing that one credit. A later manual run with the correct flag
 patches the embedded block in place.
