@@ -48,6 +48,44 @@ applies in full.
 
 ---
 
+## Prerequisites
+
+Before running, the skill needs:
+
+- **Gmail MCP** connected to a Gmail account subscribed to
+  `security@airflow.apache.org`. The skill reads threads and
+  creates drafts through this MCP; without it, there is no way
+  to discover new reports.
+- **`gh` CLI authenticated** (`gh auth status` returns OK) with
+  collaborator access to `airflow-s/airflow-s`. The skill calls
+  `gh issue create` and `gh search issues` directly.
+
+See
+[Prerequisites for running the agent skills](../../../README.md#prerequisites-for-running-the-agent-skills)
+in `README.md` for the overall setup and the ponymail-mcp
+alternative on the horizon.
+
+---
+
+## Step 0 — Pre-flight check
+
+Before touching any candidate thread, verify:
+
+1. **Gmail MCP is reachable.** Run a trivial
+   `mcp__claude_ai_Gmail__search_threads` with `pageSize: 1` and
+   confirm it returns (not an auth error). If it fails, **stop
+   immediately** and tell the user to configure Gmail MCP.
+2. **`gh` is authenticated and has access.** Run
+   `gh api repos/airflow-s/airflow-s --jq .name`; if it errors
+   (401, 403, 404), stop and tell the user to log in with
+   `gh auth login` or get added to `airflow-s/airflow-s`.
+
+If either check fails, do **not** proceed — the skill would fail
+mid-flow otherwise, leaving half-built state (a draft on the wrong
+thread, or a tracker with no receipt reply). Fail fast instead.
+
+---
+
 ## Inputs
 
 Before running, resolve the user's selector into a concrete set of

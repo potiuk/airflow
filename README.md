@@ -4,6 +4,14 @@
 
 - [Overview](#overview)
 - [Who this guide is for](#who-this-guide-is-for)
+- [Prerequisites for running the agent skills](#prerequisites-for-running-the-agent-skills)
+  - [1. An agent that speaks the `SKILL.md` convention](#1-an-agent-that-speaks-the-skillmd-convention)
+  - [2. Email connection (Gmail MCP, today)](#2-email-connection-gmail-mcp-today)
+  - [3. GitHub connection (GitHub MCP / `gh` CLI)](#3-github-connection-github-mcp--gh-cli)
+  - [4. PMC membership (only for CVE allocation)](#4-pmc-membership-only-for-cve-allocation)
+  - [5. Browser (for the human-click steps)](#5-browser-for-the-human-click-steps)
+  - [6. Local `apache/airflow` clone (only for `fix-security-issue`)](#6-local-apacheairflow-clone-only-for-fix-security-issue)
+  - [7. `uv` (for `generate-cve-json`)](#7-uv-for-generate-cve-json)
 - [Shared conventions](#shared-conventions)
   - [Keeping the reporter informed](#keeping-the-reporter-informed)
   - [Recording status transitions on the tracker](#recording-status-transitions-on-the-tracker)
@@ -94,6 +102,110 @@ Pick whichever applies to you now:
 - **I am looking up a specific step or label.** Go straight to
   [Process reference](#process-reference-the-16-steps) or
   [Label lifecycle](#label-lifecycle).
+
+## Prerequisites for running the agent skills
+
+If you only plan to **comment on issues** from the board, skip this
+section — a browser and your `airflow-s/airflow-s` collaborator access
+are enough.
+
+If you plan to **run any of the agent skills** (`import`, `sync`,
+`allocate-cve`, `fix`, `generate-cve-json`, `deduplicate`) — typically
+as a rotational triager, remediation developer, or release manager —
+check the following setup **before** invoking a skill. Each skill also
+runs a short Step 0 pre-flight against the same list and stops with a
+clear message if something is missing, so you do not discover a
+missing piece half-way through a workflow.
+
+### 1. An agent that speaks the `SKILL.md` convention
+
+[Claude Code](https://www.anthropic.com/claude-code) is the reference
+implementation the skills are written against. Any agent that reads
+the `.claude/skills/*/SKILL.md` files and follows their step-by-step
+instructions should work; there is no hard dependency on Claude Code
+specifically.
+
+### 2. Email connection (Gmail MCP, today)
+
+The import, sync, and allocate-cve skills **read the security@ mail
+thread** associated with each tracker and draft replies on that
+thread. Today this goes through the
+[Claude Gmail MCP](https://docs.anthropic.com/en/docs/build-with-claude/mcp)
+connected to the personal Gmail account of a security-team member who
+is subscribed to `security@airflow.apache.org`. That is enough access
+for the skills to see inbound reports and create drafts on the right
+threads.
+
+There is an ASF-wide alternative on the horizon:
+[`rbowen/ponymail-mcp`](https://github.com/rbowen/ponymail-mcp) (by
+Rich Bowen, former ASF board director and ComDev lead) now supports
+OAuth authentication and can read private ASF lists. Once ASF OAuth
+is wired in, individual triagers should be able to run the skills
+without connecting their personal Gmail — authenticating directly
+against ASF credentials (and, eventually, the ASF's new MFA) will be
+sufficient. Until then, Gmail MCP is the way.
+
+**Without this connection:** `import-security-issue` cannot find new
+reports, `sync-security-issue` cannot reconcile status with the mail
+thread, and no skill can draft replies to reporters. The skills will
+refuse to start and tell you to configure the MCP first.
+
+### 3. GitHub connection (GitHub MCP / `gh` CLI)
+
+Every skill reads and writes `airflow-s/airflow-s` issues. Claude
+Code ships with the GitHub MCP by default, and the skills also use
+the `gh` CLI directly for some calls. What the skills need:
+
+- Authenticated `gh auth status` on the shell the agent runs in.
+- Collaborator access (any permission level) on
+  `airflow-s/airflow-s` — see
+  [Security team roster](AGENTS.md#security-team-roster).
+- For `fix-security-issue`: a fork of `apache/airflow` on your
+  GitHub account (the skill pushes a branch there before opening
+  the PR via `gh pr create --web`).
+
+### 4. PMC membership (only for CVE allocation)
+
+The ASF Vulnogram form at
+<https://cveprocess.apache.org/allocatecve> is **PMC-gated** on the
+server side — only Airflow PMC members can submit a CVE allocation.
+Non-PMC triagers can still run `allocate-cve`; the skill detects
+this up front (it asks *"are you an Airflow PMC member?"*) and
+produces a relay message for a PMC member to click through instead.
+
+The same PMC gate applies to ponymail URL lookups on private ASF
+lists; until `ponymail-mcp` is wired in with ASF OAuth, only PMC
+members can see private-list archives directly.
+
+### 5. Browser (for the human-click steps)
+
+Several parts of the process involve a form a human has to fill in
+and click — the Vulnogram allocation form, the Vulnogram `#source`
+paste, the `gh pr create --web` compose view. The skills prepare
+the URL and the exact text to paste and hand it off to the browser;
+they do not try to automate those clicks.
+
+### 6. Local `apache/airflow` clone (only for `fix-security-issue`)
+
+The fix skill writes the change in your local clone, runs local
+checks and tests, pushes a branch to your fork, and opens a PR via
+`gh pr create --web`. You need:
+
+- a clean clone of `apache/airflow` reachable from the agent's
+  working directory;
+- the Airflow dev toolchain — `uv`, Python 3.x, `breeze` if the
+  change touches the parts of the repo that need it — installed
+  per
+  [`apache/airflow/contributing-docs`](https://github.com/apache/airflow/blob/main/contributing-docs/README.md);
+- a remote named for your GitHub fork that `gh pr create` can push
+  to.
+
+### 7. `uv` (for `generate-cve-json`)
+
+The `generate-cve-json` script is a small `uv`-managed Python
+project. Install `uv` once
+(<https://github.com/astral-sh/uv>); the script bootstraps the
+rest.
 
 ## Shared conventions
 

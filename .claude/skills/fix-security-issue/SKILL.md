@@ -67,6 +67,74 @@ anything else.
 
 ---
 
+## Prerequisites
+
+This is the skill with the most environmental requirements — the
+pre-flight check below is worth running seriously before you
+invest 10+ minutes reading, planning, and writing code against a
+tracker only to discover you cannot push the branch.
+
+- **`gh` CLI authenticated** with:
+  - collaborator access to `airflow-s/airflow-s` (the skill
+    updates the tracker after the PR is open);
+  - push access to **your personal fork of `apache/airflow`** on
+    GitHub. The skill will **not** push to `apache/airflow`
+    directly — a fork is required.
+- **A clean local clone of `apache/airflow`** reachable from the
+  agent's working directory (either passed explicitly or probed
+  at the usual locations). The clone must:
+  - have a remote pointing at your fork;
+  - be on a non-dirty `main` (or the appropriate base branch) —
+    the skill will create a new branch from that base;
+  - have the Airflow dev toolchain available (`uv`, Python 3.x,
+    and `breeze` if the change touches the Airflow CLI / images
+    layer) — see
+    [`apache/airflow/contributing-docs`](https://github.com/apache/airflow/blob/main/contributing-docs/README.md).
+- **Outbound HTTPS to `pypi.org` / `github.com`** for dependency
+  resolution and `gh` API calls.
+
+See
+[Prerequisites for running the agent skills](../../../README.md#prerequisites-for-running-the-agent-skills)
+in `README.md` for the overall setup.
+
+---
+
+## Step 0 — Pre-flight check
+
+Do **all** of these before the Step 1 sync. Any failure is an
+immediate stop — do not partial-fix half the environment and
+continue.
+
+1. **`gh` authenticated** —
+   `gh api repos/airflow-s/airflow-s --jq .name` and
+   `gh api repos/apache/airflow --jq .name` both return. A 401/403
+   on the first means no airflow-s access; on the second it is a
+   quota/auth issue — both require user action, stop.
+2. **Fork exists and is pushable** —
+   `gh repo view <your-login>/airflow --json name --jq .name`
+   returns `airflow`. If there is no fork, tell the user to run
+   `gh repo fork apache/airflow --clone=false` and re-invoke.
+3. **Local clone is found and clean** — probe the usual locations
+   (the input path if supplied, else `~/code/airflow`,
+   `~/src/airflow`, `~/airflow`, or a sibling of the current
+   working directory) for a directory whose `origin` remote
+   points at `apache/airflow`. Then verify `git status
+   --porcelain` is empty. Uncommitted work would collide with the
+   branch the skill is about to create; stop and ask the user to
+   stash / commit / clean first.
+4. **Base branch is current** — `git fetch origin` and make sure
+   the base (default `main`, or the branch the user specified) is
+   a fast-forward of `origin/<base>`. Stale bases produce stale
+   PRs.
+5. **Toolchain probe** — `uv --version`, `python3 --version`. If
+   `breeze` is required for the area of the fix, also
+   `breeze --version`. Any missing tool stops the skill;
+   installing them mid-run is out of scope.
+
+Only after **every** check is green, proceed to Step 1.
+
+---
+
 ## Step 1 — Sync the issue first
 
 Run the [`sync-security-issue`](../sync-security-issue/SKILL.md) skill

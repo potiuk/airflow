@@ -75,6 +75,36 @@ does **not** auto-pick. Practical guidance to offer when asked:
 
 ---
 
+## Prerequisites
+
+- **`gh` CLI authenticated** with collaborator access to
+  `airflow-s/airflow-s` — the skill reads both trackers, edits
+  the kept tracker's body, closes the dropped tracker, and adds
+  / removes labels.
+- **`uv` installed** — the Step 5 CVE-JSON regeneration is a
+  `uv run` call.
+
+See
+[Prerequisites for running the agent skills](../../../README.md#prerequisites-for-running-the-agent-skills)
+in `README.md`.
+
+---
+
+## Step 0 — Pre-flight check
+
+1. `gh api repos/airflow-s/airflow-s --jq .name` returns
+   `airflow-s`.
+2. Both issue numbers resolve —
+   `gh issue view <kept> --repo airflow-s/airflow-s --json number`
+   and the same for `<dropped>` — before any write.
+3. `uv --version` returns.
+
+If any check fails, stop. A partial dedup (body merged but
+dropped tracker left open, or CVE JSON not regenerated) is worse
+than no dedup.
+
+---
+
 ## Step 1 — Fetch and classify both trackers
 
 ```bash
