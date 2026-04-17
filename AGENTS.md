@@ -17,6 +17,7 @@
     - [CVE references must never point at non-public mailing-list threads](#cve-references-must-never-point-at-non-public-mailing-list-threads)
   - [Writing and editing documentation](#writing-and-editing-documentation)
     - [Tone: polite but firm — no room to wiggle](#tone-polite-but-firm--no-room-to-wiggle)
+    - [Brevity: emails state facts, not context](#brevity-emails-state-facts-not-context)
     - [Point reporters to the Security Model, don't re-explain it](#point-reporters-to-the-security-model-dont-re-explain-it)
     - [Linking CVEs](#linking-cves)
     - [Linking `airflow-s/airflow-s` issues and PRs](#linking-airflow-sairflow-s-issues-and-prs)
@@ -426,6 +427,78 @@ Concrete phrasing patterns that work well:
   Do not threaten.
 - End with a constructive alternative where one exists: *"We would welcome a PR through the
   regular contribution process."*
+
+### Brevity: emails state facts, not context
+
+Every outbound email drafted by a skill — status updates to reporters,
+escalation messages to `private@airflow.apache.org`, relay requests to
+PMC members, communications to the ASF security team (`cve-managers@`,
+`security@apache.org`) — must be **short and factual**. The recipient
+already has the context; the point of the message is to deliver new
+information.
+
+**Baseline shape.** A status-update email to a reporter should fit in
+three short paragraphs or less:
+
+1. One sentence stating **what changed** (CVE allocated, fix PR
+   opened, advisory sent, etc.).
+2. One sentence stating **what comes next** and roughly when (e.g.
+   *"The advisory will be sent once the fix ships, currently expected
+   with Airflow 3.2.2."*).
+3. The relevant **artifact URLs** on their own line(s) — CVE tool
+   link, PR URL, advisory archive URL — per the linking rules in
+   [Linking CVEs](#linking-cves) and
+   [Linking `airflow-s/airflow-s` issues and PRs](#linking-airflow-sairflow-s-issues-and-prs).
+   Gmail autolinks bare URLs; do not use markdown or shorthand.
+
+That is the entire body. No re-introduction of the vulnerability, no
+recap of earlier messages on the same thread, no explanation of the
+handling process, no speculation about severity or timelines beyond
+the single forward-looking sentence in paragraph 2.
+
+**Emails to the ASF security team are even shorter.** The ASF CVE
+managers and the ASF security team already know the Airflow process,
+the Vulnogram tool, and the CVE-5 schema. A message to them is a
+**request or a fact**, not a briefing:
+
+- Lead with the ask or the fact in one sentence (*"Please push the
+  attached credit correction to cve.org for CVE-YYYY-NNNNN."*).
+- Include only the minimum artifact the recipient needs to act (the
+  CVE ID, the corrected JSON, the archive URL) — one link, maybe two.
+- Do **not** restate the vulnerability, the Airflow release train, or
+  the history of the ticket.
+- Do **not** explain why the ASF team's action is needed when their
+  role in the process is already established (e.g. pushing to cve.org,
+  allocating a CVE from a PMC-gated form).
+
+**What to omit in every drafted email, reporter or otherwise:**
+
+- The vulnerability description or attack narrative — the recipient
+  read it in the previous message on the thread or knows it from the
+  tracker.
+- A recap of earlier status updates ("As you know, we confirmed
+  validity on X and allocated the CVE on Y…").
+- Security-model paraphrasing — link to the chapter, do not
+  re-explain (per
+  [Point reporters to the Security Model, don't re-explain it](#point-reporters-to-the-security-model-dont-re-explain-it)).
+- Inflated closings ("We greatly appreciate your continued
+  patience…"). A plain *"Thanks,"* / *"Regards,"* is enough.
+- Any open question that was already asked on the thread and is
+  still awaiting a reply (see the "Do not re-ask" rule in the
+  `sync-security-issue` skill — pinging twice gets us blocklisted).
+
+**Exception: the initial receipt-of-confirmation reply.** The first
+message the security team sends to a new reporter, drafted by the
+`import-security-issue` skill, uses the *"Confirmation of receiving
+the report"* canned response from
+[`canned-responses.md`](canned-responses.md) **verbatim**. That
+template is longer because it introduces the process to a reporter
+who has not yet seen it and carries the credit-preference question;
+leave it alone and do not trim it per this brevity rule.
+
+Everything else — every follow-up, every status update, every relay
+to a PMC member, every message to the ASF security team — falls
+under this rule.
 
 ### Point reporters to the Security Model, don't re-explain it
 
