@@ -364,16 +364,71 @@ For each confirmed `Report` / `ASF-security relay`:
      --label 'needs triage'
    ```
 
-3. Draft the receipt-of-confirmation reply to the reporter using the
-   *"Confirmation of receiving the report"* canned response verbatim
-   from [`canned-responses.md`](../../../canned-responses.md). That
-   canned response already includes the credit-preference question, so
-   no additional wording is needed.
+3. Draft the receipt-of-confirmation reply. **The draft must be
+   created on the inbound Gmail thread** — always pass the candidate's
+   `threadId` to `mcp__claude_ai_Gmail__create_draft`. Gmail does
+   **not** thread by subject string; a fabricated `Re:` prefix on a
+   new thread will not attach to the inbound thread. This is the
+   "Threading: drafts stay on the inbound Gmail thread" rule in
+   [`AGENTS.md`](../../../AGENTS.md).
 
-   Use `mcp__claude_ai_Gmail__create_draft` with `To:` set to the
-   reporter's email, `Cc:` to `security@airflow.apache.org`, and the
-   same subject line as the thread root (with `Re:` prefix so the
-   client threads it). **Never send.**
+   Shape of every create_draft call at this step:
+
+   ```
+   mcp__claude_ai_Gmail__create_draft(
+     threadId="<candidate threadId from Step 1>",   # MANDATORY
+     subject="Re: <root subject of the inbound thread>",
+     toRecipients=[...],
+     ccRecipients=["security@airflow.apache.org"],
+     plaintextBody="<body>",
+   )
+   ```
+
+   Never fabricate a new subject — subject is always
+   `Re: <root subject>`, even when the recipient changes.
+
+   **Two variants depending on the candidate class:**
+
+   - **Class `Report`** (a directly-reachable external reporter) —
+     `toRecipients` is the reporter's email (the `From:` of the
+     inbound root message). Body is the *"Confirmation of receiving
+     the report"* canned response verbatim from
+     [`canned-responses.md`](../../../canned-responses.md). That
+     canned response already includes the credit-preference
+     question, so no additional wording is needed.
+
+   - **Class `ASF-security relay`** (the external reporter is
+     unreachable to us directly; only the ASF forwarder can relay
+     questions back to them through the original external channel —
+     GHSA, HackerOne, direct mail) — `toRecipients` is the
+     **personal `@apache.org` address of the ASF forwarder** (the
+     `From:` of the inbound relay message), not `security@apache.org`
+     and not the unreachable external reporter. Body is **short**
+     per the "Brevity: emails state facts, not context" rule in
+     [`AGENTS.md`](../../../AGENTS.md):
+
+     - one sentence acknowledging receipt, linking to the external
+       reference (GHSA ID, HackerOne report URL);
+     - one sentence asking the forwarder to relay the
+       credit-preference question below through the original
+       channel;
+     - the credit-preference question itself (two or three lines,
+       adapted from the canned response — *"We will credit you in
+       the CVE record as <reporter-credited-as placeholder>. If
+       you would prefer a different credit line — full name,
+       handle, affiliation, or "anonymous" — please let us know
+       before the advisory goes out."*).
+
+     Do **not** restate the vulnerability, the severity, or the
+     Airflow handling process — the ASF security team already
+     knows all of that. See the
+     "ASF-security-relay reports: a special case for drafting"
+     section in [`AGENTS.md`](../../../AGENTS.md) for the full
+     rationale and the 2026-04-16 incident the rule was written
+     against.
+
+   **Never send.** Always create a draft; the triager reviews in
+   Gmail before sending.
 
 4. Post a short status-change comment on the newly-created
    `airflow-s/airflow-s` issue. Use the same short-headline +
