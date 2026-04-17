@@ -331,7 +331,7 @@ issues" board at
 primary overview surface for the security team, and every issue
 has exactly one `Status` option set (`Needs triage`, `Assessed`,
 `CVE allocated`, `PR created`, `PR merged`, `Fix released`,
-`Announced`, `Vendor advisory ready`, `Closed`). The board column
+`Announced`). The board column
 must match the issue's label-derived state; when it drifts, the
 sync proposes a move. Read the current column with:
 
@@ -512,7 +512,7 @@ update, label change, or next-step recommendation in Step 2:
 | Advisory message sent to `announce@apache.org` / `users@airflow.apache.org` for the CVE on the tracker | Propose adding the `announced - emails sent` label and removing `fix released`. **Do not propose closing the issue here** — closing is gated on the archived public advisory URL being captured (see the next row). |
 | Advisory archived on `users@airflow.apache.org` (the announcement message is now visible in `lists.apache.org/list.html?users@airflow.apache.org` — scan the archive with the CVE ID when `announced - emails sent` is set and the *"Public advisory URL"* body field is empty) | Propose populating the *"Public advisory URL"* body field with the archive URL, regenerating the CVE JSON attachment (the generator picks the URL up automatically and tags it `vendor-advisory`), adding the `vendor-advisory ready` label, **and moving the project-board column from `Fix released` to `Announced`** on [`airflow-s/airflow-s` Project 2](https://github.com/orgs/airflow-s/projects/2). The `Announced` column is the board's representation of Step 14 — the advisory has landed and the CVE record is staged with `CNA_private.state = "PUBLIC"` ready for the release manager's single-paste Step 15. **Do not close the issue and do not add the `vendor-advisory` label** — that is Step 15, owned by the release manager after they push the record to PUBLISHED in Vulnogram. |
 | Project-board column drifted from the issue's label-derived state (e.g. a tracker carries `pr merged` but is still in the `PR created` column on [Project 2](https://github.com/orgs/airflow-s/projects/2), or `vendor-advisory ready` + *Public advisory URL* body field populated but the column is still `Fix released`) | Propose moving the project item to the correct column per the mapping table in Step 2b. The board is the primary security-team overview surface; a stale column hides ownership handoffs from the team at a glance. |
-| `vendor-advisory ready` label set and CVE record on `cveprocess.apache.org` now reports state PUBLISHED (checked via `curl -s https://cveprocess.apache.org/cve5/<CVE-ID>.json` / the ASF CVE tool API, or an explicit release-manager comment on the issue stating the Vulnogram push is done) | Propose adding the `vendor-advisory` label, removing `vendor-advisory ready`, and closing the issue. This is the terminal transition. |
+| `vendor-advisory ready` label set and CVE record on `cveprocess.apache.org` now reports state PUBLISHED (checked via `curl -s https://cveprocess.apache.org/cve5/<CVE-ID>.json` / the ASF CVE tool API, or an explicit release-manager comment on the issue stating the Vulnogram push is done) | Propose closing the issue. Do not update any labels. This is the terminal transition. |
 | CVE record has open **review comments / reviewer proposals** (detected via the Gmail-search path in Step 1e — reviewer-comment notifications from Vulnogram land on `security@airflow.apache.org` with the CVE ID in the subject line; the `cveprocess.apache.org/cve5/<CVE-ID>.json` endpoint is behind ASF OAuth and is not readable from this skill's context, so Gmail is the load-bearing signal source). | Surface each open review comment in Step 2a with **clickable links** to the Gmail thread and to the CVE record on `cveprocess.apache.org` (the reader can authenticate in-browser to see live state), verbatim-quoted; then for each one that maps cleanly to a tracking-issue body field (CWE, Affected versions, Reporter credited as, Public advisory URL, Short public summary), **propose the matching body-field update** as a numbered item in Step 2b. The body is the source of truth for the CVE JSON — regeneration in Step 5 will pull the update back into the paste-ready attachment, and the release manager's only remaining action is the Vulnogram paste + comment-resolution click. Comments that do not map to a body field (severity/CVSS, out-of-scope challenges, free-form rewrites) are surfaced verbatim and flagged for human decision. See Step 1e for the full Gmail-search recipe and the reviewer-comment-to-field mapping table. |
 | The referenced `apache/airflow` PR has been opened but is still in `open` state | Propose `pr created` label; update the *"PR with the fix"* body field with the PR URL. |
 | The referenced `apache/airflow` PR moved to `merged` | Propose swapping `pr created` → `pr merged`; update milestone to the shipping release if now known. |
@@ -716,7 +716,7 @@ process the issue is currently at:
 | `fix released` set, advisory not yet sent — release manager owns the advisory | 13 |
 | Advisory sent, `announced - emails sent` set, *Public advisory URL* body field still empty (issue stays open) | 13 → 14 |
 | *Public advisory URL* populated, `vendor-advisory ready` label set (issue stays open — awaiting RM's Vulnogram push) | 14 |
-| `vendor-advisory ready` set and CVE state is PUBLISHED on `cveprocess.apache.org` → swap `vendor-advisory ready` → `vendor-advisory`, close the issue | 15 |
+| `vendor-advisory ready` set and CVE state is PUBLISHED on `cveprocess.apache.org` → close the issue (do not update labels) | 15 |
 | Closed, credits missing | 16 |
 
 The `pr created`, `pr merged`, and `fix released` labels describe the
@@ -881,19 +881,18 @@ will change and *why*. Group them by category:
      no scan needed. Regenerate the CVE JSON attachment so the URL
      flows into `references[]` as `vendor-advisory`.
   3. The sync skill's responsibility ends when the label is
-     `vendor-advisory ready`. **Do not propose closing the issue,
-     do not add the `vendor-advisory` label** — those are Step 15
-     actions and belong to the release manager, who finishes the
-     lifecycle by pasting the attached CVE JSON into Vulnogram,
-     moving the record to PUBLISHED, swapping `vendor-advisory
-     ready` → `vendor-advisory`, and closing the issue.
+     `vendor-advisory ready`. **Do not propose closing the issue**
+     — closing is a Step 15 action and belongs to the release
+     manager, who finishes the lifecycle by copying the attached
+     CVE JSON into Vulnogram and closing the issue (no label
+     changes).
   4. On subsequent sync runs, check whether the CVE record on
      `cveprocess.apache.org/cve5/<CVE-ID>` has moved to PUBLISHED.
-     When it has, propose the Step 15 terminal transition (swap
-     labels, close issue). This is the only place sync proposes
-     closing an advisory-flow issue; all earlier closes are only
-     for closing dispositions (`invalid` / `not CVE worthy` /
-     `duplicate` / `wontfix`) at Steps 5–6.
+     When it has, propose closing the issue (do not update labels).
+     This is the only place sync proposes closing an advisory-flow
+     issue; all earlier closes are only for closing dispositions
+     (`invalid` / `not CVE worthy` / `duplicate` / `wontfix`) at
+     Steps 5–6.
 
   See the "CVE references must never point at non-public mailing-list
   threads" section of [`AGENTS.md`](../../../AGENTS.md) for the full
@@ -917,8 +916,7 @@ will change and *why*. Group them by category:
 - **Status transitions** — e.g. *"close the issue as invalid"*, *"add `Not yet
   announced` now that apache/airflow#NNNN has merged"*, *"add `vendor-advisory
   ready` now that the users@ advisory URL has been captured — the release
-  manager will swap it for `vendor-advisory` and close the issue once
-  Vulnogram is updated"*.
+  manager will copy the CVE JSON to Vulnogram and close the issue"*.
 
 - **Project-board column** on
   [Security issues — Project 2](https://github.com/orgs/airflow-s/projects/2).
@@ -939,13 +937,14 @@ will change and *why*. Group them by category:
   | `pr merged` label set (release has not shipped) | `PR merged` |
   | `fix released` label set, advisory not yet sent | `Fix released` |
   | `announced - emails sent` label set (Step 13) **or** *Public advisory URL* body field populated + `vendor-advisory ready` label set (Step 14) | **`Announced`** — one column for both Step 13 and Step 14; the RM's next move is the single-paste Step 15 |
-  | Tracker closed with `vendor-advisory` label (terminal) | `Closed` |
 
   **One column covers Step 13 *and* Step 14.** A tracker lands on
   `Announced` as soon as the advisory is sent (`announced - emails
   sent`) and stays there through the URL-capture step
   (`vendor-advisory ready` label + *Public advisory URL* body field
-  populated) until the RM pushes to PUBLISHED (Step 15) and closes.
+  populated) until the RM copies the CVE JSON to Vulnogram (Step 15)
+  and closes the issue. There is no `Closed` column — closed issues
+  simply leave the board.
   The `vendor-advisory ready` label remains meaningful on the
   tracker — it is the load-bearing signal for the CVE JSON's
   `CNA_private.state` (REVIEW → PUBLIC) — but does not map to a
@@ -1179,7 +1178,7 @@ updates land, based on the process step. Examples:
 - *"Step 12: `fix released` — the release carrying the fix is now on PyPI / the Helm registry. Ownership of the issue has transferred to the release manager; the label swap was the hand-off."*
 - *"Step 13: the release manager should now fill in the CVE tool fields taken from the issue — CWE, product, versions, severity, patch link, credits — move the CVE to REVIEW → READY, and send the advisory to `announce@apache.org` / `users@airflow.apache.org`."*
 - *"Step 14: scan the users@ archive for the CVE ID, populate the *Public advisory URL* body field, regenerate the CVE JSON attachment, and move the issue to `vendor-advisory ready`. Sync does all of this automatically on the next run once the advisory is archived."*
-- *"Step 15: release manager — paste the regenerated CVE JSON into Vulnogram's #source tab, move the record to PUBLISHED, swap `vendor-advisory ready` → `vendor-advisory`, close the issue."*
+- *"Step 15: release manager — copy the regenerated CVE JSON into Vulnogram, close the issue."*
 
 **Never guess the release manager.** When a next-step recommendation or a
 status-comment references "the release manager for `<version>`", look up
@@ -1305,7 +1304,6 @@ before moving on to the next item. Use:
   | `PR merged` | `b21b5352` |
   | `Fix released` | `1f2dbb6c` |
   | `Announced` | `12e22331` |
-  | `Closed` | `d927769f` |
 
   If the IDs above stop working (a column was renamed, added, or
   removed), re-fetch them with the introspection query in Step 1a.
