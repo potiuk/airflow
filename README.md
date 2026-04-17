@@ -473,8 +473,8 @@ CVE JSON attachment, and moves the label to `vendor-advisory ready`. See
 For every `vendor-advisory ready` issue: open Vulnogram at
 `https://cveprocess.apache.org/cve5/<CVE-ID>#source`, paste the latest
 attached CVE JSON, save, and move the record from REVIEW to PUBLISHED.
-Then add the `vendor-advisory` label, remove `vendor-advisory ready`, and
-close the issue. This is the terminal step of the lifecycle. See
+Then close the issue (do not update any labels). This is the terminal
+step of the lifecycle. See
 [Step 15](#step-15--publish-the-cve-record-and-close-the-issue).
 
 An issue that sits on `vendor-advisory ready` for more than a day or two
@@ -780,8 +780,7 @@ same person who sent the advisory in Step 13):
 * saves and moves the record from `REVIEW` to `PUBLISHED` in the ASF CVE
   tool — **this is the final action** that propagates the record to
   [`cve.org`](https://cve.org);
-* adds the `vendor-advisory` label to the tracking issue, removes the
-  `vendor-advisory ready` label, and **closes the issue**. That closes
+* **closes the issue** — do not update any labels. That closes
   the lifecycle.
 
 This two-step hand-off (sync captures the URL → RM publishes the record)
@@ -824,13 +823,12 @@ flowchart TD
     F -->|step 12: release ships| G[fix released]
     G -->|step 13: advisory sent| H[announced - emails sent]
     H -->|step 14: archive URL captured| J[vendor-advisory ready]
-    J -->|step 15: RM pushes CVE PUBLISHED| I[vendor-advisory]
-    I -->|step 15: close| Z([issue closed])
+    J -->|step 15: RM pushes CVE PUBLISHED + close| Z([issue closed])
 
     classDef closed fill:#f8d7da,stroke:#842029,color:#000;
     classDef done fill:#d1e7dd,stroke:#0f5132,color:#000;
     class X1,Z closed;
-    class H,J,I done;
+    class H,J done;
 ```
 
 ### Label reference
@@ -846,9 +844,8 @@ moves through these labels left-to-right:
 | `pr created` | A public fix PR has been opened in `apache/airflow` but has not yet merged. | 10 | 11 (replaced by `pr merged`) |
 | `pr merged` | The fix PR has merged into `apache/airflow`; no release with the fix has shipped yet. | 11 | 12 (replaced by `fix released` when the release ships) |
 | `fix released` | A release containing the fix has shipped to users; advisory has not been sent yet. | 12 | 13 (replaced by `announced - emails sent`) |
-| `announced - emails sent` | The public advisory has been sent to `announce@apache.org` / `users@airflow.apache.org`. The issue **stays open** after this label is applied; closing is gated on `vendor-advisory` being set in Step 15. | 13 | never (stays on the issue after closing for audit history) |
-| `vendor-advisory ready` | The public advisory URL has been captured in the tracking issue's *Public advisory URL* body field and the attached CVE JSON has been regenerated so its `references[]` now carries the `vendor-advisory` URL. The tracking issue is waiting for the release manager to paste the CVE JSON into Vulnogram's `#source` tab, move the record to PUBLISHED, and close the issue (Step 15). | 14 | 15 (replaced by `vendor-advisory`) |
-| `vendor-advisory` | The release manager has pushed the CVE record to PUBLISHED in the ASF CVE tool and closed the tracking issue. This is the terminal state of the lifecycle. | 15 | never |
+| `announced - emails sent` | The public advisory has been sent to `announce@apache.org` / `users@airflow.apache.org`. The issue **stays open** after this label is applied; closing is gated on the RM completing Step 15. | 13 | never (stays on the issue after closing for audit history) |
+| `vendor-advisory ready` | The public advisory URL has been captured in the tracking issue's *Public advisory URL* body field and the attached CVE JSON has been regenerated so its `references[]` now carries the `vendor-advisory` URL. The tracking issue is waiting for the release manager to copy the CVE JSON into Vulnogram, move the record to PUBLISHED, and close the issue (Step 15). No label changes at close — the issue closes with `vendor-advisory ready` still set. | 14 | never (stays on the issue after closing) |
 | `wontfix` / `invalid` / `not CVE worthy` / `duplicate` | Closing dispositions for reports that are not valid or not CVE-worthy. | 5 / 6 | — |
 
 The [`sync-security-issue`](.claude/skills/sync-security-issue/SKILL.md)
