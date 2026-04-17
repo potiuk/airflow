@@ -18,6 +18,8 @@
   - [Writing and editing documentation](#writing-and-editing-documentation)
     - [Tone: polite but firm — no room to wiggle](#tone-polite-but-firm--no-room-to-wiggle)
     - [Brevity: emails state facts, not context](#brevity-emails-state-facts-not-context)
+    - [Threading: drafts stay on the inbound Gmail thread](#threading-drafts-stay-on-the-inbound-gmail-thread)
+    - [ASF-security-relay reports: a special case for drafting](#asf-security-relay-reports-a-special-case-for-drafting)
     - [Point reporters to the Security Model, don't re-explain it](#point-reporters-to-the-security-model-dont-re-explain-it)
     - [Linking CVEs](#linking-cves)
     - [Linking `airflow-s/airflow-s` issues and PRs](#linking-airflow-sairflow-s-issues-and-prs)
@@ -499,6 +501,93 @@ leave it alone and do not trim it per this brevity rule.
 Everything else — every follow-up, every status update, every relay
 to a PMC member, every message to the ASF security team — falls
 under this rule.
+
+### Threading: drafts stay on the inbound Gmail thread
+
+Every drafted email that relates to a tracking issue **must** be
+created on the original inbound Gmail thread — the thread whose
+`threadId` was recorded when the tracker was imported. Gmail does
+**not** thread by subject string; a `Re: <subject>` fabricated
+locally will not attach to any existing thread. Threading is bound
+by `threadId` or by the MIME `In-Reply-To` / `References` headers,
+and the Gmail API abstracts both via the `threadId` parameter to
+`mcp__claude_ai_Gmail__create_draft`. **Always pass it.**
+
+- **Same thread every time.** Whatever the recipient change — a
+  reporter reply, an ASF-security relay request, a PMC credit
+  question, a follow-up asking for a PoC — the draft stays on the
+  inbound tracker's `threadId`. A triager reading the Gmail
+  conversation view should see every exchange on a single tracker
+  in one place; if threading breaks, that history scatters across
+  two conversations.
+- **Subject stays as `Re: <root subject>`**, never a fabricated
+  new one. Gmail's own threading survives without matching
+  subjects when `threadId` is set, but other clients (Thunderbird,
+  Outlook, Apple Mail) and the recipient's own client commonly
+  fall back to subject-based threading. A drifted subject looks
+  like a broken conversation on half the world's mail readers.
+- **`To:` may differ from the original correspondents.** It is
+  fine to address a draft to a specific person (an ASF
+  security-team member who relayed the report, a named PMC member,
+  an individual reporter) even if the original inbound root was
+  addressed to a list. Threading does not require recipient
+  overlap; it requires `threadId`.
+- **Not knowing the `threadId` is a blocker, not a licence to
+  fabricate a new thread.** If the skill cannot resolve the
+  inbound `threadId` from the tracker body (the *"Security
+  mailing list thread"* field) or from the skill's own Step 1
+  context, stop and surface the gap to the user before drafting.
+  A standalone draft with no thread context is worse than no
+  draft.
+
+**This rule was added after 2026-04-16**, when a credit-preference
+relay draft for an ASF-security-relayed report (GHSA-gj3q-4g94-7h4h)
+was created as a new thread with a fabricated subject instead of
+being threaded onto the inbound relay. The ASF security-team
+forwarder (politely) flagged it back to us, and every agent
+drafting an email for an Airflow security tracker has since been
+bound by this rule.
+
+### ASF-security-relay reports: a special case for drafting
+
+Some reports reach `security@airflow.apache.org` via the ASF
+security team — `security@apache.org` itself, or a personal
+`@apache.org` address of an ASF security-team member — forwarding
+a report that came in through GHSA, HackerOne, or another channel
+the Airflow security team does not have direct access to. In
+those cases the "reporter" on the Gmail thread is the ASF
+forwarder, and the **actual external reporter is unreachable to
+us directly**: we can only reach them by asking the ASF forwarder
+to relay questions through the same external channel.
+
+When drafting any reply on an ASF-security-relay tracker —
+receipt of confirmation, credit-preference request, status
+update — the rule is the same:
+
+- **`threadId`** — the inbound relay thread's `threadId`, per the
+  threading rule above. Never fabricate a new thread for a
+  credit-preference relay; it goes on the same thread as the
+  original inbound report.
+- **Subject** — `Re: <root subject>`, i.e. the subject of the
+  inbound relay message. No fabricated new subject, no
+  relay-specific title like *"Airflow: credit-preference relay
+  for <GHSA-ID>"*.
+- **`To:`** — the ASF forwarder (the `From:` address of the
+  inbound relay message). Typically this is a personal
+  `@apache.org` address; use that, not the `security@apache.org`
+  list alias, so the conversation stays with the individual who
+  already knows the report.
+- **`Cc:`** — `security@airflow.apache.org` as always.
+- **Body** — short, per the
+  [Brevity](#brevity-emails-state-facts-not-context) rule. The
+  ASF security team knows the handling process; do **not**
+  restate the vulnerability, the severity analysis, or the
+  Airflow CVE process. Link to the external reference (GHSA ID,
+  HackerOne report URL) rather than repeating technical detail.
+  When the purpose of the draft is a credit-preference relay,
+  the ask is one sentence: *"Please forward the credit-preference
+  question below to the external reporter through the original
+  channel."*
 
 ### Point reporters to the Security Model, don't re-explain it
 

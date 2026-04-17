@@ -329,8 +329,13 @@ user to confirm. Numbered items:
    once the fix ships, the ASF CVE tool URL on its own line.
    Re-ask the credit-preference question **only if it has not yet
    been asked** on the thread — never ping twice. **Never send.**
-   Always create a Gmail draft on the original thread, per the
-   "Never send email" rule in [`AGENTS.md`](../../../AGENTS.md).
+   Always create a Gmail draft **with `threadId` set to the
+   inbound report thread** (resolved from the tracker's *"Security
+   mailing list thread"* body field) and subject
+   `Re: <root subject>`, per the "Threading: drafts stay on the
+   inbound Gmail thread" rule in
+   [`AGENTS.md`](../../../AGENTS.md). Never fabricate a new
+   thread or a new subject.
 
 ### Status-change comment template
 

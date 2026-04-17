@@ -1169,8 +1169,14 @@ before moving on to the next item. Use:
   `Amogh Desai`, plus any name that appears in a `Reporter credited
   as` field without a confirmed external-credit decision.
 - **Close / reopen:** `gh issue close <N> --repo airflow-s/airflow-s --reason completed` (or `not planned`).
-- **Gmail draft:** `mcp__claude_ai_Gmail__gmail_create_draft` with the thread ID
-  from Step 1c so the draft lands in the correct thread. **Never send.** Tell
+- **Gmail draft:** `mcp__claude_ai_Gmail__create_draft` — **always**
+  pass the `threadId` from Step 1c so the draft threads onto the
+  inbound Gmail thread. Gmail does not thread by subject string;
+  omitting `threadId` creates a fabricated new thread that neither
+  the reporter's client nor the ASF security team will recognise
+  as a reply. Subject is `Re: <root subject>`, never a fabricated
+  one. See the "Threading: drafts stay on the inbound Gmail thread"
+  rule in [`AGENTS.md`](../../../AGENTS.md). **Never send.** Tell
   the user the draft is waiting for their review in Gmail.
 
 If any command fails, stop the apply loop, report the failure, and ask the user
