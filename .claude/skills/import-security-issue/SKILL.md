@@ -393,12 +393,13 @@ For each confirmed `Report` / `ASF-security relay`:
    EOF
    ```
 
-2. Create the issue with the `needs triage` label:
+2. Create the issue with the `needs triage` and `security issue` labels:
    ```bash
    gh issue create --repo airflow-s/airflow-s \
      --title '<title>' \
      --body-file /tmp/issue-body-<threadId>.md \
-     --label 'needs triage'
+     --label 'needs triage' \
+     --label 'security issue'
    ```
 
 3. Draft the receipt-of-confirmation reply. **The draft must be
