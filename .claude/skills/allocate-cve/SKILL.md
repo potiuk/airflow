@@ -89,6 +89,53 @@ anything else.
 
 ---
 
+## Prerequisites
+
+- **`gh` CLI authenticated** with collaborator access to
+  `airflow-s/airflow-s` — the skill reads the tracker, adds
+  labels, and posts the status-change comment via `gh`.
+- **`uv` installed** — the embedded `generate-cve-json` regeneration
+  step uses `uv run`.
+- **Gmail MCP** connected — optional at this skill's scope, but
+  required if the tracker carries a reporter thread that needs a
+  status-update draft (Step 5).
+- **A PMC member on call** — the Vulnogram allocation form is
+  PMC-gated. If the user is not on the Airflow PMC, the skill
+  still runs: it produces a relay message for a PMC member to
+  click through instead of stopping.
+
+See
+[Prerequisites for running the agent skills](../../../README.md#prerequisites-for-running-the-agent-skills)
+in `README.md` for the overall setup (including the ponymail-mcp
+option on the horizon for non-personal-Gmail access).
+
+---
+
+## Step 0 — Pre-flight check
+
+Before touching the tracker, verify:
+
+1. **`gh` is authenticated** —
+   `gh api repos/airflow-s/airflow-s --jq .name` must return
+   `airflow-s`. A 401/403/404 means the user needs `gh auth login`
+   or collaborator access; stop.
+2. **`uv` is on the PATH** — `uv --version`. Without it the Step 4
+   CVE-JSON regeneration would fail silently mid-flow; better to
+   tell the user up front to install `uv` (one command:
+   `curl -LsSf https://astral.sh/uv/install.sh | sh`).
+3. **Ask the PMC question up front** (Step 3 asks it anyway, but
+   prompting here gives the user a chance to abort if they did
+   not realise they needed a PMC member to click through — it is
+   friendlier than generating the relay recipe and then realising
+   no PMC member is available to act on it).
+
+If any check fails, stop with a clear message. Do not start
+filling in the tracker until all three are green — a partial
+allocation (label added, JSON regeneration skipped) is worse than
+no allocation at all.
+
+---
+
 ## Step 1 — Fetch the tracker state and run blocker checks
 
 ```bash

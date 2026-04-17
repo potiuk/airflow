@@ -254,6 +254,49 @@ or an ambiguous credit line).
 
 ---
 
+## Prerequisites
+
+The skill needs:
+
+- **Gmail MCP** connected to an account subscribed to
+  `security@airflow.apache.org`. Required for reading the reporter
+  thread and drafting status updates.
+- **`gh` CLI authenticated** with collaborator access to
+  `airflow-s/airflow-s` (read + issue-write) and `apache/airflow`
+  (read is enough — the sync only reads PR state on that repo).
+- Outbound HTTPS to `pypi.org`, `artifacthub.io`, and
+  `lists.apache.org` — the sync curls these to detect released
+  versions and to find advisory archive URLs.
+
+See
+[Prerequisites for running the agent skills](../../../README.md#prerequisites-for-running-the-agent-skills)
+in `README.md` for the overall setup.
+
+---
+
+## Step 0 — Pre-flight check
+
+Before reading any tracker state, verify:
+
+1. **Gmail MCP is reachable** — trivial
+   `mcp__claude_ai_Gmail__search_threads` with `pageSize: 1`; an
+   auth error here means Gmail MCP is not configured, stop and
+   say so.
+2. **`gh` is authenticated** with access to `airflow-s/airflow-s` —
+   `gh api repos/airflow-s/airflow-s --jq .name` must return
+   `airflow-s`. A 401/403/404 means the user needs
+   `gh auth login` or collaborator access.
+3. **Selector resolves to a concrete issue (or set of issues)** —
+   if the user said `sync NNN` but the number does not exist in
+   `airflow-s/airflow-s`, stop before Step 1 and ask which issue
+   they meant.
+
+If any check fails, stop and surface what is missing. Do **not**
+proceed to Step 1 on a partial setup — half the observations would
+be wrong and the proposals downstream would be junk.
+
+---
+
 ## Step 1 — Gather the current state
 
 Run these reads in parallel where possible. Do **not** make any changes yet.
