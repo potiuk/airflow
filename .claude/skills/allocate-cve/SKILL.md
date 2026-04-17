@@ -261,11 +261,20 @@ of two handoff paths the recipe describes:
   submit the allocation. Reshape the recipe into a **relay message**
   the user posts as a comment on the tracker (``@``-mentioning one
   or more current PMC members) or sends on the
-  `security@airflow.apache.org` mail thread, containing:
+  `security@airflow.apache.org` mail thread. **Keep it terse** — the
+  PMC member already knows the allocation process, so the relay is a
+  request, not a briefing, per the "Brevity: emails state facts, not
+  context" section of [`AGENTS.md`](../../../AGENTS.md). The message
+  contains only:
   - the clickable allocation URL,
   - the stripped title (ready for the Vulnogram form),
   - the derived scope / product / package-name block from Step 2,
-  - a short line explaining what the PMC member should paste back.
+  - one line: *"Paste the allocated `CVE-YYYY-NNNNN` back here when
+    done."*
+
+  Do not restate the vulnerability, the assessment history, or the
+  handling process in the relay — the PMC member can read the
+  tracker for any of that.
 
 The relay message is just markdown — it does not go to Vulnogram
 directly. The PMC member reads the message, clicks through, fills
@@ -313,12 +322,15 @@ user to confirm. Numbered items:
    omit the flag and let a later sync run backfill it.
 5. **Draft a reporter status update** — only when the real
    reporter's Gmail thread is known and the ball is in our court
-   (see `sync-security-issue` Step 1c). The draft acknowledges the
-   CVE allocation, re-asks the credit-preference question if it
-   has not been answered yet, and explains that the advisory will
-   be sent once the fix ships. **Never send.** Always create a
-   Gmail draft on the original thread, per the "Never send email"
-   rule in [`AGENTS.md`](../../../AGENTS.md).
+   (see `sync-security-issue` Step 1c). Keep the draft short, per
+   the "Brevity: emails state facts, not context" section of
+   [`AGENTS.md`](../../../AGENTS.md): one sentence that the CVE has
+   been allocated, one sentence that the advisory will be sent
+   once the fix ships, the ASF CVE tool URL on its own line.
+   Re-ask the credit-preference question **only if it has not yet
+   been asked** on the thread — never ping twice. **Never send.**
+   Always create a Gmail draft on the original thread, per the
+   "Never send email" rule in [`AGENTS.md`](../../../AGENTS.md).
 
 ### Status-change comment template
 

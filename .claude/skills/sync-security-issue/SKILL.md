@@ -853,9 +853,18 @@ will change and *why*. Group them by category:
   - the release has shipped and the public advisory has been sent;
   - any credits or fields visible in the eventual public advisory have changed.
 
-  Each status update should: (a) state plainly what has changed, (b) link to
-  the relevant artifact (PR URL, CVE ID, advisory link), and (c) state what
-  comes next. Always reply on the **original** Gmail thread (the one identified
+  Each status update follows the three-paragraph shape from the
+  "Brevity: emails state facts, not context" section of
+  [`AGENTS.md`](../../../AGENTS.md): (a) one sentence on what
+  changed, (b) one sentence on what comes next and roughly when,
+  (c) the relevant artifact URLs on their own line(s). Nothing else.
+  No re-introduction of the vulnerability, no recap of earlier
+  messages on the same thread, no process explanation, no
+  speculation about severity or schedule beyond the single
+  forward-looking sentence. The reporter read the previous update
+  on this same thread — trust that and do not restate it.
+
+  Always reply on the **original** Gmail thread (the one identified
   in Step 1c), not on the GitHub-notifications mirror thread.
 
   **Use full, clickable URLs for every reference in the email body.**
@@ -1023,6 +1032,12 @@ will change and *why*. Group them by category:
   from [`canned-responses.md`](../../../canned-responses.md) verbatim where
   one applies. Show the exact subject, recipients, In-Reply-To, and body in
   the proposal.
+
+  **Brevity** applies here too — if no canned response fits and you are
+  drafting fresh wording, keep it to the facts the reporter needs (the
+  question being answered, the decision being communicated) plus one
+  artifact link. See the "Brevity: emails state facts, not context"
+  section of [`AGENTS.md`](../../../AGENTS.md).
 
   **Never send.** Always create a draft. The draft must always be created on
   the original mail thread (`threadId` from Step 1c) so that
@@ -1328,6 +1343,13 @@ finalising the recap.
   instead, following the editorial guidance in [`AGENTS.md`](../../../AGENTS.md).
 - **Tone of any drafted email must be polite but firm** — see the "Tone: polite
   but firm — no room to wiggle" section of [`AGENTS.md`](../../../AGENTS.md).
+- **Brevity.** Every drafted email follows the three-paragraph shape in the
+  "Brevity: emails state facts, not context" section of
+  [`AGENTS.md`](../../../AGENTS.md): one sentence on what changed, one on
+  what comes next, artifact URLs on their own line(s). No recap of earlier
+  messages on the same thread, no re-introduction of the vulnerability, no
+  process explanation. Messages to the ASF security team or to PMC members
+  are even terser — they already know the process.
 - **Milestone naming** must follow the process document exactly:
   - `Airflow-X.Y.Z` or bare `3.2.2` for core releases.
   - `Providers YYYY-MM-DD` for provider-wave cuts. The date is the
