@@ -595,7 +595,7 @@ For a post-triage, pre-merge fix, the target label set is:
 - **not** `pr merged` or `fix released` (those belong to post-merge
   / post-release states, applied by the `sync-security-issue` skill
   on later runs);
-- **not** `announced - emails sent` or `vendor-advisory ready` (those
+- **not** `announced - emails sent` or `announced` (those
   belong to post-advisory states, also applied by the sync skill).
 
 If a label the skill wants to apply does **not** exist on the
