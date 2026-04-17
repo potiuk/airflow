@@ -472,7 +472,7 @@ CVE JSON attachment, and moves the label to `vendor-advisory ready`. See
 
 For every `vendor-advisory ready` issue: open Vulnogram at
 `https://cveprocess.apache.org/cve5/<CVE-ID>#source`, paste the latest
-attached CVE JSON, save, and move the record from REVIEW to PUBLISHED.
+attached CVE JSON, save, and move the record from REVIEW to PUBLIC.
 Then close the issue (do not update any labels). This is the terminal
 step of the lifecycle. See
 [Step 15](#step-15--publish-the-cve-record-and-close-the-issue).
@@ -731,7 +731,7 @@ announcement emails from the ASF CVE tool. The release manager then adds
 the `announced - emails sent` label and removes the `fix released` label.
 **The issue stays open** at this point — it is closed only at Step 15
 below, after the public archive URL has been captured (Step 14) and the
-CVE record has been pushed to PUBLISHED in Vulnogram (Step 15). This
+CVE record has been moved to PUBLIC in Vulnogram (Step 15). This
 gives the `sync-security-issue` skill one more handoff where it can
 notice a missing archive URL and prompt for it before the issue is
 forgotten.
@@ -757,7 +757,7 @@ release manager, if they want to drive it by hand):
   `vendor-advisory` link ready to paste into the ASF CVE tool;
 * **adds the `vendor-advisory ready` label** to the tracking issue. The
   issue **stays open** at this point — closing is the release manager's
-  job in Step 15 below, after they have pushed the CVE record to PUBLISHED
+  job in Step 15 below, after they have moved the CVE record to PUBLIC
   in Vulnogram.
 
 Until the *Public advisory URL* field is populated, the
@@ -777,7 +777,7 @@ same person who sent the advisory in Step 13):
 * copies the latest CVE JSON attachment from the tracking issue (the one
   regenerated in Step 14, now carrying the `vendor-advisory` URL) and
   pastes it into the `#source` form;
-* saves and moves the record from `REVIEW` to `PUBLISHED` in the ASF CVE
+* saves and moves the record from `REVIEW` to `PUBLIC` in the ASF CVE
   tool — **this is the final action** that propagates the record to
   [`cve.org`](https://cve.org);
 * **closes the issue** — do not update any labels. That closes
@@ -823,7 +823,7 @@ flowchart TD
     F -->|step 12: release ships| G[fix released]
     G -->|step 13: advisory sent| H[announced - emails sent]
     H -->|step 14: archive URL captured| J[vendor-advisory ready]
-    J -->|step 15: RM pushes CVE PUBLISHED + close| Z([issue closed])
+    J -->|step 15: RM moves CVE to PUBLIC + close| Z([issue closed])
 
     classDef closed fill:#f8d7da,stroke:#842029,color:#000;
     classDef done fill:#d1e7dd,stroke:#0f5132,color:#000;
@@ -845,7 +845,7 @@ moves through these labels left-to-right:
 | `pr merged` | The fix PR has merged into `apache/airflow`; no release with the fix has shipped yet. | 11 | 12 (replaced by `fix released` when the release ships) |
 | `fix released` | A release containing the fix has shipped to users; advisory has not been sent yet. | 12 | 13 (replaced by `announced - emails sent`) |
 | `announced - emails sent` | The public advisory has been sent to `announce@apache.org` / `users@airflow.apache.org`. The issue **stays open** after this label is applied; closing is gated on the RM completing Step 15. | 13 | never (stays on the issue after closing for audit history) |
-| `vendor-advisory ready` | The public advisory URL has been captured in the tracking issue's *Public advisory URL* body field and the attached CVE JSON has been regenerated so its `references[]` now carries the `vendor-advisory` URL. The tracking issue is waiting for the release manager to copy the CVE JSON into Vulnogram, move the record to PUBLISHED, and close the issue (Step 15). No label changes at close — the issue closes with `vendor-advisory ready` still set. | 14 | never (stays on the issue after closing) |
+| `vendor-advisory ready` | The public advisory URL has been captured in the tracking issue's *Public advisory URL* body field and the attached CVE JSON has been regenerated so its `references[]` now carries the `vendor-advisory` URL. The tracking issue is waiting for the release manager to copy the CVE JSON into Vulnogram, move the record to PUBLIC, and close the issue (Step 15). No label changes at close — the issue closes with `vendor-advisory ready` still set. | 14 | never (stays on the issue after closing) |
 | `wontfix` / `invalid` / `not CVE worthy` / `duplicate` | Closing dispositions for reports that are not valid or not CVE-worthy. | 5 / 6 | — |
 
 The [`sync-security-issue`](.claude/skills/sync-security-issue/SKILL.md)
