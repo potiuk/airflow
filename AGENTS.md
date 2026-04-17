@@ -370,7 +370,7 @@ Concretely, the issue template has two separate fields for this:
   triagers can navigate back to the report. It is expected to 404 for
   anyone outside the security team. Keep whatever the reporter /
   team-member put there — do **not** scrub it during sync.
-- The *"Public advisory URL"* field (new as of 2026-04-16) holds the
+- The *"Public advisory URL"* field holds the
   archive URL on `lists.apache.org/list.html?users@airflow.apache.org`
   once the public advisory has been sent (Step 13 of the process).
   This is the URL that ends up as the `vendor-advisory` reference on
@@ -539,14 +539,6 @@ and the Gmail API abstracts both via the `threadId` parameter to
   context, stop and surface the gap to the user before drafting.
   A standalone draft with no thread context is worse than no
   draft.
-
-**This rule was added after 2026-04-16**, when a credit-preference
-relay draft for an ASF-security-relayed report (GHSA-gj3q-4g94-7h4h)
-was created as a new thread with a fabricated subject instead of
-being threaded onto the inbound relay. The ASF security-team
-forwarder (politely) flagged it back to us, and every agent
-drafting an email for an Airflow security tracker has since been
-bound by this rule.
 
 ### ASF-security-relay reports: a special case for drafting
 

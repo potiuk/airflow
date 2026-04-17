@@ -325,6 +325,45 @@ Record:
 - the discussion so far (comments), paying attention to the most recent activity
   and any stalled-for-30-days state.
 
+Also read the tracker's **project-board status** on the "Security
+issues" board at
+<https://github.com/orgs/airflow-s/projects/2> — the board is the
+primary overview surface for the security team, and every issue
+has exactly one `Status` option set (`Needs triage`, `Assessed`,
+`CVE allocated`, `PR created`, `PR merged`, `Fix released`,
+`Announced`, `Vendor advisory ready`, `Closed`). The board column
+must match the issue's label-derived state; when it drifts, the
+sync proposes a move. Read the current column with:
+
+```bash
+gh api graphql -f query='
+query($n: Int!) {
+  repository(owner: "airflow-s", name: "airflow-s") {
+    issue(number: $n) {
+      projectItems(first: 5) {
+        nodes {
+          id
+          project { number }
+          fieldValues(first: 20) {
+            nodes {
+              ... on ProjectV2ItemFieldSingleSelectValue {
+                field { ... on ProjectV2SingleSelectField { name } }
+                name
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}' -F n=<N> --jq '.data.repository.issue.projectItems.nodes[] | select(.project.number == 2) | {itemId: .id, status: (.fieldValues.nodes[] | select(.name != null)).name}'
+```
+
+Record the item's `itemId` (needed for the Step 4 apply mutation)
+and the current `status` column. See the "Project-board column
+mapping" table in Step 2b for which column the issue *should* be
+on given its labels and body state.
+
 ### 1b. Find referenced and referencing PRs
 
 First, get the PRs that GitHub itself has linked to the issue via "fixes" /
@@ -470,8 +509,9 @@ update, label change, or next-step recommendation in Step 2:
 | Reporter reply with a confirmed credit line (*"please credit me as …"*, *"use handle X"*, *"anonymous is fine"*) | Replace the `Reporter credited as` placeholder with the confirmed form; mark the credit question as resolved so the next status-update draft does not re-ask it. |
 | Reporter explicit opt-out of credit (*"do not credit me"*, *"anonymous"*) | Set the field to `anonymous` and flag the advisory to use that form. |
 | Release manager's `[RESULT][VOTE] Release Airflow <version>` on `dev@airflow.apache.org` for a version that carries the fix | Record the release manager in the "Known release managers" subsection of [`AGENTS.md`](../../../AGENTS.md) if not already there; flag Step 13 (advisory) as assigned to that person. |
-| Advisory message sent to `announce@apache.org` / `users@airflow.apache.org` for the CVE on the tracker | Propose adding the `announced - emails sent` label and removing `fix released`. **Do not propose closing the issue here** — per the 2026-04-16 process update, closing is gated on the archived public advisory URL being captured (see the next row). |
-| Advisory archived on `users@airflow.apache.org` (the announcement message is now visible in `lists.apache.org/list.html?users@airflow.apache.org` — scan the archive with the CVE ID when `announced - emails sent` is set and the *"Public advisory URL"* body field is empty) | Propose populating the *"Public advisory URL"* body field with the archive URL, regenerating the CVE JSON attachment (the generator picks the URL up automatically and tags it `vendor-advisory`), and adding the `vendor-advisory ready` label. **Do not close the issue and do not add the `vendor-advisory` label** — that is Step 15, owned by the release manager after they push the record to PUBLISHED in Vulnogram. |
+| Advisory message sent to `announce@apache.org` / `users@airflow.apache.org` for the CVE on the tracker | Propose adding the `announced - emails sent` label and removing `fix released`. **Do not propose closing the issue here** — closing is gated on the archived public advisory URL being captured (see the next row). |
+| Advisory archived on `users@airflow.apache.org` (the announcement message is now visible in `lists.apache.org/list.html?users@airflow.apache.org` — scan the archive with the CVE ID when `announced - emails sent` is set and the *"Public advisory URL"* body field is empty) | Propose populating the *"Public advisory URL"* body field with the archive URL, regenerating the CVE JSON attachment (the generator picks the URL up automatically and tags it `vendor-advisory`), adding the `vendor-advisory ready` label, **and moving the project-board column from `Fix released` to `Announced`** on [`airflow-s/airflow-s` Project 2](https://github.com/orgs/airflow-s/projects/2). The `Announced` column is the board's representation of Step 14 — the advisory has landed and the CVE record is staged with `CNA_private.state = "PUBLIC"` ready for the release manager's single-paste Step 15. **Do not close the issue and do not add the `vendor-advisory` label** — that is Step 15, owned by the release manager after they push the record to PUBLISHED in Vulnogram. |
+| Project-board column drifted from the issue's label-derived state (e.g. a tracker carries `pr merged` but is still in the `PR created` column on [Project 2](https://github.com/orgs/airflow-s/projects/2), or `vendor-advisory ready` + *Public advisory URL* body field populated but the column is still `Fix released`) | Propose moving the project item to the correct column per the mapping table in Step 2b. The board is the primary security-team overview surface; a stale column hides ownership handoffs from the team at a glance. |
 | `vendor-advisory ready` label set and CVE record on `cveprocess.apache.org` now reports state PUBLISHED (checked via `curl -s https://cveprocess.apache.org/cve5/<CVE-ID>.json` / the ASF CVE tool API, or an explicit release-manager comment on the issue stating the Vulnogram push is done) | Propose adding the `vendor-advisory` label, removing `vendor-advisory ready`, and closing the issue. This is the terminal transition. |
 | CVE record has open **review comments / reviewer proposals** (detected via the Gmail-search path in Step 1e — reviewer-comment notifications from Vulnogram land on `security@airflow.apache.org` with the CVE ID in the subject line; the `cveprocess.apache.org/cve5/<CVE-ID>.json` endpoint is behind ASF OAuth and is not readable from this skill's context, so Gmail is the load-bearing signal source). | Surface each open review comment in Step 2a with **clickable links** to the Gmail thread and to the CVE record on `cveprocess.apache.org` (the reader can authenticate in-browser to see live state), verbatim-quoted; then for each one that maps cleanly to a tracking-issue body field (CWE, Affected versions, Reporter credited as, Public advisory URL, Short public summary), **propose the matching body-field update** as a numbered item in Step 2b. The body is the source of truth for the CVE JSON — regeneration in Step 5 will pull the update back into the paste-ready attachment, and the release manager's only remaining action is the Vulnogram paste + comment-resolution click. Comments that do not map to a body field (severity/CVSS, out-of-scope challenges, free-form rewrites) are surfaced verbatim and flagged for human decision. See Step 1e for the full Gmail-search recipe and the reviewer-comment-to-field mapping table. |
 | The referenced `apache/airflow` PR has been opened but is still in `open` state | Propose `pr created` label; update the *"PR with the fix"* body field with the PR URL. |
@@ -820,9 +860,9 @@ will change and *why*. Group them by category:
   Keep whatever the reporter or triager put there so the team can
   navigate back to the original thread from the tracker.
 
-  **New field as of 2026-04-16 — "Public advisory URL".** This is the
-  separate body field that carries the archived public advisory URL
-  on `lists.apache.org/list.html?users@airflow.apache.org` (or
+  **The "Public advisory URL" body field** is a separate body field
+  that carries the archived public advisory URL on
+  `lists.apache.org/list.html?users@airflow.apache.org` (or
   `announce@apache.org`). Empty until Step 13 — the release manager
   fills it in **after** the advisory email has been sent and archived.
   Every sync run must:
@@ -879,6 +919,41 @@ will change and *why*. Group them by category:
   ready` now that the users@ advisory URL has been captured — the release
   manager will swap it for `vendor-advisory` and close the issue once
   Vulnogram is updated"*.
+
+- **Project-board column** on
+  [Security issues — Project 2](https://github.com/orgs/airflow-s/projects/2).
+  Every tracker has exactly one `Status` option set, and the column
+  must match the issue's label-derived state. Reconcile whenever
+  the labels and the column disagree — the board is the primary
+  overview surface for the security team and scans of "who owns
+  what right now" start there.
+
+  **Mapping — labels + body state → board column:**
+
+  | Issue state | Correct `Status` column |
+  |---|---|
+  | `needs triage` label set, no scope label yet | `Needs triage` |
+  | Scope label (`airflow` / `providers` / `chart`) applied, no CVE yet | `Assessed` |
+  | `cve allocated` label set, no fix PR yet | `CVE allocated` |
+  | `pr created` label set | `PR created` |
+  | `pr merged` label set (release has not shipped) | `PR merged` |
+  | `fix released` label set, advisory not yet sent | `Fix released` |
+  | `announced - emails sent` label set (Step 13) **or** *Public advisory URL* body field populated + `vendor-advisory ready` label set (Step 14) | **`Announced`** — one column for both Step 13 and Step 14; the RM's next move is the single-paste Step 15 |
+  | Tracker closed with `vendor-advisory` label (terminal) | `Closed` |
+
+  **One column covers Step 13 *and* Step 14.** A tracker lands on
+  `Announced` as soon as the advisory is sent (`announced - emails
+  sent`) and stays there through the URL-capture step
+  (`vendor-advisory ready` label + *Public advisory URL* body field
+  populated) until the RM pushes to PUBLISHED (Step 15) and closes.
+  The `vendor-advisory ready` label remains meaningful on the
+  tracker — it is the load-bearing signal for the CVE JSON's
+  `CNA_private.state` (REVIEW → PUBLIC) — but does not map to a
+  separate column.
+
+  Board-column mutations are applied via the GraphQL
+  `updateProjectV2ItemFieldValue` mutation; see the
+  *"Project board column"* entry in the Step 4 apply list.
 
 - **Status update to the reporter** — **whenever the issue's status has changed
   since the last message we sent to the reporter, propose a Gmail draft that
@@ -1212,6 +1287,55 @@ before moving on to the next item. Use:
   `Amogh Desai`, plus any name that appears in a `Reporter credited
   as` field without a confirmed external-credit decision.
 - **Close / reopen:** `gh issue close <N> --repo airflow-s/airflow-s --reason completed` (or `not planned`).
+- **Project-board column:** `gh api graphql` with
+  `updateProjectV2ItemFieldValue`. The Security-issues Project 2
+  on `airflow-s` uses a `Status` single-select field; move the
+  project item to the target column by passing the `itemId` (from
+  Step 1a's board read) and the target option ID. Re-verify the
+  option IDs with the query in Step 1a if any write mutation starts
+  returning `not found` — `updateProjectV2Field` regenerates every
+  ID whenever the column list is edited.
+
+  | Column | Option ID |
+  |---|---|
+  | `Needs triage` | `aee65beb` |
+  | `Assessed` | `ce6377ce` |
+  | `CVE allocated` | `aae2beb3` |
+  | `PR created` | `af56c90c` |
+  | `PR merged` | `b21b5352` |
+  | `Fix released` | `1f2dbb6c` |
+  | `Announced` | `12e22331` |
+  | `Closed` | `d927769f` |
+
+  If the IDs above stop working (a column was renamed, added, or
+  removed), re-fetch them with the introspection query in Step 1a.
+  The GraphQL `updateProjectV2Field` mutation replaces the whole
+  option list rather than editing it in place, so any schema
+  change regenerates every ID at once.
+
+  Project ID: `PVT_kwDOCAwKzs4BUzbt`. Status field ID:
+  `PVTSSF_lADOCAwKzs4BUzbtzhD08bw`.
+
+  ```bash
+  gh api graphql -f query='
+    mutation($pid: ID!, $iid: ID!, $fid: ID!, $oid: String!) {
+      updateProjectV2ItemFieldValue(input: {
+        projectId: $pid
+        itemId: $iid
+        fieldId: $fid
+        value: { singleSelectOptionId: $oid }
+      }) { projectV2Item { id } }
+    }' \
+    -F pid=PVT_kwDOCAwKzs4BUzbt \
+    -F iid=<itemId from Step 1a> \
+    -F fid=PVTSSF_lADOCAwKzs4BUzbtzhD08bw \
+    -F oid=<option ID from the table above>
+  ```
+
+  If the issue does not yet have a project item (a freshly-created
+  tracker that the board automation has not picked up), first add
+  it via `addProjectV2ItemById` with the issue's node ID, then
+  call `updateProjectV2ItemFieldValue` on the returned item ID.
 - **Gmail draft:** `mcp__claude_ai_Gmail__create_draft` — **always**
   pass the `threadId` from Step 1c so the draft threads onto the
   inbound Gmail thread. Gmail does not thread by subject string;
