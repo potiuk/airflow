@@ -53,6 +53,26 @@ repos:
         name: Detect if mixed line ending is used (\r vs. \r\n)
       - id: trailing-whitespace
         name: Remove trailing whitespace at end of line
+  # Belt-and-braces check that the per-user configuration file never
+  # lands on airflow-s — .gitignore already excludes it, but this hook
+  # catches a stray `git add -f config/user.md` before it reaches the
+  # remote. See config/README.md for the config layer explainer.
+  - repo: local
+    hooks:
+      - id: forbid-user-config
+        name: Refuse commits that stage config/user.md
+        language: system
+        entry: |
+          bash -c '
+            if git diff --cached --name-only | grep -Fxq config/user.md; then
+              echo "✗ config/user.md is a per-user file and must never be committed."
+              echo "  Unstage it with: git restore --staged config/user.md"
+              echo "  See config/README.md for the per-user configuration layer."
+              exit 1
+            fi
+          '
+        pass_filenames: false
+        always_run: true
   # Project-local checks for the `generate-cve-json` Python project,
   # which lives under `tools/vulnogram/` as the Vulnogram tool adapter's
   # CVE-5.x JSON generator. Each hook sets the working directory via

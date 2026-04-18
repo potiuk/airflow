@@ -81,8 +81,13 @@ tracker only to discover you cannot push the branch.
     GitHub. The skill will **not** push to `apache/airflow`
     directly — a fork is required.
 - **A clean local clone of `apache/airflow`** reachable from the
-  agent's working directory (either passed explicitly or probed
-  at the usual locations). The clone must:
+  agent's working directory. The path comes from the user's
+  [`config/user.md`](../../../config/user.md) →
+  `environment.apache_airflow_clone`; if the file or key is missing,
+  the skill asks the user interactively and offers to save the
+  answer back into `config/user.md` so the next run is silent. The
+  skill does **not** guess filesystem layouts — there is no
+  hard-coded search path. The clone must:
   - have a remote pointing at your fork;
   - be on a non-dirty `main` (or the appropriate base branch) —
     the skill will create a new branch from that base;
@@ -241,15 +246,17 @@ The skill will never write into `airflow-s/airflow-s` for a code
 change; it writes into a local clone of `apache/airflow`. Before
 touching any files:
 
-1. Resolve the clone path. First try
+1. Resolve the clone path from the user's
    [`config/user.md`](../../../config/user.md) →
    `environment.apache_airflow_clone` (see
    [`config/README.md`](../../../config/README.md) for the config
-   layer explainer); if set and the path resolves to a git repo with
-   a remote pointing at `apache/airflow` or the user's fork, use it.
-   Otherwise fall back to auto-detection against the common locations
-   (`~/code/airflow`, `~/code/apache-airflow`, `~/projects/airflow`)
-   and, failing that, ask the user for the path interactively.
+   layer explainer). If the file is missing, the key is unset, or
+   the stored path does not resolve to a git repo with a remote
+   pointing at `apache/airflow` or the user's fork, **ask the user
+   for the path interactively** and offer to save their answer back
+   into `config/user.md` so the next run is silent. Do **not**
+   probe hard-coded paths like `~/code/airflow` — filesystem layouts
+   vary per user and a wrong guess masks a misconfigured clone.
 
 2. Check `git remote -v`. Identify which remote is the **user's fork**
    and which is the upstream `apache/airflow`. Per the rule in

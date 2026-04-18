@@ -14,6 +14,7 @@
     - [3. Verify](#3-verify)
     - [4. Run a skill](#4-run-a-skill)
     - [5. Update as needed](#5-update-as-needed)
+  - [Safeguards against committing `user.md`](#safeguards-against-committing-usermd)
   - [When to use memory instead](#when-to-use-memory-instead)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -113,8 +114,12 @@ Concretely:
   skips the *"are you a PMC member?"* prompt and picks the
   self-service or relay recipe automatically.
 - `fix-security-issue` Step 3 reads
-  `environment.apache_airflow_clone`. If set and the path exists, it
-  skips the clone auto-detection prompt.
+  `environment.apache_airflow_clone`. If the path resolves to a
+  valid clone, the skill uses it silently; otherwise it asks for
+  the path interactively. The skill does **not** guess filesystem
+  layouts — there is no hard-coded search path like `~/code/…`,
+  because filesystem conventions vary per user and a wrong guess
+  masks a misconfigured clone.
 - Every skill reads `identity.github_handle` to recognise your own
   activity on the tracker and your own Gmail drafts.
 
@@ -163,8 +168,10 @@ Open `config/user.md` and fill in:
   Airflow, <https://projects.apache.org/committee.html?airflow>.)
 - `tools` → leave defaults unless you have explicitly configured an
   alternative (e.g. `ponymail-mcp` when that lands).
-- `environment.apache_airflow_clone` — absolute path to your local
-  `apache/airflow` clone, or leave empty to keep auto-detection.
+- `environment.apache_airflow_clone` — **absolute** path to your
+  local `apache/airflow` clone. There is no auto-detection: if you
+  leave this empty, `fix-security-issue` will ask you at runtime
+  and offer to save your answer back here.
 - Notes — anything else worth remembering.
 
 ### 3. Verify
@@ -198,6 +205,29 @@ Edit `config/user.md` whenever:
 
 There is no versioning concern — the file is local; you edit it and
 re-run whatever skill was asking.
+
+## Safeguards against committing `user.md`
+
+The per-user file must never land on `airflow-s`. Two independent
+defences ensure that:
+
+1. **`.gitignore`** covers `config/user.md` and common variant names
+   (`config/user.md.local`, `config/user.md.bak`,
+   `config/user.md.backup`). A plain `git add config/user.md` is a
+   no-op.
+2. **`forbid-user-config` prek hook** (see `.pre-commit-config.yaml`)
+   refuses any commit that stages `config/user.md`, even if the file
+   was force-added with `git add -f`. The hook prints the exact
+   unstage command and fails the commit before it reaches the
+   remote.
+
+If you ever see `config/user.md` in `git status` as staged, unstage
+it immediately with `git restore --staged config/user.md`. The hook
+will catch it if you don't, but there is no reason to rely on that.
+
+The committed template `config/user.md.example` is the only shared
+surface — everything you write into `config/user.md` stays on your
+machine.
 
 ## When to use memory instead
 

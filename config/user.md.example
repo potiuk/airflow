@@ -86,9 +86,12 @@ tools:
 environment:
   # Absolute path to your local apache/airflow clone. Used by
   # fix-security-issue Step 3 to write code changes locally without
-  # asking you every time. Leave blank to keep auto-detection
-  # (the skill tries ~/code/airflow, ~/code/apache-airflow,
-  # ~/projects/airflow).
+  # asking you every time. There is no default and no auto-detection
+  # — filesystem layouts vary per user and a wrong guess masks a
+  # misconfigured clone — so if you leave this blank the skill will
+  # prompt you at runtime and offer to save your answer back here.
+  # Examples: /Users/alice/src/apache-airflow,
+  #           /home/bob/work/airflow
   apache_airflow_clone:
 
   # Optional: the name of the git remote pointing at your fork of
