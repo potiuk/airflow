@@ -612,7 +612,7 @@ Currently available:
   change before applying it. Points the user at
   [`allocate-cve`](.claude/skills/allocate-cve/SKILL.md) when a CVE is
   needed. **At the end of every run** it also invokes
-  [`generate-cve-json`](.claude/skills/generate-cve-json/SKILL.md) with
+  [`generate-cve-json`](tools/vulnogram/generate-cve-json/SKILL.md) with
   `--attach` to refresh the CVE JSON attachment on the tracking issue (auto-
   resolving `--remediation-developer` from the first apache/airflow PR author
   in the *PR with the fix* body field), so the attached JSON stays in
@@ -646,12 +646,12 @@ Currently available:
   message, branch name, PR title, PR body, newsfragment) is scrubbed for CVE /
   `airflow-s` / `vulnerability` / `security fix` leakage before being written or
   pushed. Updates the `airflow-s` tracking issue with the new PR link afterwards.
-- [`generate-cve-json`](.claude/skills/generate-cve-json/SKILL.md) — generates
+- [`generate-cve-json`](tools/vulnogram/generate-cve-json/SKILL.md) — generates
   a paste-ready CVE 5.x JSON record from a tracking issue, matching the shape
   Vulnogram exports (`containers.cna` with `affected`, `descriptions` + HTML
   `supportingMedia`, `problemTypes` with `type: "CWE"`, `metrics.other`,
   tagged `references`, `providerMetadata.orgId`, `cveMetadata` envelope). A
-  deterministic `uv run` script — [the `generate-cve-json` project](.claude/skills/generate-cve-json/) —
+  deterministic `uv run` script — [the `generate-cve-json` project](tools/vulnogram/generate-cve-json/) —
   parses the issue's template fields (multiple credits on separate lines,
   multiple reference URLs, `>= X, < Y` version ranges), writes the JSON to a
   file, and prints the Vulnogram `#json` paste URL for the CVE. The ASF CVE
@@ -682,3 +682,4 @@ When adding a new skill:
 - [`projects/airflow/`](projects/airflow/) — other project-specific files (canned responses, release trains, security model, scope labels, milestones, title-normalization, fix workflow, naming conventions).
 - [`tools/github/`](tools/github/) — GitHub tool adapter: `tool.md` (overview), `operations.md` (`gh` CLI / API catalogue), `issue-template.md` (body-field schema), `labels.md` (lifecycle-label taxonomy), `project-board.md` (Projects V2 GraphQL).
 - [`tools/gmail/`](tools/gmail/) — Gmail tool adapter: `tool.md` (overview), `operations.md` (MCP catalogue + no-update limitation), `threading.md` (always-pass-`threadId` rule), `asf-relay.md` (ASF-security-relay drafting), `search-queries.md` (query templates), `ponymail-archive.md` (ASF PonyMail URL construction).
+- [`tools/vulnogram/`](tools/vulnogram/) — Vulnogram (ASF CVE tool) adapter: `tool.md` (overview), `allocation.md` (PMC-gated allocation flow), `record.md` (record URLs + `#source` paste + `DRAFT`/`REVIEW`/`PUBLIC` state machine + reviewer-comment signal), `generate-cve-json/` (CVE-5.x JSON generator — Python project).

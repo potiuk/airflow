@@ -350,7 +350,7 @@ for the full detail.
   proposal.
 - [`allocate-cve`](.claude/skills/allocate-cve/SKILL.md) — *"allocate a CVE
   for <issue-ref>"*.
-- [`generate-cve-json`](.claude/skills/generate-cve-json/SKILL.md) — to
+- [`generate-cve-json`](tools/vulnogram/generate-cve-json/SKILL.md) — to
   refresh the paste-ready JSON embedded in the issue body on demand.
 - [`deduplicate-security-issue`](.claude/skills/deduplicate-security-issue/SKILL.md) —
   when two trackers describe the same root-cause bug discovered
@@ -508,7 +508,7 @@ security team to push the information to `cve.org`. See
   see the `announced` backlog needing a Vulnogram push. Also
   *"sync CVE-YYYY-NNNN"* to drill into one specific CVE before sending the
   advisory.
-- [`generate-cve-json`](.claude/skills/generate-cve-json/SKILL.md) — to
+- [`generate-cve-json`](tools/vulnogram/generate-cve-json/SKILL.md) — to
   regenerate the attachment on demand when a body field changes after the
   URL has been captured.
 

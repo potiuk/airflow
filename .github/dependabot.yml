@@ -49,12 +49,14 @@ updates:
         patterns:
           - "*"
 
-  # uv lock for the generate-cve-json Python project. Dependabot reads
-  # pyproject.toml + uv.lock and opens PRs that update pinned versions.
-  # Runtime deps are empty today (stdlib-only); the dev group (ruff,
-  # mypy, pytest) is what this ecosystem actually tracks.
+  # uv lock for the generate-cve-json Python project (lives under
+  # tools/vulnogram/ as the Vulnogram tool adapter's CVE-5.x JSON
+  # generator). Dependabot reads pyproject.toml + uv.lock and opens
+  # PRs that update pinned versions. Runtime deps are empty today
+  # (stdlib-only); the dev group (ruff, mypy, pytest) is what this
+  # ecosystem actually tracks.
   - package-ecosystem: "uv"
-    directory: "/.claude/skills/generate-cve-json"
+    directory: "/tools/vulnogram/generate-cve-json"
     schedule:
       interval: "weekly"
     cooldown:

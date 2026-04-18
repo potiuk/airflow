@@ -95,7 +95,7 @@ PR series).
 |---|---|---|---|
 | Issue tracking + source control + project board | `github` | [`../../tools/github/`](../../tools/github/) | `tracker_repo`, `upstream_repo`, `github_project_board_*`, `issue_template_fields` |
 | Inbound email / drafts | `gmail` | [`../../tools/gmail/`](../../tools/gmail/) | `security_list` subscription; PonyMail archive URL templates below |
-| CVE allocation + record mgmt | `vulnogram` | *(to land in PR 4)* | see [CVE tooling](#cve-tooling) below |
+| CVE allocation + record mgmt | `vulnogram` | [`../../tools/vulnogram/`](../../tools/vulnogram/) | see [CVE tooling](#cve-tooling) below |
 | Release voting / announce | ASF mailing lists | — | via `dev_list` / `announce_list` / `users_list` |
 
 To replace a tool (e.g. swap GitHub issues for JIRA), declare an
@@ -106,7 +106,12 @@ reachable from this manifest.
 ## CVE tooling
 
 Apache Airflow uses the ASF's **Vulnogram** instance as its CNA tool
-for CVE allocation and record management.
+for CVE allocation and record management. The Vulnogram-side
+mechanics (allocation URL + PMC-gated flow, record URL templates,
+`#source` paste flow, `DRAFT` → `REVIEW` → `PUBLIC` state machine,
+reviewer-comment-via-email signal, CVE-5.x JSON generator) live under
+[`../../tools/vulnogram/`](../../tools/vulnogram/); the per-project
+values below are what the generic recipes substitute in.
 
 | Key | Value |
 |---|---|
@@ -120,10 +125,17 @@ for CVE allocation and record management.
 | `cna_private_projecturl` | <https://airflow.apache.org/> |
 | `cna_private_userslist` | `users@airflow.apache.org` |
 
-The full Vulnogram-specific allocation / record / state-machine flow
-will live in `tools/vulnogram/` once PR 4 lands; until then the
-Vulnogram-specific details are inlined in the skill files and read
-alongside this manifest.
+The `asf_org_id` is the ASF's CNA organisation UUID and is shared by
+every ASF project; the `cna_private_*` triple is project-specific and
+lands inside the Vulnogram `CNA_private` envelope the generator emits.
+
+The generator that produces the paste-ready JSON from the tracker
+body lives at
+[`../../tools/vulnogram/generate-cve-json/`](../../tools/vulnogram/generate-cve-json/).
+See [`../../tools/vulnogram/allocation.md`](../../tools/vulnogram/allocation.md)
+for the allocation flow and
+[`../../tools/vulnogram/record.md`](../../tools/vulnogram/record.md)
+for the record-management flow.
 
 ## GitHub project board
 
