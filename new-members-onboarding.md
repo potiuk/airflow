@@ -140,23 +140,24 @@ any per-user config.
 # Picking up a role
 
 Once you have observed the process for a while, you can start taking
-on more of the work. Three roles rotate across the team (see
-[`README.md` — Who this guide is for](README.md#who-this-guide-is-for)
-for the overview):
+on more of the work. The three rotating roles — issue triager,
+remediation developer, release manager — are defined in
+[`README.md` — Who this guide is for](README.md#who-this-guide-is-for),
+which describes the step ranges each role owns. From the onboarding
+perspective:
 
-- **Issue triager** (Steps 1–6 of the process) — imports new reports
-  from the project's `<security-list>`, drives validity assessment in
-  comments, and allocates CVEs. A good starter role once you are
-  comfortable with the tone and the canned responses.
-- **Remediation developer** (Steps 7–11) — picks up a triaged tracker
-  with a CVE allocated and opens a fix PR on `<upstream>`. Suits team
-  members who are already regular contributors to the active project.
-- **Release manager** (Steps 12–15) — for the release managers of the
-  active project's release trains (for Airflow: core, Providers, and
-  the Helm Chart; see `projects/<PROJECT>/release-trains.md`). You
-  inherit this role automatically when you cut a release that contains
-  a security fix; `sync-security-issue` hands the tracker to you with
-  `fix released`.
+- **Issue triager** is the natural first role: it's the one you can
+  step into as soon as you're comfortable with the tone of the
+  canned responses and the shape of the triage loop.
+- **Remediation developer** suits team members who are already regular
+  contributors to the active project — the role owns a fix PR in
+  `<upstream>` and is easiest to pick up when you already know that
+  codebase.
+- **Release manager** is usually inherited rather than volunteered for:
+  when you cut a release that contains a security fix,
+  `sync-security-issue` hands those trackers to you with
+  `fix released` and you own them through the advisory + Vulnogram
+  steps.
 
 You can volunteer to provide a fix for a specific issue even before
 formally taking on the remediation-developer role — just comment on
