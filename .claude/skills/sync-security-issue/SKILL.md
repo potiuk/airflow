@@ -1105,12 +1105,16 @@ will change and *why*. Group them by category:
   artifact link. See the "Brevity: emails state facts, not context"
   section of [`AGENTS.md`](../../../AGENTS.md).
 
-  **Never send.** Always create a draft, on the original mail thread
-  (`threadId` from Step 1c) per the threading rule in
+  **Never send.** Always create a draft. Prefer attaching it to the
+  inbound mail thread by `threadId` (from Step 1c); if Step 1c
+  could not resolve a `threadId`, fall back to a subject-matched
+  draft (`threadId` omitted, `subject: Re: <root subject>`) per the
+  threading rule in
   [`tools/gmail/threading.md`](../../../tools/gmail/threading.md).
-  The Gmail MCP's no-update-no-delete limitation — and the resulting
-  rule that corrections surface the prior `draftId` for manual
-  discard rather than silently shadowing it — is documented in
+  Surface which path was taken in the proposal. The Gmail MCP's
+  no-update-no-delete limitation — and the resulting rule that
+  corrections surface the prior `draftId` for manual discard
+  rather than silently shadowing it — is documented in
   [`tools/gmail/operations.md`](../../../tools/gmail/operations.md#hard-limitation--no-update-no-delete).
 
 ### 2c. Next-step recommendation
@@ -1249,13 +1253,19 @@ before moving on to the next item. Use:
   `updateProjectV2ItemFieldValue`). Re-fetch the option IDs via the
   introspection query in the same reference if a write mutation
   starts returning `not found`.
-- **Gmail draft:** `mcp__claude_ai_Gmail__create_draft` — **always**
-  pass the `threadId` from Step 1c. See the threading rule in
-  [`tools/gmail/threading.md`](../../../tools/gmail/threading.md) and
-  the call signature in
+- **Gmail draft:** `mcp__claude_ai_Gmail__create_draft` — **prefer**
+  passing the `threadId` from Step 1c. If Step 1c could not
+  resolve a `threadId`, fall back to a subject-matched draft (omit
+  `threadId`, keep `subject: Re: <root subject of the inbound
+  message>`) — see the
+  [fallback rule](../../../tools/gmail/threading.md#fallback--subject-matched-draft-when-threadid-is-unavailable)
+  and the call-signature variants in
   [`tools/gmail/operations.md`](../../../tools/gmail/operations.md#create-draft).
-  **Never send.** Tell the user the draft is waiting for their
-  review in Gmail.
+  **Surface which path the draft took** (`threadId`-attached vs.
+  subject fallback) in the proposal so the user can see the
+  threading at a glance; record the reason on the tracker's status
+  comment when fallback kicks in. **Never send.** Tell the user the
+  draft is waiting for their review in Gmail.
 
 If any command fails, stop the apply loop, report the failure, and ask the user
 how to proceed — do not guess.

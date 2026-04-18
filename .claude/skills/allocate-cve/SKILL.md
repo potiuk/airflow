@@ -376,15 +376,21 @@ user to confirm. Numbered items:
    once the fix ships, the ASF CVE tool URL on its own line.
    Re-ask the credit-preference question **only if it has not yet
    been asked** on the thread — never ping twice. **Never send.**
-   Always create a Gmail draft **with `threadId` set to the
-   inbound report thread** (resolved from the tracker's *security-
-   thread* body field — for Airflow, *"Security mailing list
-   thread"*). Subject is `Re: <root subject>`, never fabricated.
-   See
+   Always create a Gmail draft. **Prefer** attaching it by
+   `threadId` (resolved from the tracker's *security-thread* body
+   field — for Airflow, *"Security mailing list thread"*). If the
+   `threadId` cannot be resolved from the field (it was never
+   filled in, or the stored value is stale), **fall back to a
+   subject-matched draft**: omit `threadId` and keep
+   `subject: Re: <root subject of the inbound report>`. Subject is
+   always the inbound root subject, never fabricated. Surface which
+   path the draft took in the Step 5 proposal (`threadId`-attached
+   vs. subject fallback). See
    [`tools/gmail/threading.md`](../../../tools/gmail/threading.md)
-   for the threading rule and
+   for the full threading rule (including the few cases where the
+   skill should stop rather than fall back) and
    [`tools/gmail/operations.md`](../../../tools/gmail/operations.md#create-draft)
-   for the call signature.
+   for the call-signature variants.
 
 ### Status-change comment template
 
