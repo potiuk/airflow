@@ -326,43 +326,21 @@ Record:
   and any stalled-for-30-days state.
 
 Also read the tracker's **project-board status** on the "Security
-issues" board at
-<https://github.com/orgs/airflow-s/projects/2> — the board is the
-primary overview surface for the security team, and every issue
-has exactly one `Status` option set (`Needs triage`, `Assessed`,
-`CVE allocated`, `PR created`, `PR merged`, `Fix released`,
-`Announced`). The board column
-must match the issue's label-derived state; when it drifts, the
-sync proposes a move. Read the current column with:
+issues" board — the board is the primary overview surface for the
+security team, and every issue has exactly one `Status` option set.
+The board column must match the issue's label-derived state; when it
+drifts, the sync proposes a move.
 
-```bash
-gh api graphql -f query='
-query($n: Int!) {
-  repository(owner: "airflow-s", name: "airflow-s") {
-    issue(number: $n) {
-      projectItems(first: 5) {
-        nodes {
-          id
-          project { number }
-          fieldValues(first: 20) {
-            nodes {
-              ... on ProjectV2ItemFieldSingleSelectValue {
-                field { ... on ProjectV2SingleSelectField { name } }
-                name
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}' -F n=<N> --jq '.data.repository.issue.projectItems.nodes[] | select(.project.number == 2) | {itemId: .id, status: (.fieldValues.nodes[] | select(.name != null)).name}'
-```
+The GraphQL introspection recipe for the board lives in
+[`tools/github/project-board.md`](../../../tools/github/project-board.md#introspection--find-the-itemid-and-current-column).
+The per-project board URL, node IDs, and label → column mapping live
+in
+[`projects/airflow/project.md`](../../../projects/airflow/project.md#github-project-board).
 
-Record the item's `itemId` (needed for the Step 4 apply mutation)
-and the current `status` column. See the "Project-board column
-mapping" table in Step 2b for which column the issue *should* be
-on given its labels and body state.
+Substitute the project's `<tracker-owner>` / `<tracker-name>` /
+`<project-number>` into the introspection query, then record the
+item's `itemId` (needed for the Step 4 apply mutation) and the
+current `status` column.
 
 ### 1b. Find referenced and referencing PRs
 
@@ -911,41 +889,20 @@ will change and *why*. Group them by category:
   ready` now that the users@ advisory URL has been captured — the release
   manager will copy the CVE JSON to Vulnogram and close the issue"*.
 
-- **Project-board column** on
-  [Security issues — Project 2](https://github.com/orgs/airflow-s/projects/2).
-  Every tracker has exactly one `Status` option set, and the column
-  must match the issue's label-derived state. Reconcile whenever
-  the labels and the column disagree — the board is the primary
-  overview surface for the security team and scans of "who owns
-  what right now" start there.
+- **Project-board column.** Every tracker has exactly one `Status`
+  option set on the Security-issues board, and the column must match
+  the issue's label-derived state. Reconcile whenever the labels and
+  the column disagree — the board is the primary overview surface for
+  the security team and scans of *"who owns what right now"* start
+  there.
 
-  **Mapping — labels + body state → board column:**
-
-  | Issue state | Correct `Status` column |
-  |---|---|
-  | `needs triage` label set, no scope label yet | `Needs triage` |
-  | Scope label (`airflow` / `providers` / `chart`) applied, no CVE yet | `Assessed` |
-  | `cve allocated` label set, no fix PR yet | `CVE allocated` |
-  | `pr created` label set | `PR created` |
-  | `pr merged` label set (release has not shipped) | `PR merged` |
-  | `fix released` label set, advisory not yet sent | `Fix released` |
-  | `announced - emails sent` label set (Step 13) **or** *Public advisory URL* body field populated + `announced` label set (Step 14) | **`Announced`** — one column for both Step 13 and Step 14; the RM's next move is the single-paste Step 15 |
-
-  **One column covers Step 13 *and* Step 14.** A tracker lands on
-  `Announced` as soon as the advisory is sent (`announced - emails
-  sent`) and stays there through the URL-capture step
-  (`announced` label + *Public advisory URL* body field
-  populated) until the RM copies the CVE JSON to Vulnogram (Step 15)
-  and closes the issue. There is no `Closed` column — closed issues
-  simply leave the board.
-  The `announced` label remains meaningful on the
-  tracker — it is the load-bearing signal for the CVE JSON's
-  `CNA_private.state` (REVIEW → PUBLIC) — but does not map to a
-  separate column.
-
+  The label + body-state → board-column mapping and the board URL
+  live in
+  [`projects/airflow/project.md`](../../../projects/airflow/project.md#github-project-board).
   Board-column mutations are applied via the GraphQL
-  `updateProjectV2ItemFieldValue` mutation; see the
-  *"Project board column"* entry in the Step 4 apply list.
+  `updateProjectV2ItemFieldValue` mutation; the recipe lives in
+  [`tools/github/project-board.md`](../../../tools/github/project-board.md#write--move-a-tracker-to-a-different-column)
+  and is invoked from the Step 4 apply list.
 
 - **Status update to the reporter** — **whenever the issue's status has changed
   since the last message we sent to the reporter, propose a Gmail draft that
@@ -1282,54 +1239,18 @@ before moving on to the next item. Use:
   `Amogh Desai`, plus any name that appears in a `Reporter credited
   as` field without a confirmed external-credit decision.
 - **Close / reopen:** `gh issue close <N> --repo airflow-s/airflow-s --reason completed` (or `not planned`).
-- **Project-board column:** `gh api graphql` with
-  `updateProjectV2ItemFieldValue`. The Security-issues Project 2
-  on `airflow-s` uses a `Status` single-select field; move the
-  project item to the target column by passing the `itemId` (from
-  Step 1a's board read) and the target option ID. Re-verify the
-  option IDs with the query in Step 1a if any write mutation starts
-  returning `not found` — `updateProjectV2Field` regenerates every
-  ID whenever the column list is edited.
-
-  | Column | Option ID |
-  |---|---|
-  | `Needs triage` | `aee65beb` |
-  | `Assessed` | `ce6377ce` |
-  | `CVE allocated` | `aae2beb3` |
-  | `PR created` | `af56c90c` |
-  | `PR merged` | `b21b5352` |
-  | `Fix released` | `1f2dbb6c` |
-  | `Announced` | `12e22331` |
-
-  If the IDs above stop working (a column was renamed, added, or
-  removed), re-fetch them with the introspection query in Step 1a.
-  The GraphQL `updateProjectV2Field` mutation replaces the whole
-  option list rather than editing it in place, so any schema
-  change regenerates every ID at once.
-
-  Project ID: `PVT_kwDOCAwKzs4BUzbt`. Status field ID:
-  `PVTSSF_lADOCAwKzs4BUzbtzhD08bw`.
-
-  ```bash
-  gh api graphql -f query='
-    mutation($pid: ID!, $iid: ID!, $fid: ID!, $oid: String!) {
-      updateProjectV2ItemFieldValue(input: {
-        projectId: $pid
-        itemId: $iid
-        fieldId: $fid
-        value: { singleSelectOptionId: $oid }
-      }) { projectV2Item { id } }
-    }' \
-    -F pid=PVT_kwDOCAwKzs4BUzbt \
-    -F iid=<itemId from Step 1a> \
-    -F fid=PVTSSF_lADOCAwKzs4BUzbtzhD08bw \
-    -F oid=<option ID from the table above>
-  ```
-
-  If the issue does not yet have a project item (a freshly-created
-  tracker that the board automation has not picked up), first add
-  it via `addProjectV2ItemById` with the issue's node ID, then
-  call `updateProjectV2ItemFieldValue` on the returned item ID.
+- **Project-board column:** apply via the `updateProjectV2ItemFieldValue`
+  GraphQL recipe in
+  [`tools/github/project-board.md`](../../../tools/github/project-board.md#write--move-a-tracker-to-a-different-column).
+  Substitute the project's board node ID, status-field node ID, and
+  target-column option ID from
+  [`projects/airflow/project.md`](../../../projects/airflow/project.md#github-project-board).
+  Use the `itemId` captured in Step 1a's board read. If the issue
+  does not yet have a project item, use the orphan-issue path from
+  the same reference (`addProjectV2ItemById` then
+  `updateProjectV2ItemFieldValue`). Re-fetch the option IDs via the
+  introspection query in the same reference if a write mutation
+  starts returning `not found`.
 - **Gmail draft:** `mcp__claude_ai_Gmail__create_draft` — **always**
   pass the `threadId` from Step 1c so the draft threads onto the
   inbound Gmail thread. Gmail does not thread by subject string;

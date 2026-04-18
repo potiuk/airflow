@@ -285,6 +285,15 @@ expects. Most fields the reporter did not explicitly supply stay as
 `_No response_`; the subsequent `sync-security-issue` run will prompt
 the triager to fill them as the discussion progresses.
 
+The generic body-field schema (role → field-name contract, empty-field
+convention, body-field surgery pattern) lives in
+[`tools/github/issue-template.md`](../../../tools/github/issue-template.md);
+the concrete field names for the active project are declared in
+[`projects/airflow/project.md`](../../../projects/airflow/project.md#issue-template-fields).
+The table below describes **what value to source** from the inbound
+report for each field — that guidance is import-specific and stays
+here.
+
 | Template field | Source |
 |---|---|
 | **The issue description** | The root email body, **verbatim** (preserve paragraphs, PoC code blocks, and any quoted sections). The body is private — the triager will copy it into a public CVE description only after Step 13. |

@@ -41,7 +41,7 @@ responses, indirectly by external reporters. Small wording choices matter.
 
 ## Repository purpose
 
-The repo has two layers:
+The repo has three layers:
 
 1. **Generic** — project-agnostic process, agent conventions, and skill
    definitions. Lives at the repo root and under `.claude/skills/`.
@@ -50,6 +50,10 @@ The repo has two layers:
    and milestone conventions. Lives under [`projects/<name>/`](projects/).
    The active project is declared in
    [`config/active-project.md`](config/active-project.md).
+3. **Tool adapters** — operation catalogues and reference docs for the
+   external tools the skills call (GitHub, Gmail, Vulnogram, …). Lives
+   under [`tools/<name>/`](tools/). Each project's manifest declares
+   which tools it opts into.
 
 Repo-root files:
 
@@ -58,6 +62,7 @@ Repo-root files:
 - [`new-members-onboarding.md`](new-members-onboarding.md) — onboarding guide for new security team members.
 - [`config/active-project.md`](config/active-project.md) — declares which project under `projects/` this working tree targets.
 - [`projects/<active>/`](projects/) — project-specific content (canned responses, release trains, security model, milestones, …).
+- [`tools/<name>/`](tools/) — tool adapters (GitHub operations, issue-template schema, project-board GraphQL, …) for the external tools the skills invoke.
 
 There is no source code to build or test. Changes are reviewed and merged by the security team.
 
@@ -731,5 +736,6 @@ When adding a new skill:
 ## References
 
 - [`config/active-project.md`](config/active-project.md) — declares which project under `projects/` this working tree targets.
-- [`projects/airflow/project.md`](projects/airflow/project.md) — the active project's manifest (identity, repositories, mailing lists, tools enabled, CVE tooling).
+- [`projects/airflow/project.md`](projects/airflow/project.md) — the active project's manifest (identity, repositories, mailing lists, tools enabled, CVE tooling, GitHub project board + issue-template field declarations).
 - [`projects/airflow/`](projects/airflow/) — other project-specific files (canned responses, release trains, security model, scope labels, milestones, title-normalization, fix workflow, naming conventions).
+- [`tools/github/`](tools/github/) — GitHub tool adapter: `tool.md` (overview), `operations.md` (`gh` CLI / API catalogue), `issue-template.md` (body-field schema), `labels.md` (lifecycle-label taxonomy), `project-board.md` (Projects V2 GraphQL).

@@ -163,7 +163,12 @@ Also capture:
 ## Step 3 — Build the merged body proposal
 
 The output is a single body that preserves both reporters' content
-verbatim. Structure:
+verbatim. The body-field schema (role names, empty-field convention,
+body-field-surgery pattern) is documented in
+[`tools/github/issue-template.md`](../../../tools/github/issue-template.md);
+the concrete field names for the active project live in
+[`projects/airflow/project.md`](../../../projects/airflow/project.md#issue-template-fields).
+Structure:
 
 ```markdown
 ### The issue description
