@@ -10,7 +10,7 @@
   - [3. GitHub connection (GitHub MCP / `gh` CLI)](#3-github-connection-github-mcp--gh-cli)
   - [4. PMC membership (only for CVE allocation)](#4-pmc-membership-only-for-cve-allocation)
   - [5. Browser (for the human-click steps)](#5-browser-for-the-human-click-steps)
-  - [6. Local `apache/airflow` clone (only for `fix-security-issue`)](#6-local-apacheairflow-clone-only-for-fix-security-issue)
+  - [6. Local `<upstream>` clone (only for `fix-security-issue`)](#6-local-upstream-clone-only-for-fix-security-issue)
   - [7. `uv` (for `generate-cve-json`)](#7-uv-for-generate-cve-json)
 - [Shared conventions](#shared-conventions)
   - [Keeping the reporter informed](#keeping-the-reporter-informed)
@@ -73,17 +73,17 @@ Airflow, see
 currently active project is declared in
 [`config/active-project.md`](config/active-project.md).
 
-For the active project (Airflow), the private `airflow-s/airflow-s`
-repository is the security team's shared tracker for Apache Airflow
-vulnerability reports. Only members of the security team have access.
-Issues are created from reports raised on
-`security@airflow.apache.org` and copied here by security-team members —
-the GitHub author of a tracker is therefore **not always the reporter**,
-and the real reporter is whoever sent the original email.
+The private `<tracker>` repository is the active project's security
+team's shared tracker. Only members of the security team have access.
+Issues are created from reports raised on the project's security
+mailing list (see `projects/<PROJECT>/project.md → Mailing lists`)
+and copied into `<tracker>` by security-team members — the GitHub
+author of a tracker is therefore **not always the reporter**, and
+the real reporter is whoever sent the original email.
 
 Every tracker flows through two channels at the same time:
 
-- the original `security@airflow.apache.org` mail thread, where the reporter is
+- the original security-list mail thread, where the reporter is
   kept informed at every status transition;
 - a comment on the tracking issue, so the rest of the security team and the
   release manager can follow along without reconstructing state from labels
@@ -103,9 +103,11 @@ moment a given tracking issue has exactly one person who owns the next move.
 Pick whichever applies to you now:
 
 - **I am new to the security team, or I mostly just want to comment on
-  issues.** Read [Shared conventions](#shared-conventions) below. The board at
-  <https://github.com/orgs/airflow-s/projects/2> is the main view. You do not
-  need an agent for commenting.
+  issues.** Read [Shared conventions](#shared-conventions) below. The
+  active project's security-issues board (for Airflow:
+  <https://github.com/orgs/airflow-s/projects/2>; in general, see
+  `projects/<PROJECT>/project.md → GitHub project board`) is the main
+  view. You do not need an agent for commenting.
 - **I am a rotational triager** — running `import new reports` and
   `sync all` a few times a week. Jump to
   [For issue triagers — Steps 1–6](#for-issue-triagers--steps-16).
@@ -120,8 +122,8 @@ Pick whichever applies to you now:
 ## Prerequisites for running the agent skills
 
 If you only plan to **comment on issues** from the board, skip this
-section — a browser and your `airflow-s/airflow-s` collaborator access
-are enough.
+section — a browser and your `<tracker>` collaborator access are
+enough.
 
 If you plan to **run any of the agent skills** (`import`, `sync`,
 `allocate-cve`, `fix`, `generate-cve-json`, `deduplicate`) — typically
@@ -141,14 +143,15 @@ specifically.
 
 ### 2. Email connection (Gmail MCP, today)
 
-The import, sync, and allocate-cve skills **read the security@ mail
-thread** associated with each tracker and draft replies on that
+The import, sync, and allocate-cve skills **read the security-list
+mail thread** associated with each tracker and draft replies on that
 thread. Today this goes through the
 [Claude Gmail MCP](https://docs.anthropic.com/en/docs/build-with-claude/mcp)
-connected to the personal Gmail account of a security-team member who
-is subscribed to `security@airflow.apache.org`. That is enough access
-for the skills to see inbound reports and create drafts on the right
-threads.
+connected to the personal Gmail account of a security-team member
+who is subscribed to the active project's security list (see
+`projects/<PROJECT>/project.md → Mailing lists`). That is enough
+access for the skills to see inbound reports and create drafts on
+the right threads.
 
 There is an ASF-wide alternative on the horizon:
 [`rbowen/ponymail-mcp`](https://github.com/rbowen/ponymail-mcp) (by
@@ -166,26 +169,29 @@ refuse to start and tell you to configure the MCP first.
 
 ### 3. GitHub connection (GitHub MCP / `gh` CLI)
 
-Every skill reads and writes `airflow-s/airflow-s` issues. Claude
-Code ships with the GitHub MCP by default, and the skills also use
-the `gh` CLI directly for some calls. What the skills need:
+Every skill reads and writes `<tracker>` issues. Claude Code ships
+with the GitHub MCP by default, and the skills also use the `gh`
+CLI directly for some calls. What the skills need:
 
 - Authenticated `gh auth status` on the shell the agent runs in.
-- Collaborator access (any permission level) on
-  `airflow-s/airflow-s` — see
-  [Security team roster](AGENTS.md#security-team-roster).
-- For `fix-security-issue`: a fork of `apache/airflow` on your
-  GitHub account (the skill pushes a branch there before opening
-  the PR via `gh pr create --web`).
+- Collaborator access (any permission level) on `<tracker>` — the
+  security-team roster is maintained per-project; for the active
+  project see
+  [`projects/airflow/release-trains.md`](projects/airflow/release-trains.md#security-team-roster).
+- For `fix-security-issue`: a fork of `<upstream>` on your GitHub
+  account (the skill pushes a branch there before opening the PR
+  via `gh pr create --web`).
 
 ### 4. PMC membership (only for CVE allocation)
 
-The ASF Vulnogram form at
-<https://cveprocess.apache.org/allocatecve> is **PMC-gated** on the
-server side — only Airflow PMC members can submit a CVE allocation.
-Non-PMC triagers can still run `allocate-cve`; the skill detects
-this up front (it asks *"are you an Airflow PMC member?"*) and
-produces a relay message for a PMC member to click through instead.
+The active project's CVE-tool allocation form is **PMC-gated** on
+the server side — only the project's PMC members can submit a CVE
+allocation. Non-PMC triagers can still run `allocate-cve`; the
+skill detects this up front (it asks *"are you a PMC member of
+`<PROJECT>`?"*) and produces a relay message for a PMC member to
+click through instead. For Airflow the concrete tool is ASF's
+Vulnogram at <https://cveprocess.apache.org/allocatecve>; see
+[`projects/airflow/project.md → CVE tooling`](projects/airflow/project.md#cve-tooling).
 
 The same PMC gate applies to ponymail URL lookups on private ASF
 lists; until `ponymail-mcp` is wired in with ASF OAuth, only PMC
@@ -194,23 +200,24 @@ members can see private-list archives directly.
 ### 5. Browser (for the human-click steps)
 
 Several parts of the process involve a form a human has to fill in
-and click — the Vulnogram allocation form, the Vulnogram `#source`
+and click — the CVE-tool allocation form, the CVE record `#source`
 paste, the `gh pr create --web` compose view. The skills prepare
 the URL and the exact text to paste and hand it off to the browser;
 they do not try to automate those clicks.
 
-### 6. Local `apache/airflow` clone (only for `fix-security-issue`)
+### 6. Local `<upstream>` clone (only for `fix-security-issue`)
 
 The fix skill writes the change in your local clone, runs local
 checks and tests, pushes a branch to your fork, and opens a PR via
 `gh pr create --web`. You need:
 
-- a clean clone of `apache/airflow` reachable from the agent's
-  working directory;
-- the Airflow dev toolchain — `uv`, Python 3.x, `breeze` if the
-  change touches the parts of the repo that need it — installed
-  per
-  [`apache/airflow/contributing-docs`](https://github.com/apache/airflow/blob/main/contributing-docs/README.md);
+- a clean clone of `<upstream>` reachable from the agent's working
+  directory — the path comes from `config/user.md →
+  environment.upstream_clone`, set interactively the first time
+  you run the skill;
+- the active project's dev toolchain installed per its contributing
+  docs — for Airflow see
+  [`projects/airflow/fix-workflow.md → Toolchain`](projects/airflow/fix-workflow.md#toolchain);
 - a remote named for your GitHub fork that `gh pr create` can push
   to.
 
@@ -257,7 +264,7 @@ reply from scratch.
 ### Recording status transitions on the tracker
 
 **Every status transition must also be recorded as a comment on the GitHub
-issue in `airflow-s/airflow-s`**, not only sent by email. The two channels
+issue in `<tracker>`**, not only sent by email. The two channels
 serve different audiences: the email keeps the reporter informed; the issue
 comment keeps the rest of the security team and the release manager informed
 without forcing them to reconstruct the state from labels and timestamps. The
@@ -266,25 +273,26 @@ ID, advisory link), and indicate whether the reporter has been notified.
 
 ### Confidentiality
 
-The existence of `airflow-s/airflow-s`, the issue numbers it contains, the
+The existence of `<tracker>`, the issue numbers it contains, the
 labels we use, and everything discussed inside are **not public**. Nothing
-from this repository may appear in public `apache/airflow` PR descriptions or
+from this repository may appear in public `<upstream>` PR descriptions or
 commits, public mailing-list posts, canned responses, or anywhere else a
 non-security-team reader could see it.
 
 The full rule set — including what is allowed in private `security@` /
 `private@` threads, in status updates to the reporter, and in ``gh issue
 comment`` calls inside this repository — lives in
-[`AGENTS.md` — Confidentiality of `airflow-s/airflow-s`](AGENTS.md#confidentiality-of-airflow-sairflow-s).
+[`AGENTS.md` — Confidentiality of `<tracker>`](AGENTS.md#confidentiality-of-the-tracker-repository).
 Read it before editing anything that might be seen outside the team.
 
 ## For issue triagers — Steps 1–6
 
-You own the tracker from an inbound report on `security@airflow.apache.org`
+You own the tracker from an inbound report on `<security-list>`
 through to a CVE allocated, a scope label applied, and the issue ready for a
 remediation developer to pick up. Step 6 (the CVE allocation itself) is
-PMC-gated: **only Airflow PMC members can submit the Vulnogram allocation
-form**. If you are not on the PMC you relay a pre-drafted request to a PMC
+PMC-gated: **only the active project's PMC members can submit the
+CVE-tool allocation form**. If you are not on the PMC you relay a
+pre-drafted request to a PMC
 member — either way you are the one who lands the resulting CVE ID back into
 the tracker.
 
@@ -294,7 +302,7 @@ A typical triage sweep runs three skills in order:
 
 1. **`import new reports`** —
    [`import-security-issue`](.claude/skills/import-security-issue/SKILL.md)
-   scans `security@airflow.apache.org` for threads not yet imported,
+   scans `<security-list>` for threads not yet imported,
    classifies each candidate (real report vs. automated-scan / consolidated /
    media / spam), and proposes a tracker per valid report plus a
    receipt-of-confirmation Gmail draft. See
@@ -332,7 +340,7 @@ If discussion stalls for about 30 days, escalate to a broader audience per
 Use [`allocate-cve`](.claude/skills/allocate-cve/SKILL.md). The skill asks up
 front whether you are on the PMC; if not, it reshapes the recipe into an
 ``@``-mention relay message you forward to a PMC member on the tracker or on
-the `security@airflow.apache.org` thread. Once the allocated `CVE-YYYY-NNNNN`
+the `<security-list>` thread. Once the allocated `CVE-YYYY-NNNNN`
 is pasted back, the skill wires it into the tracker in one pass (the *CVE
 tool link* body field, the `cve allocated` label, a status-change comment, a
 refreshed CVE-JSON attachment) and hands off to `sync-security-issue` to
@@ -359,7 +367,7 @@ for the full detail.
 ## For remediation developers — Steps 7–11
 
 You own the tracker from a CVE allocated to a merged public fix PR in
-`apache/airflow` (including the `pr merged` hand-off where the tracker sits
+`<upstream>` (including the `pr merged` hand-off where the tracker sits
 waiting for the release train to ship). The role name matches the
 `remediation developer` credit you receive in the published CVE record (see
 `credits[]` with `type: "remediation developer"` in the generated CVE JSON).
@@ -382,19 +390,19 @@ skill:
 - reads the full tracker discussion and the linked `security@` mail
   thread and decides whether the issue is *easily fixable* — clear
   consensus on the fix shape, small scope, known location in
-  `apache/airflow`. If it is not, the skill stops and tells you what
+  `<upstream>`. If it is not, the skill stops and tells you what
   more the tracker needs before it is safe to attempt;
 - if it is, proposes an implementation plan (which file(s) to touch,
   what to change, what tests to add) and **waits for your explicit
   confirmation** before making any edits;
-- writes the change in your local `apache/airflow` clone, runs the
+- writes the change in your local `<upstream>` clone, runs the
   local static checks and tests, and iterates on failures;
 - opens the public PR from your fork via `gh pr create --web` with a
   scrubbed title and body — every public surface (commit message,
   branch name, PR title, PR body, newsfragment) is grep-checked for
   `CVE-`, `airflow-s`, `vulnerability`, *"security fix"* and similar
   leakage before being written or pushed;
-- updates the `airflow-s/airflow-s` tracking issue with the new PR
+- updates the `<tracker>` tracking issue with the new PR
   link and applies the `pr created` label, handing back off to
   `sync-security-issue`.
 
@@ -406,18 +414,18 @@ private-PR fallback in
 fall back to the manual flow below.
 
 Even when the skill succeeds end-to-end, you remain the PR's author
-and reviewer-facing contact on the public `apache/airflow` PR. Stay
+and reviewer-facing contact on the public `<upstream>` PR. Stay
 on the PR through review and merge.
 
 ### Opening the public fix PR manually
 
 If you are writing the fix by hand, write the code change in your local
-`apache/airflow` clone, run the local checks and tests, and open the PR
+`<upstream>` clone, run the local checks and tests, and open the PR
 via `gh pr create --web`. The PR description **must not** reveal the CVE,
-the security nature of the change, or link back to `airflow-s/airflow-s` —
+the security nature of the change, or link back to `<tracker>` —
 see [Step 8](#step-8--open-a-public-pr-straightforward-cases) and the
 confidentiality rules in
-[`AGENTS.md`](AGENTS.md#confidentiality-of-airflow-sairflow-s).
+[`AGENTS.md`](AGENTS.md#confidentiality-of-the-tracker-repository).
 
 Request a `backport-to-v3-2-test` (or equivalent) label on the public PR
 when the fix should ship on a patch train.
@@ -425,15 +433,15 @@ when the fix should ship on a patch train.
 ### Private-PR fallback
 
 In exceptional cases — highly critical fixes, or code that needs private
-review — open the PR against the `main` branch of `airflow-s/airflow-s`
-instead of `apache/airflow`. CI does not run there, so run static checks and
+review — open the PR against the `main` branch of `<tracker>`
+instead of `<upstream>`. CI does not run there, so run static checks and
 tests manually before asking for review. Once approved, re-open the PR in
-`apache/airflow` by pushing the branch public. See
+`<upstream>` by pushing the branch public. See
 [Step 9](#step-9--open-a-private-pr-exceptional-cases).
 
 ### Handoff to the release manager
 
-Once the `apache/airflow` PR merges, `sync-security-issue` moves the tracker
+Once the `<upstream>` PR merges, `sync-security-issue` moves the tracker
 from `pr created` to `pr merged` and sets the milestone of the release the
 fix will ship in. The tracker then waits for the release train. When the
 release ships, sync swaps `pr merged` → `fix released` and the tracker
@@ -470,7 +478,7 @@ Watch your `fix released` queue on the board. Until the `pr merged` →
 
 Review the attached CVE JSON on the tracker, fill any missing body fields
 (CWE, severity, affected versions), and send the advisory emails to
-`announce@apache.org` / `users@airflow.apache.org` from the ASF CVE tool.
+`<announce-list>` / `<users-list>` from the ASF CVE tool.
 Add `announced - emails sent` and remove `fix released`. **Do not close the
 issue yet** — see [Step 13](#step-13--send-the-advisory).
 
@@ -520,16 +528,16 @@ sections conflicts with what is here, the reference wins.
 
 ### Step 1 — Report arrives on security@
 
-The reporter reports the issue to `security@airflow.apache.org` or
-`security@apache.org` (in the latter case, the security team of the Apache
-Software Foundation will forward the issue to the Airflow security mailing
-list).
+The reporter reports the issue to the active project's
+`<security-list>` or to `security@apache.org` (in the latter case,
+the security team of the Apache Software Foundation will forward the
+issue to the project's security mailing list).
 
 ### Step 2 — Import the report
 
-**Import the report into `airflow-s/airflow-s` as a tracking issue.** The
+**Import the report into `<tracker>` as a tracking issue.** The
 [`import-security-issue`](.claude/skills/import-security-issue/SKILL.md)
-skill is the on-ramp of the process: it scans `security@airflow.apache.org`
+skill is the on-ramp of the process: it scans `<security-list>`
 for threads that have not yet been imported, classifies each candidate
 (real report vs. automated-scan / consolidated / media / spam), extracts
 the issue-template fields from the root message, and proposes one tracker
@@ -561,7 +569,7 @@ If the discussion stalls and we cannot make a decision in about 30 days,
 the next step is to seek assistance in making a decision from a broader
 audience:
 
-* `private@airflow.apache.org`
+* `<private-list>`
 * `security@apache.org`
 * the reporter(s) who raised the issue, asking them for their opinion and
   additional context
@@ -580,29 +588,31 @@ binding votes, whereas everyone else has advisory votes — and all are
 encouraged to vote and express their opinion. If there is no major
 disagreement during the discussion, there is no need to formally vote via
 a mailing list thread — the voting is done in the PR. However, if there
-are differing opinions, voting is done on the `security@airflow.apache.org`
+are differing opinions, voting is done on the `<security-list>`
 list. The `needs triage` label should then be removed.
 
 ### Step 6 — Allocate the CVE
 
 If we agree the issue is invalid, a team member closes the issue and
 responds to the reporter with that information. If the issue is valid,
-**an Airflow PMC member**
-[assigns a CVE via the ASF CVE tool](https://cveprocess.apache.org/allocatecve).
-The Vulnogram allocation button is PMC-gated on the server side, so a
-triager who is not on the PMC cannot complete the allocation themselves —
+**a PMC member of the active project** allocates a CVE via the
+project's CVE tool (see
+[`projects/<PROJECT>/project.md → CVE tooling`](projects/airflow/project.md#cve-tooling)).
+The allocation action is PMC-gated on the server side, so a triager
+who is not on the PMC cannot complete the allocation themselves —
 they prepare the request (using the
-[`allocate-cve`](.claude/skills/allocate-cve/SKILL.md) skill, which strips
-the redundant `Apache Airflow` prefix from the title and builds a relay
-message) and forward it to a PMC member via an ``@``-mention on the
-tracker or on the `security@airflow.apache.org` thread. Once the PMC
-member has allocated and reported the `CVE-YYYY-NNNNN` back, the skill
-can be re-invoked with the ID as an override to wire the allocated CVE
-into the tracker: the *CVE tool link* body field, the `cve allocated`
-label, a status-change comment, and a refreshed CVE-JSON body embed. The
-skill then hands off to `sync-security-issue` to reconcile the rest of
-the tracker (milestone, assignee, fix-PR state, reporter-thread drafts)
-in the same flow.
+[`allocate-cve`](.claude/skills/allocate-cve/SKILL.md) skill, which
+strips any redundant project prefix from the title per
+`projects/<PROJECT>/title-normalization.md` and builds a relay
+message) and forward it to a PMC member via an `@`-mention on the
+tracker or on the `<security-list>` thread. Once the PMC member has
+allocated and reported the `CVE-YYYY-NNNNN` back, the skill can be
+re-invoked with the ID as an override to wire the allocated CVE into
+the tracker: the *CVE tool link* body field, the `cve allocated`
+label, a status-change comment, and a refreshed CVE-JSON body embed.
+The skill then hands off to `sync-security-issue` to reconcile the
+rest of the tracker (milestone, assignee, fix-PR state,
+reporter-thread drafts) in the same flow.
 
 The team member (triager or PMC, whoever has the reporter's thread
 loaded) then responds in the email thread to confirm creation of the CVE
@@ -618,8 +628,8 @@ person who originally started the discussion) and implements the fix.
 NOTE: In some cases it is possible to delegate the fix to a trusted
 third-party individual. For example, if the security team member assigned
 to the issue has access to developers willing or otherwise dedicated to
-Airflow development, they may delegate to one such individual, provided
-that:
+development on the active project, they may delegate to one such
+individual, provided that:
 
 1) The individual is trusted.
 2) The individual only receives the information required to implement a
@@ -631,37 +641,37 @@ that:
 
 ### Step 8 — Open a public PR (straightforward cases)
 
-If the issue is straightforward, it may be followed by a direct PR in the
-Airflow repository. The description in the PR should not reveal the CVE
-or the security nature of it.
+If the issue is straightforward, it may be followed by a direct PR
+in the `<upstream>` repository. The description in the PR should not
+reveal the CVE or the security nature of it.
 
 ### Step 9 — Open a private PR (exceptional cases)
 
 In exceptional cases — when the issue is highly critical, or when code
 discussion is needed and the PR requires input and review before it gets
-merged — the person solving it can create a PR in the `airflow-s/airflow-s`
+merged — the person solving it can create a PR in the `<tracker>`
 repository with "Closes: #issue". The PR should be raised against the
-`main` branch of the `airflow-s/airflow-s` repository (not the default
-`airflow-s` branch). This allows for detailed code-change discussion in
-private. For now, CI is not run for PRs in the `airflow-s/airflow-s`
-repository, so static checks and tests should be run manually by the
-person creating the PR. We may improve this in the future. Once the PR
-has been reviewed, approved, and is ready to merge, the branch with the
-fix should be pushed to the Airflow repository and the PR should be
-re-opened in the Airflow repository by pushing the branch to public
-`apache/airflow` and merging it there.
+`main` branch of the `<tracker>` repository (not the default branch
+declared in `projects/<PROJECT>/project.md → tracker_default_branch`).
+This allows for detailed code-change discussion in private. For now,
+CI is not run for PRs in the `<tracker>` repository, so static checks
+and tests should be run manually by the person creating the PR. We
+may improve this in the future. Once the PR has been reviewed,
+approved, and is ready to merge, the branch with the fix should be
+pushed to the `<upstream>` repository and the PR should be re-opened
+there by pushing the branch to public `<upstream>` and merging it.
 
 ### Step 10 — Link the PR and apply `pr created`
 
-Once the PR is created in the `apache/airflow` repository, the team
+Once the PR is created in the `<upstream>` repository, the team
 member who creates it should link to the PR in the description of the
-issue and mark the issue with the `pr created` label in `airflow-s`.
+issue and mark the issue with the `pr created` label on `<tracker>`.
 
 ### Step 11 — PR merged
 
-**PR merged.** When the `apache/airflow` PR merges, the security team
+**PR merged.** When the `<upstream>` PR merges, the security team
 member merging it should move the issue from `pr created` to `pr merged`.
-If there is a private variant of the PR in the `airflow-s/airflow-s`
+If there is a private variant of the PR in the `<tracker>`
 repository, it should be closed. The milestone of the issue should be set
 to the milestone of the release it is planned to ship in.
 
@@ -681,14 +691,16 @@ when the release hits PyPI / the Helm registry (Step 12).
 
 ### Step 12 — Fix released
 
-**Fix released.** When the release carrying the fix actually ships to
-users — the final `apache/airflow` / `apache-airflow-providers-*` /
-`apache-airflow-helm-chart-*` version is live on PyPI or on the Helm
-registry — the issue moves from `pr merged` to `fix released`. The
-`sync-security-issue` skill detects the release (by curling PyPI / the
-Helm registry for the milestone version) and proposes the label swap on
-the next run, so in practice this transition is automatic; a security
-team member only needs to confirm the sync proposal.
+**Fix released.** When the release carrying the fix actually ships
+to users — the final release artefact (per the active project's
+release-train conventions; for Airflow see
+[`projects/airflow/milestones.md`](projects/airflow/milestones.md))
+is live on the project's package index — the issue moves from
+`pr merged` to `fix released`. The `sync-security-issue` skill
+detects the release (by checking the project's package index for
+the milestone version) and proposes the label swap on the next run,
+so in practice this transition is automatic; a security team member
+only needs to confirm the sync proposal.
 
 **Why this is its own step.** The `pr merged` → `fix released` swap is
 the cue that ownership of the issue has transferred from the fix author /
@@ -702,13 +714,17 @@ board.
 
 ### Step 13 — Send the advisory
 
-During releases, the release manager looks through `fix released` issues
-in `airflow-s`, updates the [ASF CVE tool](https://cveprocess.apache.org),
-and updates the following fields, taking them from the issue:
+During releases, the release manager looks through `fix released`
+issues on `<tracker>`, updates the project's CVE tool (for Airflow,
+[the ASF CVE tool](https://cveprocess.apache.org); in general see
+`projects/<PROJECT>/project.md → CVE tooling`), and updates the
+following fields, taking them from the issue:
 
 * CWE (Common Weakness Enumeration) — possible CWEs are available
   [here](https://cwe.mitre.org/data/index.html)
-* Product name (Airflow, affected Airflow Provider, or Airflow Helm Chart)
+* Product name — per the active project's scope-label → product
+  mapping (for Airflow, see
+  [`projects/airflow/scope-labels.md`](projects/airflow/scope-labels.md))
 * Version affected (`0, < Version released`)
 * Short public summary
 * Severity score — based on the
@@ -723,14 +739,14 @@ and updates the following fields, taking them from the issue:
   opinions of the security team). This is to prioritize getting the issue
   announcement out in a timely manner.
 * References:
-    * `patch` — PR to the fix in the Apache Airflow repository
+    * `patch` — PR to the fix in the `<upstream>` repository
 * Credits:
     * `reporter` — reporter(s) of the issue
     * `remediation developer` — PR author(s)
 
 The release manager also generates the CVE description, sets the CVE to
 REVIEW if feedback is needed and then to READY, and eventually sends the
-announcement emails from the ASF CVE tool. The release manager then adds
+announcement emails from the CVE tool. The release manager then adds
 the `announced - emails sent` label and removes the `fix released` label.
 **The issue stays open** at this point — it is closed only at Step 15
 below, after the public archive URL has been captured (Step 14) and the
@@ -747,7 +763,7 @@ and archived, this is done by the next `sync-security-issue` run (or the
 release manager, if they want to drive it by hand):
 
 * retrieves the archive URL from the
-  [users@ list archive](https://lists.apache.org/list.html?users@airflow.apache.org) —
+  [users@ list archive](https://lists.apache.org/list.html?<users-list>) —
   the `sync-security-issue` skill scans the archive for the CVE ID on
   every run and proposes the URL automatically once it finds a match;
 * pastes the URL into the tracking issue's **Public advisory URL** body
@@ -817,9 +833,9 @@ the issue forward. Closing dispositions (`invalid`, `not CVE worthy`,
 
 ```mermaid
 flowchart TD
-    A([report on security@]) -->|step 2: import-security-issue| B[needs triage]
+    A([report on project security list]) -->|step 2: import-security-issue| B[needs triage]
     B -->|step 5: consensus invalid| X1([invalid / not CVE worthy / duplicate / wontfix])
-    B -->|step 5: consensus valid| C[airflow / providers / chart]
+    B -->|step 5: consensus valid| C["scope label<br/>(project-specific — see<br/>projects/&lt;PROJECT&gt;/scope-labels.md)"]
     C -->|step 6: CVE reserved by PMC member| D[cve allocated]
     D -->|step 10: public PR opened| E[pr created]
     E -->|step 11: PR merges| F[pr merged]
@@ -837,18 +853,25 @@ flowchart TD
 ### Label reference
 
 The table below repeats the same flow in tabular form. An issue typically
-moves through these labels left-to-right:
+moves through these labels left-to-right.
+
+**Scope labels are project-specific** — the active project's concrete
+scope labels live in
+[`projects/<PROJECT>/scope-labels.md`](projects/) (for the currently
+active project, [`projects/airflow/scope-labels.md`](projects/airflow/scope-labels.md)).
+The table below uses `<scope>` as a placeholder for whichever scope
+labels the active project defines.
 
 | Label | Meaning | Added at step | Removed at step |
 | --- | --- | --- | --- |
 | `needs triage` | Freshly filed; assessment not yet started. | 1 | 5 |
-| `airflow` / `providers` / `chart` | Scope of the vulnerability. Exactly one of these is set. | 5 | never (sticks for the lifetime of the issue) |
-| `cve allocated` | A CVE has been reserved for the issue. Allocation itself is PMC-gated (only Airflow PMC members can submit the Vulnogram allocation form); a non-PMC triager relays a request to a PMC member via the [`allocate-cve`](.claude/skills/allocate-cve/SKILL.md) skill. | 6 | never |
-| `pr created` | A public fix PR has been opened in `apache/airflow` but has not yet merged. | 10 | 11 (replaced by `pr merged`) |
-| `pr merged` | The fix PR has merged into `apache/airflow`; no release with the fix has shipped yet. | 11 | 12 (replaced by `fix released` when the release ships) |
+| `<scope>` | Scope of the vulnerability. Exactly one project-specific scope label is set. | 5 | never (sticks for the lifetime of the issue) |
+| `cve allocated` | A CVE has been reserved for the issue. Allocation itself is PMC-gated (only the active project's PMC members can submit the CVE-tool allocation form); a non-PMC triager relays a request to a PMC member via the [`allocate-cve`](.claude/skills/allocate-cve/SKILL.md) skill. | 6 | never |
+| `pr created` | A public fix PR has been opened on `<upstream>` but has not yet merged. | 10 | 11 (replaced by `pr merged`) |
+| `pr merged` | The fix PR has merged into `<upstream>`; no release with the fix has shipped yet. | 11 | 12 (replaced by `fix released` when the release ships) |
 | `fix released` | A release containing the fix has shipped to users; advisory has not been sent yet. | 12 | 13 (replaced by `announced - emails sent`) |
-| `announced - emails sent` | The public advisory has been sent to `announce@apache.org` / `users@airflow.apache.org`. The issue **stays open** after this label is applied; closing is gated on the RM completing Step 15. | 13 | never (stays on the issue after closing for audit history) |
-| `announced` | The public advisory URL has been captured in the tracking issue's *Public advisory URL* body field and the attached CVE JSON has been regenerated so its `references[]` now carries the `vendor-advisory` URL. The tracking issue is waiting for the release manager to copy the CVE JSON into Vulnogram, move the record to PUBLIC, and close the issue (Step 15). No label changes at close — the issue closes with `announced` still set. | 14 | never (stays on the issue after closing) |
+| `announced - emails sent` | The public advisory has been sent to the project's announce and users mailing lists (see `projects/<PROJECT>/project.md → Mailing lists`). The issue **stays open** after this label is applied; closing is gated on the RM completing Step 15. | 13 | never (stays on the issue after closing for audit history) |
+| `announced` | The public advisory URL has been captured in the tracking issue's *Public advisory URL* body field and the attached CVE JSON has been regenerated so its `references[]` now carries the `vendor-advisory` URL. The tracking issue is waiting for the release manager to copy the CVE JSON into the project's CVE tool, move the record to PUBLIC, and close the issue (Step 15). No label changes at close — the issue closes with `announced` still set. | 14 | never (stays on the issue after closing) |
 | `wontfix` / `invalid` / `not CVE worthy` / `duplicate` | Closing dispositions for reports that are not valid or not CVE-worthy. | 5 / 6 | — |
 
 The [`sync-security-issue`](.claude/skills/sync-security-issue/SKILL.md)

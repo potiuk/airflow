@@ -14,9 +14,14 @@
 
 # Welcome
 
-Hello, new member of the Airflow security team. This document is the
-soft-landing guide — it tells you how the team works, where the action
-happens, and what is expected of you in the first few weeks.
+Hello, new member of the active project's security team. This
+repository hosts a project-agnostic framework for handling security
+issues; the active project (for this clone:
+[`projects/airflow/`](projects/airflow/)) is declared in
+[`config/active-project.md`](config/active-project.md). This document
+is the soft-landing guide — it tells you how the team works, where
+the action happens, and what is expected of you in the first few
+weeks.
 
 Read this end-to-end once, then use [`README.md`](README.md) as the
 operational reference when you start actually handling issues. The
@@ -26,12 +31,13 @@ into its section.
 
 # How the team is composed
 
-The Airflow security team is a group of people — mostly PMC members and
-committers, but we also have security researchers and people who are not
-yet committers but aspire to be, and who are already active and known in
-the community. We also have members of the security teams of our
-stakeholders who already deal with Airflow security outside of the
-community projects — for example, when they provide Airflow-as-a-Service.
+The security team is a group of people — mostly PMC members and
+committers of the active project, but we also have security
+researchers and people who are not yet committers but aspire to be,
+and who are already active and known in the community. We also have
+members of the security teams of stakeholders who deal with the
+project's security outside of the community project itself — for
+example, when they provide the project as a service.
 
 The team works on a voluntary basis. We understand that people have
 other commitments and lives, and we do not expect them to be available
@@ -55,30 +61,34 @@ Exposures) information about issues when affected software is released
 with the fixes.
 
 The authoritative source for who is currently on the team is the
-collaborator list of `airflow-s/airflow-s` (everyone listed, regardless
-of permission level). See
+collaborator list of the tracker repository (`<tracker>`) —
+everyone listed, regardless of permission level. For the active
+project, see
 [`projects/airflow/release-trains.md` — Security team roster](projects/airflow/release-trains.md#security-team-roster)
-for the lookup command.
+for the lookup command and the latest snapshot.
 
 # Where things happen
 
-- **`security@airflow.apache.org` mailing list** — you are subscribed
-  automatically. This is where external reporters land their reports,
-  and where we reply to keep them informed. We are discussing moving
-  inbound reporting to the
-  [GitHub Private Issue reporting feature](https://github.com/airflow-s/airflow-s/discussions/70),
-  but today `security@` is the primary channel.
-- **`airflow-s/airflow-s` GitHub repository** (this one) — the private
-  tracker. Every valid report becomes a tracking issue here. Everything
-  that happens on an issue is automatically mirrored to the security
-  mailing list so people who prefer email stay in the loop.
-- **Security-issues board** —
-  <https://github.com/orgs/airflow-s/projects/2>. This is the dashboard
-  view: issues grouped by state, by scope, by owner. If you want one
-  URL to bookmark, bookmark this one.
-- **Private PRs on `airflow-s/airflow-s` `main` branch** — an
-  exceptional path used for highly-critical fixes that need private
-  code review before going public. See
+- **The project's `<security-list>`** (for Airflow:
+  `security@airflow.apache.org`; in general see
+  `projects/<PROJECT>/project.md → Mailing lists`). You are
+  subscribed automatically when you join the security team. This is
+  where external reporters land their reports and where we reply to
+  keep them informed.
+- **`<tracker>` GitHub repository** (for this clone:
+  `airflow-s/airflow-s`) — the private tracker. Every valid report
+  becomes a tracking issue here. Everything that happens on an
+  issue is automatically mirrored to the security mailing list so
+  people who prefer email stay in the loop.
+- **Security-issues board** — each project runs its own Projects V2
+  board. For Airflow:
+  <https://github.com/orgs/airflow-s/projects/2>. In general, see
+  `projects/<PROJECT>/project.md → GitHub project board`. If you
+  want one URL to bookmark for the active project, bookmark that
+  board.
+- **Private PRs on the `<tracker>` `main` branch** — an exceptional
+  path used for highly-critical fixes that need private code review
+  before going public. See
   [Step 9](README.md#step-9--open-a-private-pr-exceptional-cases) of
   the process.
 
@@ -95,9 +105,11 @@ week. A good starting routine:
 1. **Read [`README.md`](README.md) once, skim the role sections.** Pick
    the role you think you are most likely to take on first, and read it
    in full.
-2. **Open the board** at
-   <https://github.com/orgs/airflow-s/projects/2>. Get a feel for what
-   states issues sit in and how they flow across columns.
+2. **Open the active project's board** (for Airflow:
+   <https://github.com/orgs/airflow-s/projects/2>; in general, see
+   `projects/<PROJECT>/project.md → GitHub project board`). Get a
+   feel for what states issues sit in and how they flow across
+   columns.
 3. **Subscribe to a few open issues** and read along. The mailing-list
    mirror means you will see new activity in your inbox. Seeing a few
    issues move from `needs triage` to `cve allocated` and onwards is
@@ -106,16 +118,16 @@ week. A good starting routine:
    reply templates we send to reporters. They shape most of the tone
    you will eventually need to match when you draft a reply yourself.
 5. **Read [`AGENTS.md`](AGENTS.md) at least the
-   [Confidentiality](AGENTS.md#confidentiality-of-airflow-sairflow-s)
-   section.** The rule of thumb: nothing about
-   `airflow-s/airflow-s` — issue numbers, labels, discussions, even the
-   repo name — leaves the private channels.
+   [Confidentiality](AGENTS.md#confidentiality-of-the-tracker-repository)
+   section.** The rule of thumb: nothing about the tracker repository
+   (`<tracker>`) — issue numbers, labels, discussions, even the repo
+   name — leaves the private channels.
 6. **Set up your per-user config** if (and only if) you plan to run
    the agent skills. Copy
    [`config/user.md.example`](config/user.md.example) to
    `config/user.md` and fill in your GitHub handle, email, PMC status,
    and (for remediation-developer work) the path to your local
-   `apache/airflow` clone. The full tutorial is in
+   `<upstream>` clone. The full tutorial is in
    [`config/README.md`](config/README.md) — it takes under five
    minutes. You can skip this step on day one; skills fall back to
    runtime prompts when `config/user.md` is missing.
@@ -133,16 +145,18 @@ on more of the work. Three roles rotate across the team (see
 for the overview):
 
 - **Issue triager** (Steps 1–6 of the process) — imports new reports
-  from `security@`, drives validity assessment in comments, and
-  allocates CVEs. A good starter role once you are comfortable with
-  the tone and the canned responses.
+  from the project's `<security-list>`, drives validity assessment in
+  comments, and allocates CVEs. A good starter role once you are
+  comfortable with the tone and the canned responses.
 - **Remediation developer** (Steps 7–11) — picks up a triaged tracker
-  with a CVE allocated and opens a fix PR in `apache/airflow`. Suits
-  team members who are already regular Airflow contributors.
-- **Release manager** (Steps 12–15) — for release managers of Airflow
-  core, Providers, and the Helm Chart. You inherit this role
-  automatically when you cut a release that contains a security fix;
-  `sync-security-issue` hands the tracker to you with `fix released`.
+  with a CVE allocated and opens a fix PR on `<upstream>`. Suits team
+  members who are already regular contributors to the active project.
+- **Release manager** (Steps 12–15) — for the release managers of the
+  active project's release trains (for Airflow: core, Providers, and
+  the Helm Chart; see `projects/<PROJECT>/release-trains.md`). You
+  inherit this role automatically when you cut a release that contains
+  a security fix; `sync-security-issue` hands the tracker to you with
+  `fix released`.
 
 You can volunteer to provide a fix for a specific issue even before
 formally taking on the remediation-developer role — just comment on
@@ -166,11 +180,11 @@ and discussing on the board, a browser is enough.
 If you do use an agent, the three commands a rotational triager runs
 a few times a week are:
 
-- **`import new reports`** — converts un-imported `security@` threads
-  into trackers and drafts the receipt-of-confirmation reply. See
-  [Step 2](README.md#step-2--import-the-report).
+- **`import new reports`** — converts un-imported security-list
+  threads into trackers and drafts the receipt-of-confirmation reply.
+  See [Step 2](README.md#step-2--import-the-report).
 - **`sync all issues`** — reconciles every open tracker with its mail
-  thread, its fix PR, the release train, and the users@ archive.
+  thread, its fix PR, the release train, and the users-list archive.
 - **`allocate CVE for issue #N`** — when a report is assessed as valid.
   See [Step 6](README.md#step-6--allocate-the-cve).
 
@@ -182,12 +196,13 @@ remediation-developer turn:
   attempts to land the fix for a triaged tracker in one go. It runs a
   pre-fix sync, reads the discussion on the tracker to build a fix
   plan, shows you the plan, and — only after you confirm — writes the
-  change in your local `apache/airflow` clone, runs the local checks
-  and tests, and opens a public `gh pr create --web` PR from your fork.
-  Every public surface (commit message, branch name, PR title, PR
-  body, newsfragment) is scrubbed for CVE / `airflow-s` /
-  `vulnerability` / `security fix` leakage before being written or
-  pushed. The skill refuses to operate on reports that are still being
+  change in your local `<upstream>` clone (path from
+  `config/user.md → environment.upstream_clone`), runs the local
+  checks and tests, and opens a public `gh pr create --web` PR from
+  your fork. Every public surface (commit message, branch name, PR
+  title, PR body, newsfragment) is scrubbed for CVE / the tracker
+  repo slug / `vulnerability` / `security fix` leakage before being
+  written or pushed. The skill refuses to operate on reports that are still being
   assessed, or on issues that need the private-PR fallback of
   [Step 9](README.md#step-9--open-a-private-pr-exceptional-cases). See
   [For remediation developers — Steps 7–11](README.md#for-remediation-developers--steps-711)
@@ -205,12 +220,13 @@ The full list of skills, and what each one does, is in
 # Proactive work and process improvements
 
 Beyond reacting to inbound reports, you are also welcome to
-proactively look for security improvements in Airflow. Take a look at
-the [Discussions](https://github.com/airflow-s/airflow-s/discussions)
-tab — we occasionally start a discussion there when we see we can
-improve something, process-wise or tooling-wise. Join those
-discussions, share your perspective, or start new ones if you see
-something worth fixing.
+proactively look for security improvements in the active project.
+Take a look at the tracker's Discussions tab (for Airflow:
+<https://github.com/airflow-s/airflow-s/discussions>) — we
+occasionally start a discussion there when we see we can improve
+something, process-wise or tooling-wise. Join those discussions,
+share your perspective, or start new ones if you see something
+worth fixing.
 
 PRs against any part of our process are welcome. The documents that
 shape the team are small enough to read in one sitting:

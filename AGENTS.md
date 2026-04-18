@@ -8,7 +8,7 @@
     - [Placeholder convention used in skill files](#placeholder-convention-used-in-skill-files)
   - [Local setup](#local-setup)
   - [Commit and PR conventions](#commit-and-pr-conventions)
-  - [Confidentiality of `airflow-s/airflow-s`](#confidentiality-of-airflow-sairflow-s)
+  - [Confidentiality of the tracker repository](#confidentiality-of-the-tracker-repository)
   - [Assessing reports](#assessing-reports)
     - [Reporter-supplied CVSS scores are informational only — never propagate them](#reporter-supplied-cvss-scores-are-informational-only--never-propagate-them)
     - [CVE references must never point at non-public mailing-list threads](#cve-references-must-never-point-at-non-public-mailing-list-threads)
@@ -19,7 +19,7 @@
     - [ASF-security-relay reports: a special case for drafting](#asf-security-relay-reports-a-special-case-for-drafting)
     - [Point reporters to the project's Security Model, don't re-explain it](#point-reporters-to-the-projects-security-model-dont-re-explain-it)
     - [Linking CVEs](#linking-cves)
-    - [Linking `airflow-s/airflow-s` issues and PRs](#linking-airflow-sairflow-s-issues-and-prs)
+    - [Linking tracker issues and PRs](#linking-tracker-issues-and-prs)
     - [Mentioning project maintainers and security-team members](#mentioning-project-maintainers-and-security-team-members)
     - [Other editorial guidelines](#other-editorial-guidelines)
   - [Reusable skills](#reusable-skills)
@@ -96,7 +96,7 @@ lists:
 [`config/user.md`](config/user.md) (copied from
 [`config/user.md.example`](config/user.md.example)) declaring their
 identity, PMC status, per-capability tool picks, and local
-environment paths (e.g. the apache/airflow clone location). Skills
+environment paths (e.g. the local `<upstream>` clone location). Skills
 read this file at Step 0 pre-flight and skip the corresponding
 prompts when a field is set. Fields that are unset fall back to
 runtime prompts — nothing is broken if `user.md` is missing; it is an
@@ -123,8 +123,8 @@ the active configuration before executing any command:
 | Placeholder | Resolves to | Source |
 |---|---|---|
 | `<PROJECT>` | The active project's directory name under `projects/` — for this tree, `airflow`. | `config/active-project.md` → `active_project:` |
-| `<tracker>` | The GitHub slug of the tracker repo — for this tree, `airflow-s/airflow-s`. | `projects/<PROJECT>/project.md` → `tracker_repo` |
-| `<upstream>` | The GitHub slug of the upstream codebase the fixes land in — for this tree, `apache/airflow`. | `projects/<PROJECT>/project.md` → `upstream_repo` |
+| `<tracker>` | The GitHub slug of the tracker repo — for this tree, `<tracker>`. | `projects/<PROJECT>/project.md` → `tracker_repo` |
+| `<upstream>` | The GitHub slug of the upstream codebase the fixes land in — for this tree, `<upstream>`. | `projects/<PROJECT>/project.md` → `upstream_repo` |
 | `<N>` | An issue or PR number. | The user's input to the skill |
 | `<CVE-ID>` | A CVE identifier of the form `CVE-YYYY-NNNNN`. | Per-tracker |
 
@@ -144,7 +144,7 @@ means *"before running this, substitute `<tracker>` for the value in
 link, `[…](../../../projects/<PROJECT>/canned-responses.md)` means
 *"substitute `<PROJECT>` for the value in
 `config/active-project.md` → `active_project`, then follow the
-link"*. Writing the literal value directly (e.g. `airflow-s/airflow-s`
+link"*. Writing the literal value directly (e.g. `<tracker>`
 or `projects/airflow/`) in a skill is a refactor bug — skills must
 stay project-agnostic so swapping projects is a config change, not
 a code change.
@@ -195,60 +195,67 @@ if a hook is failing, fix the underlying issue or update the hook configuration 
 - Keep the commit message focused on the user-visible change, not the mechanics of how the edit
   was made.
 
-## Confidentiality of `airflow-s/airflow-s`
+## Confidentiality of the tracker repository
 
-The existence of this private repository, the issue numbers it contains, the
-labels we use, and the discussions inside it are **not public**. Anything that
-leaves the security team's private channels — public Apache Airflow PRs,
-public GitHub issues, public mailing lists, public canned responses, public
-release notes, public commit messages, public blog posts, **anything visible
-to non-security-team members** — must not contain:
+The existence of the private tracker repository (`<tracker>`), the
+issue numbers it contains, the labels we use, and the discussions
+inside it are **not public**. Anything that leaves the security
+team's private channels — public `<upstream>` PRs, public GitHub
+issues, public mailing lists, public canned responses, public
+release notes, public commit messages, public blog posts, **anything
+visible to non-security-team members** — must not contain:
 
-- URLs of the form `https://github.com/airflow-s/airflow-s/...`
-  (issue links, PR links, discussion links, comment links);
-- bare references like `airflow-s/airflow-s#NNN` or `#NNN` in a context where
-  the implicit repository is `airflow-s/airflow-s`;
-- the literal string `airflow-s` used as a repo or org name;
-- screenshots or excerpts of the airflow-s GitHub UI;
-- copy/paste of comments, labels, or milestones from this repository if doing
-  so reveals that the source is the private security tracker.
+- URLs of the form `https://github.com/<tracker>/...` (issue links,
+  PR links, discussion links, comment links);
+- bare references like `<tracker>#NNN` or `#NNN` in a context where
+  the implicit repository is `<tracker>`;
+- the literal string `<tracker>` (i.e. the active project's tracker
+  repo slug) used as a repo or org name;
+- screenshots or excerpts of the tracker's GitHub UI;
+- copy/paste of comments, labels, or milestones from the tracker if
+  doing so reveals that the source is the private security tracker.
 
 These references are allowed **only** in:
 
-- documents that live inside this private repository (this file, `README.md`,
-  `projects/<PROJECT>/canned-responses.md`, `SKILL.md` files, etc.);
-- private mail threads on `security@airflow.apache.org` with the original
-  reporter (where letting them know we have a tracking issue is part of the
-  status update they receive);
-- private mail to `private@airflow.apache.org` when escalating a stalled
-  discussion per process step 4.
+- documents that live inside the tracker repository (this file,
+  `README.md`, `projects/<PROJECT>/canned-responses.md`, `SKILL.md`
+  files, etc.);
+- private mail threads on the project's `<security-list>` with the
+  original reporter (where letting them know we have a tracking issue
+  is part of the status update they receive);
+- private mail to the project's `<private-list>` (PMC escalation
+  list) when escalating a stalled discussion per process step 4.
 
 In particular:
 
-- **Public `apache/airflow` PR descriptions and commit messages** must not
-  reveal the CVE, the security nature of the change, or any link back to
-  `airflow-s/airflow-s`. This is already required by process step 8 of
+- **Public `<upstream>` PR descriptions and commit messages** must
+  not reveal the CVE, the security nature of the change, or any link
+  back to `<tracker>`. This is already required by process step 8 of
   [`README.md`](README.md) and the rule above reinforces it.
-- **Canned responses**
-  ([`projects/airflow/canned-responses.md`](projects/airflow/canned-responses.md))
-  must remain free of `airflow-s/airflow-s` URLs, because they are sent
-  verbatim as email replies. If you are tempted to add one, link to the
-  project's public Security Model or security policy instead — see
+- **Canned responses** (for the active project,
+  [`projects/airflow/canned-responses.md`](projects/airflow/canned-responses.md))
+  must remain free of `<tracker>` URLs, because they are sent
+  verbatim as email replies. If you are tempted to add one, link to
+  the project's public Security Model or security policy instead —
+  for Airflow, see
   [`projects/airflow/security-model.md`](projects/airflow/security-model.md).
 - **Status updates the skill drafts to reporters** *may* include the
-  `airflow-s/airflow-s` tracking-issue URL — the reporter is on the private
-  `security@airflow.apache.org` thread and is expected to keep it
-  confidential — but the same content **must not** be reused in any public
-  comment, comment to the public Airflow PR, or release-time advisory text.
-- **`gh issue comment` calls inside this repository are fine** because they
-  land on the private issue itself; they do not leak.
+  `<tracker>` tracking-issue URL — the reporter is on the private
+  `<security-list>` thread and is expected to keep it confidential —
+  but the same content **must not** be reused in any public comment,
+  comment to the public `<upstream>` PR, or release-time advisory
+  text.
+- **`gh issue comment` calls inside the tracker repository are fine**
+  because they land on the private issue itself; they do not leak.
 
-When editing or generating any text destined for a public audience, search it
-for `airflow-s` and the patterns above before saving or sending. If a public
-audience needs to see a tracking link for transparency, link to the **public**
-artifact (the merged `apache/airflow` PR, the published CVE on `cve.org`, the
-`users@` advisory archive on `lists.apache.org`) — never to the private
-tracker.
+When editing or generating any text destined for a public audience,
+search it for the tracker repo slug (substitute `<tracker>` with the
+concrete value — for this tree, the sequence `airflow-s`) and for
+the patterns above before saving or sending. If a public audience
+needs to see a tracking link for transparency, link to the **public**
+artifact (the merged `<upstream>` PR, the published CVE on
+`cve.org`, the public users-list advisory archive) — never to the
+private tracker.
 
 ## Assessing reports
 
@@ -264,7 +271,7 @@ informational background only.** Do not:
   status update to the reporter;
 - repeat it in an email reply, even to confirm it.
 
-The Airflow security team scores every accepted vulnerability independently,
+The active project's security team scores every accepted vulnerability independently,
 as part of the CVE-allocation step, using the same CVSS version and vector
 conventions we use for all Airflow CVEs. The independent score is the **only**
 score that ends up in the CVE record and the public advisory. Reasons:
@@ -299,38 +306,41 @@ attaches alongside.
 
 ### CVE references must never point at non-public mailing-list threads
 
-When populating the CVE record's ``references[]`` array (via the
-`generate-cve-json` script or directly in the Vulnogram UI), **never
-tag a URL as ``vendor-advisory`` if the URL points to a non-publicly
-archived list**. The Airflow lists fall into two groups:
+When populating the CVE record's `references[]` array (via the
+`generate-cve-json` script or directly in the project's CVE-tool
+UI), **never tag a URL as `vendor-advisory` if the URL points to a
+non-publicly archived list**. The project's mailing lists fall into
+two groups — see
+[`projects/<PROJECT>/project.md → Mailing lists`](projects/airflow/project.md#mailing-lists)
+for the concrete list membership and the public / private marking:
 
-- **Publicly archived** on `lists.apache.org`: `users@airflow.apache.org`,
-  `dev@airflow.apache.org`, `announce@apache.org`,
-  `commits@airflow.apache.org`. Thread URLs on these lists resolve
-  correctly for the whole world and are the right target for a
-  ``vendor-advisory`` reference on the public CVE record.
-- **Private**, not publicly archived: `security@airflow.apache.org`,
-  `private@airflow.apache.org`. `lists.apache.org/thread/<id>` URLs
-  that come from an inbound report on `security@` look identical in
-  shape to public-list URLs, but they 404 for everyone outside the
-  security team. They must **never** appear in the public CVE record.
+- **Publicly archived** (for ASF projects, on `lists.apache.org`):
+  users list, dev list, announce list, commits list. Thread URLs on
+  these lists resolve correctly for the whole world and are the
+  right target for a `vendor-advisory` reference on the public CVE
+  record.
+- **Private**, not publicly archived: the project's `<security-list>`
+  and `<private-list>`. For ASF projects these produce
+  `lists.apache.org/thread/<id>` URLs that look identical in shape
+  to public-list URLs but 404 for everyone outside the security
+  team. They must **never** appear in the public CVE record.
 
 Concretely, the issue template has two separate fields for this:
 
 - The *"Security mailing list thread"* field is the **internal**
-  reference for the security team: it holds the URL (or Gmail thread
-  ID) of the original `security@airflow.apache.org` thread so
-  triagers can navigate back to the report. It is expected to 404 for
-  anyone outside the security team. Keep whatever the reporter /
+  reference for the security team: it holds the URL (or Gmail
+  thread ID) of the original `<security-list>` thread so triagers
+  can navigate back to the report. It is expected to 404 for anyone
+  outside the security team. Keep whatever the reporter /
   team-member put there — do **not** scrub it during sync.
-- The *"Public advisory URL"* field holds the
-  archive URL on `lists.apache.org/list.html?users@airflow.apache.org`
-  once the public advisory has been sent (Step 13 of the process).
-  This is the URL that ends up as the `vendor-advisory` reference on
-  the public CVE record. Before the advisory is sent the field stays
-  empty; the `sync-security-issue` skill scans the users@ archive
-  for the CVE ID and proposes populating the field automatically
-  once the advisory lands.
+- The *"Public advisory URL"* field holds the archive URL on the
+  project's public users-list archive once the public advisory has
+  been sent (Step 13 of the process). This is the URL that ends up
+  as the `vendor-advisory` reference on the public CVE record.
+  Before the advisory is sent the field stays empty; the
+  `sync-security-issue` skill scans the users-list archive for the
+  CVE ID and proposes populating the field automatically once the
+  advisory lands.
 
 The `generate-cve-json` script enforces this split:
 
@@ -388,7 +398,7 @@ Concrete phrasing patterns that work well:
 ### Brevity: emails state facts, not context
 
 Every outbound email drafted by a skill — status updates to reporters,
-escalation messages to `private@airflow.apache.org`, relay requests to
+escalation messages to `<private-list>`, relay requests to
 PMC members, communications to the ASF security team (`cve-managers@`,
 `security@apache.org`) — must be **short and factual**. The recipient
 already has the context; the point of the message is to deliver new
@@ -401,11 +411,11 @@ three short paragraphs or less:
    opened, advisory sent, etc.).
 2. One sentence stating **what comes next** and roughly when (e.g.
    *"The advisory will be sent once the fix ships, currently expected
-   with Airflow 3.2.2."*).
+   with the next patch release."*).
 3. The relevant **artifact URLs** on their own line(s) — CVE tool
    link, PR URL, advisory archive URL — per the linking rules in
    [Linking CVEs](#linking-cves) and
-   [Linking `airflow-s/airflow-s` issues and PRs](#linking-airflow-sairflow-s-issues-and-prs).
+   [Linking tracker issues and PRs](#linking-tracker-issues-and-prs).
    Gmail autolinks bare URLs; do not use markdown or shorthand.
 
 That is the entire body. No re-introduction of the vulnerability, no
@@ -496,12 +506,13 @@ repository) rather than duplicated in the canned responses.
 
 ### Linking CVEs
 
-Whenever a CVE ID appears in text this repository produces — status comments
-on `airflow-s` issues, proposals from the `sync-security-issue` skill, recap
-messages, canned-response drafts to reporters, internal notes — render it as
-a **clickable link**, not as bare text. The canonical link is the ASF CVE
-tool entry, which any security team member can click through to the live
-CVE record we control:
+Whenever a CVE ID appears in text this repository produces — status
+comments on `<tracker>` issues, proposals from the
+`sync-security-issue` skill, recap messages, canned-response drafts
+to reporters, internal notes — render it as a **clickable link**,
+not as bare text. The canonical link is the active project's CVE-tool
+record URL, which any security team member can click through to the
+live CVE record we control:
 
 ```
 https://cveprocess.apache.org/cve5/<CVE-ID>
@@ -512,7 +523,7 @@ Example:
 > [`CVE-2026-40690`](https://cveprocess.apache.org/cve5/CVE-2026-40690)
 
 For CVEs that have already been **published** (the advisory has been sent
-to `users@airflow.apache.org`, the issue carries `vendor-advisory`, and the
+to `<users-list>`, the issue carries `vendor-advisory`, and the
 CVE record is visible on public databases), additionally link to the public
 `cve.org` / MITRE record so non-security-team readers can see the public
 description without needing access to the ASF tool:
@@ -532,65 +543,68 @@ shows the CVE as RESERVED with no details — skip the public link in that
 case and link only to the ASF tool.
 
 **Confidentiality**, as a cross-reference to the
-"Confidentiality of `airflow-s/airflow-s`" section above:
+[Confidentiality of the tracker repository](#confidentiality-of-the-tracker-repository)
+section above:
 
-- ASF CVE tool links are fine inside `airflow-s/airflow-s` private
-  comments and in private mail to the reporter on
-  `security@airflow.apache.org` — the tool is team-internal and does not
-  reveal anything beyond the CVE ID itself.
-- Public `apache/airflow` PR descriptions, public mailing-list posts, and
-  any other public surface **must not** link to the ASF CVE tool before the
-  advisory is sent — doing so implies the existence of the private tracking
-  issue. Once the advisory is public, link only to `cve.org` (or NVD),
-  never to the ASF tool.
+- CVE-tool links are fine inside `<tracker>` private comments and
+  in private mail to the reporter on `<security-list>` — the tool
+  is team-internal and does not reveal anything beyond the CVE ID
+  itself.
+- Public `<upstream>` PR descriptions, public mailing-list posts,
+  and any other public surface **must not** link to the CVE tool
+  before the advisory is sent — doing so implies the existence of
+  the private tracking issue. Once the advisory is public, link
+  only to `cve.org` (or NVD), never to the CVE tool.
 
 When editing an existing document that contains a bare `CVE-YYYY-NNNNN`
 string, convert it to the linked form in the same edit.
 
-### Linking `airflow-s/airflow-s` issues and PRs
+### Linking tracker issues and PRs
 
-Whenever a reference to an `airflow-s/airflow-s` issue, pull request,
-comment, or discussion appears in text this repository produces — sync /
-fix skill proposals, status comments on the private issue itself, recap
-messages, internal notes, `SKILL.md` files — render it as a **clickable
-markdown link**, not as a bare `#NNN` or `airflow-s/airflow-s#NNN`. The
-URL format is:
+Whenever a reference to a `<tracker>` issue, pull request, comment,
+or discussion appears in text this repository produces — sync / fix
+skill proposals, status comments on the private issue itself, recap
+messages, internal notes, `SKILL.md` files — render it as a
+**clickable markdown link**, not as a bare `#NNN` or
+`<tracker>#NNN`. The URL format is:
 
 ```
-https://github.com/airflow-s/airflow-s/issues/<N>
-https://github.com/airflow-s/airflow-s/pull/<N>
-https://github.com/airflow-s/airflow-s/issues/<N>#issuecomment-<C>
+https://github.com/<tracker>/issues/<N>
+https://github.com/<tracker>/pull/<N>
+https://github.com/<tracker>/issues/<N>#issuecomment-<C>
 ```
 
-Preferred rendering:
+Preferred rendering (with `<tracker>` substituted — for this tree,
+`<tracker>`):
 
-> [`airflow-s/airflow-s#221`](https://github.com/airflow-s/airflow-s/issues/221)
+> [`<tracker>#221`](https://github.com/<tracker>/issues/221)
 
 or, when the repository is already obvious from context (for example
-inside a comment on `airflow-s/airflow-s#221` itself):
+inside a comment on `<tracker>#221` itself):
 
-> [`#221`](https://github.com/airflow-s/airflow-s/issues/221)
+> [`#221`](https://github.com/<tracker>/issues/221)
 
-Link both the number *and* any referenced comment / review by using the
-per-comment anchor:
+Link both the number *and* any referenced comment / review by using
+the per-comment anchor:
 
-> [`airflow-s/airflow-s#216 — issuecomment-4252393493`](https://github.com/airflow-s/airflow-s/issues/216#issuecomment-4252393493)
+> [`<tracker>#216 — issuecomment-4252393493`](https://github.com/<tracker>/issues/216#issuecomment-4252393493)
 
-**Confidentiality, as always**, takes precedence: these rendered links
-are *only* allowed inside this private repository and in private mail
-threads on `security@airflow.apache.org` — they are **never** permitted
-in public `apache/airflow` PR descriptions, public mailing-list posts,
-public canned responses, or anywhere else a non-security-team member
-could see them. See the "Confidentiality of `airflow-s/airflow-s`"
-section above. The scrubbing grep the `fix-security-issue` skill runs
-before pushing anything public is the final line of defence and must
-catch any stray `airflow-s` URL or `airflow-s#NNN` reference that slips
+**Confidentiality, as always**, takes precedence: these rendered
+links are *only* allowed inside the tracker repository and in
+private mail threads on the project's `<security-list>` — they are
+**never** permitted in public `<upstream>` PR descriptions, public
+mailing-list posts, public canned responses, or anywhere else a
+non-security-team member could see them. See the
+[Confidentiality of the tracker repository](#confidentiality-of-the-tracker-repository)
+section above. The scrubbing grep the `fix-security-issue` skill
+runs before pushing anything public is the final line of defence and
+must catch any stray tracker-repo URL or `#NNN` reference that slips
 into public text.
 
 When editing an existing document in this repo that contains a bare
-`#NNN` or `airflow-s/airflow-s#NNN`, convert it to the linked form in
-the same edit. Skill-generated output (sync proposals, issue comments,
-email drafts to reporters on the `security@` thread) must emit the
+`#NNN` or `<tracker>#NNN`, convert it to the linked form in the same
+edit. Skill-generated output (sync proposals, issue comments, email
+drafts to reporters on the `<security-list>` thread) must emit the
 linked form from the start — bare references are a miss.
 
 ### Mentioning project maintainers and security-team members
@@ -641,8 +655,8 @@ commit message or an ad-hoc comment.
 Currently available:
 
 - [`import-security-issue`](.claude/skills/import-security-issue/SKILL.md) —
-  the on-ramp of the process. Scans `security@airflow.apache.org` for threads
-  that have not yet been copied into `airflow-s/airflow-s` as tracking issues,
+  the on-ramp of the process. Scans `<security-list>` for threads
+  that have not yet been copied into `<tracker>` as tracking issues,
   classifies each candidate (real report vs. automated-scan / consolidated /
   media / spam), extracts the issue-template fields from the root email, and —
   after user confirmation — creates one tracker per valid report plus a Gmail
@@ -667,29 +681,34 @@ Currently available:
   an existing tracker.
 - [`sync-security-issue`](.claude/skills/sync-security-issue/SKILL.md) —
   reconciles a security issue with its GitHub discussion, its
-  `security@airflow.apache.org` mail thread, and any fixing PRs; proposes label,
+  `<security-list>` mail thread, and any fixing PRs; proposes label,
   milestone, field, and draft-email updates; and prompts the user to confirm each
   change before applying it. Points the user at
   [`allocate-cve`](.claude/skills/allocate-cve/SKILL.md) when a CVE is
   needed. **At the end of every run** it also invokes
   [`generate-cve-json`](tools/vulnogram/generate-cve-json/SKILL.md) with
   `--attach` to refresh the CVE JSON attachment on the tracking issue (auto-
-  resolving `--remediation-developer` from the first apache/airflow PR author
+  resolving `--remediation-developer` from the first <upstream> PR author
   in the *PR with the fix* body field), so the attached JSON stays in
   lock-step with the issue body. Skipped only when no CVE has been allocated
   yet, or when the issue has been closed as invalid / not-CVE-worthy / duplicate.
-- [`allocate-cve`](.claude/skills/allocate-cve/SKILL.md) — walks the user
-  through allocating a CVE via the ASF Vulnogram form at
-  <https://cveprocess.apache.org/allocatecve>. **The allocation itself is
-  PMC-gated** — only Airflow PMC members can submit the Vulnogram form.
-  The skill asks up front whether the user is on the PMC; if not, it
-  reshapes the recipe into a ``@``-mention relay message the triager
+- [`allocate-cve`](.claude/skills/allocate-cve/SKILL.md) — walks the
+  user through allocating a CVE via the active project's CVE-tool
+  allocation form (for Airflow, ASF Vulnogram at
+  <https://cveprocess.apache.org/allocatecve>; see
+  `projects/<PROJECT>/project.md → CVE tooling`).
+  **The allocation itself is PMC-gated** — only the active project's
+  PMC members can submit the form. The skill asks up front whether
+  the user is on the PMC (reading
+  `config/user.md → role_flags.pmc_member` when set); if not, it
+  reshapes the recipe into a `@`-mention relay message the triager
   forwards to a PMC member (on the tracker or on the
-  `security@airflow.apache.org` thread). Either way it reads the
-  tracking issue, strips redundant `Apache Airflow` / `[ Security Report ]`
-  / trailing version noise from the title to produce a CVE-ready title
-  for the Vulnogram form, and — once the allocated `CVE-YYYY-NNNNN` ID
-  is pasted back — updates the tracker in one coordinated pass: fills in
+  `<security-list>` thread). Either way it reads the tracking issue,
+  strips the project-specific redundant prefixes from the title (per
+  `projects/<PROJECT>/title-normalization.md`) to produce a
+  CVE-ready title for the allocation form, and — once the allocated
+  `CVE-YYYY-NNNNN` ID is pasted back — updates the tracker in one
+  coordinated pass: fills in
   the *CVE tool link* body field, adds the `cve allocated` label, posts
   a collapsed status-change comment, regenerates the CVE JSON attachment
   in the body via `generate-cve-json --attach`, and (when relevant)
@@ -701,11 +720,14 @@ Currently available:
   `sync-security-issue` first, then analyses the issue discussion to decide
   whether the reported problem is easily fixable (clear consensus, small scope,
   known location). If it is, proposes an implementation plan, writes the change
-  in the user's local `apache/airflow` clone, runs local checks and tests, and
-  opens a public PR via `gh pr create --web`. Every public surface (commit
-  message, branch name, PR title, PR body, newsfragment) is scrubbed for CVE /
-  `airflow-s` / `vulnerability` / `security fix` leakage before being written or
-  pushed. Updates the `airflow-s` tracking issue with the new PR link afterwards.
+  in the user's local `<upstream>` clone (path from
+  `config/user.md → environment.upstream_clone`), runs local checks and
+  tests, and opens a public PR via `gh pr create --web`. Every public
+  surface (commit message, branch name, PR title, PR body,
+  newsfragment) is scrubbed for CVE / the tracker repo slug (for this
+  tree, the substring `airflow-s`) / `vulnerability` / `security fix`
+  leakage before being written or pushed. Updates the `<tracker>`
+  tracking issue with the new PR link afterwards.
 - [`generate-cve-json`](tools/vulnogram/generate-cve-json/SKILL.md) — generates
   a paste-ready CVE 5.x JSON record from a tracking issue, matching the shape
   Vulnogram exports (`containers.cna` with `affected`, `descriptions` + HTML
@@ -714,9 +736,9 @@ Currently available:
   deterministic `uv run` script — [the `generate-cve-json` project](tools/vulnogram/generate-cve-json/) —
   parses the issue's template fields (multiple credits on separate lines,
   multiple reference URLs, `>= X, < Y` version ranges), writes the JSON to a
-  file, and prints the Vulnogram `#json` paste URL for the CVE. The ASF CVE
-  tool URL and any `airflow-s` URLs are filtered out of `references[]`
-  before serialising.
+  file, and prints the Vulnogram `#json` paste URL for the CVE. The
+  project's CVE-tool URL and any tracker-repo URLs (`<tracker>`) are
+  filtered out of `references[]` before serialising.
 
 When adding a new skill:
 

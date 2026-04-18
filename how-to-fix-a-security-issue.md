@@ -2,35 +2,88 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [Fixing Security Issues in Airflow](#fixing-security-issues-in-airflow)
+- [Fixing security issues](#fixing-security-issues)
   - [Process](#process)
-  - [Best Practices](#best-practices)
+  - [Best practices](#best-practices)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-# Fixing Security Issues in Airflow
+# Fixing security issues
 
-Generally speaking, Apache Airflow addresses security issues through the following steps:
+High-level overview of how the security team handles a vulnerability
+report from inbound email through published CVE. This page is
+project-agnostic; the concrete lists, repos, release trains, and
+tooling for the currently active project live under
+[`projects/<PROJECT>/`](projects/) — for Airflow, see
+[`projects/airflow/project.md`](projects/airflow/project.md).
+
+The end-to-end 16-step lifecycle is in [`README.md`](README.md). This
+page is the two-minute summary.
 
 ## Process
 
-1. **Vulnerability Identification**:
-   The Apache Airflow community actively monitors security channels and mailing lists for reports of vulnerabilities. Issues are reported to the `security@airflow.apache.org` email address.
+1. **Vulnerability identification.**
+   The active project's community monitors the project's
+   `<security-list>` (declared in
+   `projects/<PROJECT>/project.md → Mailing lists`) for inbound
+   reports. Reports from elsewhere (GHSA, HackerOne, the ASF
+   `security@apache.org` relay) are forwarded onto that list so the
+   security team has a single inbox.
 
-2. **Security Advisories**:
-   When vulnerabilities are fixed, the release managers issue security advisories to inform users about the
-   vulnerabilities and provide guidance on mitigation.
+2. **Triage.**
+   A rotating triager imports new reports into the private
+   `<tracker>` repository (see the
+   [`import-security-issue`](.claude/skills/import-security-issue/SKILL.md)
+   skill), classifies each candidate, and drafts a
+   receipt-of-confirmation reply to the reporter. The team then
+   discusses CVE-worthiness in the issue comments and — once the
+   report is assessed valid — applies a project-specific scope label
+   (see `projects/<PROJECT>/scope-labels.md`).
 
-3. **Security Features**:
-   The Apache Airflow project continuously works on introducing new security features and enhancing existing
-   ones to improve the overall security posture of the platform.
+3. **CVE allocation.**
+   A PMC member of the active project allocates a CVE through the
+   project's CVE tool (for Airflow, ASF Vulnogram). The allocation
+   is PMC-gated; non-PMC triagers use the
+   [`allocate-cve`](.claude/skills/allocate-cve/SKILL.md) skill to
+   produce a relay message for a PMC member to click through.
 
-4. **Community Engagement**:
-   The Apache Airflow project encourages responsible vulnerability disclosure from users and security researchers
-   to ensure prompt and responsible handling of security issues. The Airflow security team follows an on-call rotation and handles reports received this way.
+4. **Remediation.**
+   A security-team member writes the fix in the public `<upstream>`
+   repository (see the
+   [`fix-security-issue`](.claude/skills/fix-security-issue/SKILL.md)
+   skill, which can draft the PR automatically). The public PR is
+   scrubbed of CVE references, tracker-repo references, and any
+   *"security fix"* signal — per the confidentiality rules in
+   [`AGENTS.md`](AGENTS.md#confidentiality-of-the-tracker-repository).
 
+5. **Release + advisory.**
+   The release manager for the cut that carries the fix sends the
+   public advisory to the project's users + announce lists, captures
+   the archive URL, and moves the CVE record to `PUBLIC` in the CVE
+   tool.
 
-## Best Practices
+6. **Continuous improvement.**
+   The security team encourages responsible vulnerability disclosure
+   and continues to improve the project's security posture, security
+   features, and handling process. The active project's security
+   model (for Airflow, [`projects/airflow/security-model.md`](projects/airflow/security-model.md))
+   is the authoritative reference for what counts as a vulnerability.
 
-*  When we implement low-severity security fixes — sometimes ones that are not even worthy of a CVE — we avoid describing them as security features. This prevents web scrapers and tools running against our repository commits
-   from raising reports about issues they were not originally aware of. Such tools may themselves violate our security practices.
+## Best practices
+
+* **Avoid labelling low-severity fixes as "security fixes" in public
+  commits.** When we implement low-severity security fixes —
+  sometimes ones that are not even worthy of a CVE — we avoid
+  describing them as security features in public commit messages,
+  newsfragments, and release notes. This prevents automated scrapers
+  from raising reports about issues they were not originally aware
+  of. Such tools may themselves violate our security practices.
+* **Keep the reporter informed at every status transition** — see
+  the [*Keeping the reporter informed*](README.md#keeping-the-reporter-informed)
+  section of `README.md` for the full list of transitions and the
+  drafting rules.
+* **Confidentiality first.** Nothing about the private `<tracker>`
+  repository — issue numbers, labels, discussions — may appear on a
+  public surface. See the
+  [Confidentiality of the tracker repository](AGENTS.md#confidentiality-of-the-tracker-repository)
+  section of `AGENTS.md`.

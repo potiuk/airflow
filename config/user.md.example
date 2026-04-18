@@ -92,12 +92,12 @@ environment:
   # prompt you at runtime and offer to save your answer back here.
   # Examples: /Users/alice/src/apache-airflow,
   #           /home/bob/work/airflow
-  apache_airflow_clone:
+  upstream_clone:
 
   # Optional: the name of the git remote pointing at your fork of
   # apache/airflow. gh pr create uses this to push the fix branch.
   # Leave blank to let the skill detect the first non-origin remote.
-  apache_airflow_fork_remote:
+  upstream_fork_remote:
 ```
 
 ## Skill defaults

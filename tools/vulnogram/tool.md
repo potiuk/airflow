@@ -70,10 +70,10 @@ Vulnogram links are internal during the allocation + drafting window:
 
 - Before an advisory is sent, links to
   `cveprocess.apache.org/cve5/<CVE-ID>` **must not** appear on public
-  surfaces (the public `apache/airflow` PR body, public mailing-list
+  surfaces (the public `<upstream>` PR body, public mailing-list
   posts, anything else non-security-team-visible) — see the
-  *"Confidentiality"* and *"Linking CVEs"* sections of
-  [`../../AGENTS.md`](../../AGENTS.md).
+  *"Confidentiality of the tracker repository"* and *"Linking CVEs"*
+  sections of [`../../AGENTS.md`](../../AGENTS.md).
 - After publication the CVE record is world-readable at
   [`cve.org`](https://cve.org); the Vulnogram URL stays useful as the
   security team's edit surface but the public-facing link switches to
