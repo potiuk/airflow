@@ -247,6 +247,7 @@ should be sent to the reporter whenever any of the following happens:
 * a fix PR has been **merged**;
 * the issue has been scheduled for a specific release (milestone set);
 * the release has shipped and the public advisory has been sent;
+* the CVE record has been published on cve.org (completes the disclosure);
 * any credits or fields visible in the eventual public advisory have changed.
 
 Each status update should plainly state what has changed, link to the relevant

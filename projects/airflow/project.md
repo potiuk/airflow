@@ -96,6 +96,7 @@ PR series).
 | Issue tracking + source control + project board | `github` | [`../../tools/github/`](../../tools/github/) | `tracker_repo`, `upstream_repo`, `github_project_board_*`, `issue_template_fields` |
 | Inbound email / drafts | `gmail` | [`../../tools/gmail/`](../../tools/gmail/) | `security_list` subscription; PonyMail archive URL templates below |
 | CVE allocation + record mgmt | `vulnogram` | [`../../tools/vulnogram/`](../../tools/vulnogram/) | see [CVE tooling](#cve-tooling) below |
+| Public CVE-registry check (cve.org) | `cve-org` | [`../../tools/cve-org/`](../../tools/cve-org/) | none (universal registry — URLs are the same for every CVE ID) |
 | Release voting / announce | ASF mailing lists | — | via `dev_list` / `announce_list` / `users_list` |
 
 To replace a tool (e.g. swap GitHub issues for JIRA), declare an

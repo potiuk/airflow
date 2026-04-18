@@ -133,13 +133,16 @@ concurrently, which is exactly what the sync needs.
 
    | User input | Resolves to |
    |---|---|
-   | `sync all` (or `sync all open`) | every open issue in `<tracker>` — run `gh issue list --repo <tracker> --state open --limit 100 --json number,title,labels` and use the full result |
-   | `sync #212`, `sync 212`, `sync #212, #214, #218`, `sync #212-#218` | the issue number(s) verbatim — no resolution needed |
-   | `sync CVE-2026-40913` or `sync CVE-2026-40913, CVE-2026-40690` | look up each CVE ID with `gh search issues "CVE-YYYY-NNNNN" --repo <tracker> --json number,title,body --jq '.[] | select(.body \| contains("CVE-YYYY-NNNNN")) \| .number'` (match against the body's *CVE tool link* field) and expand |
-   | `sync <free-text>` (e.g. `sync JWT`, `sync KubernetesExecutor`) | title-substring match — run `gh issue list --repo <tracker> --state open --search "<free-text> in:title" --json number,title` and surface the matches back to the user for confirmation before dispatching (title matches are the fuzziest selector — always confirm, never auto-dispatch) |
-   | `sync <label>` (e.g. `sync announced`, `sync pr merged`) | all open issues carrying that label — run `gh issue list --repo <tracker> --state open --label "<label>" --json number,title` |
-   | `sync open` | same as `sync all` (explicit alias) |
-   | `sync closed` | open *and* closed issues — only run on explicit request; most sync actions are no-ops on closed issues |
+   | `sync all` | every open issue in `<tracker>` **plus recently-closed trackers still awaiting a post-close cve.org publication check**. Resolve as: `gh issue list --repo <tracker> --state open --limit 100 --json number,title,labels` ∪ `gh issue list --repo <tracker> --state closed --label "announced" --limit 50 --json number,title,labels,closedAt --jq '[.[] \| select(.closedAt > (now - 90*86400 \| todate))]'`. The closed bucket is limited to the last 90 days and to trackers carrying the `announced` label — those are the ones waiting for cve.org propagation + the final reporter notification (see [1g](#1g-recently-closed-trackers--check-cveorg-publication-state)). Everything else is a no-op on closed issues and is excluded. |
+   | `sync all open` | explicit open-only variant — `gh issue list --repo <tracker> --state open --limit 100 --json number,title,labels`. No closed trackers. Use when you want the classic open-only sweep and nothing else. |
+   | `sync #212`, `sync 212`, `sync #212, #214, #218`, `sync #212-#218` | the issue number(s) verbatim — no resolution needed. Works on open and closed trackers alike (the closed-issue sub-steps run when the tracker is closed with `announced`). |
+   | `sync CVE-2026-40913` or `sync CVE-2026-40913, CVE-2026-40690` | look up each CVE ID with `gh search issues "CVE-YYYY-NNNNN" --repo <tracker> --json number,title,body --jq '.[] | select(.body \| contains("CVE-YYYY-NNNNN")) \| .number'` (match against the body's *CVE tool link* field) and expand. |
+   | `sync <free-text>` (e.g. `sync JWT`, `sync KubernetesExecutor`) | title-substring match — run `gh issue list --repo <tracker> --state open --search "<free-text> in:title" --json number,title` and surface the matches back to the user for confirmation before dispatching (title matches are the fuzziest selector — always confirm, never auto-dispatch). |
+   | `sync <label>` (e.g. `sync announced`, `sync pr merged`) | all open issues carrying that label — `gh issue list --repo <tracker> --state open --label "<label>" --json number,title`. |
+   | `sync announced` (as a label selector) | as above, open-only. To include the recently-closed `announced` bucket, use `sync all` (default) or `sync closed announced`. |
+   | `sync closed announced` | the recently-closed `announced` bucket by itself — useful when you want to run the cve.org publication-check sweep without touching open issues (for example, as a post-release cron). |
+   | `sync open` | alias for `sync all open`. |
+   | `sync closed` | open *and* closed issues, **all** closed (not just recent `announced`). Explicit, narrow-scope request — most sync actions are no-ops on closed issues that are not in the `announced` bucket. |
 
    Selectors can be combined: `sync #212, CVE-2026-40690, JWT`
    resolves each independently and dispatches the union of the
@@ -147,12 +150,13 @@ concurrently, which is exactly what the sync needs.
    back to the user and ask for confirmation** before spawning
    subagents — this catches fuzzy-match surprises (a title-substring
    hit that was not intended, a CVE alias that matched two scope
-   trackers) before they cost an API round-trip.
+   trackers) before they cost an API round-trip. When the open /
+   closed buckets both contribute, group them in the echo so the
+   user can tell at a glance *"9 open, 2 recently-closed awaiting
+   cve.org"*.
 
-   For a plain `sync all`, default to open issues only; do not include
-   closed issues unless the user explicitly asks. When the selector
-   resolves to zero issues, tell the user and stop — do not fall back
-   to `sync all`.
+   When the selector resolves to zero issues, tell the user and stop
+   — do not fall back to `sync all`.
 
 2. **Spawn one subagent per issue, in a single message.** Use the
    `general-purpose` subagent type and send all `Agent` tool calls in
@@ -692,6 +696,7 @@ process the issue is currently at:
 | Advisory sent, `announced - emails sent` set, *Public advisory URL* body field still empty (issue stays open) | 13 → 14 |
 | *Public advisory URL* populated, `announced` label set (issue stays open — awaiting RM's Vulnogram push) | 14 |
 | `announced` set and CVE state is PUBLISHED on `cveprocess.apache.org` → close the issue (do not update labels) | 15 |
+| **Closed**, `announced` set, cve.org check **not yet run** for this tracker since close | post-15 (cve.org publication check — see [1g](#1g-recently-closed-trackers--check-cveorg-publication-state)) |
 | Closed, credits missing | 16 |
 
 The `pr created`, `pr merged`, and `fix released` labels describe the
@@ -699,6 +704,63 @@ fix-side flow; `cve allocated` and `announced - emails sent` describe
 the advisory-side flow. Both can coexist on the same issue — for
 example, a typical mid-flight issue carries `airflow`, `cve allocated`
 and `pr merged` at the same time.
+
+---
+
+### 1g. Recently-closed trackers — check cve.org publication state
+
+For **closed** trackers carrying the `announced` label (the ones
+`sync all` now includes alongside open issues), the CNA-tool record
+has been moved to `PUBLIC` and the issue was closed at Step 15 —
+but propagation from the CNA tool to `cve.org` is asynchronous
+(minutes to days). Until cve.org reflects the published state,
+there is nothing to tell the reporter except *"still propagating"*;
+once it does, the reporter is owed a final *"CVE is live"* email.
+
+The check is read-only and uses the MITRE CVE Services API v2 —
+the recipe lives in
+[`tools/cve-org/tool.md`](../../../tools/cve-org/tool.md#publication-state-check--check-published).
+Concretely, for each closed-`announced` tracker in this run:
+
+1. Extract the `CVE-YYYY-NNNNN` ID from the tracker's *CVE tool
+   link* body field (same field the allocate-cve and sync skills
+   already read).
+2. Call the API:
+   ```bash
+   curl -sSf https://cveawg.mitre.org/api/cve/<CVE-ID> \
+     | jq -r '{state: .cveMetadata.state, datePublished: .cveMetadata.datePublished}'
+   ```
+3. Interpret:
+   - `state == "PUBLISHED"` → capture `datePublished` and propose
+     the *CVE-published* reporter email in Step 2b.
+   - `state == "RESERVED"` → record *"cve.org shows RESERVED;
+     propagation not complete yet"* in the observed state; no
+     email yet; a future sync run will catch the publication.
+   - `state == "REJECTED"` → **surface as a blocker**. The record
+     was withdrawn post-publication. Do not draft a reporter
+     email; flag to the security team.
+   - `curl` error (404 / 5xx / DNS) → record *"cve.org lookup
+     failed — <short error> — try again next sync"*. Do not
+     propose notification on an absent response.
+
+**Idempotence.** Check the tracker's comment trail for a prior
+*"Sync YYYY-MM-DD — CVE-published reporter notification drafted"*
+status-change comment. If one exists and the reporter thread
+already carries a corresponding sent message, skip the proposal
+and record *"CVE-published notification already sent on <date>"*.
+
+**Gmail-budget.** The cve.org check is a single HTTP call per
+tracker — not metered against the Gmail budget. Still, keep it
+inside the skill's overall "≤ 1 extra HTTP round-trip per tracker"
+soft limit for closed-bucket scans: if multiple closed trackers
+are in scope, run the checks in parallel via the subagent fanout
+(one curl per subagent), not serially in the orchestrator.
+
+**When the tracker has no CVE ID.** Closed trackers without a
+`CVE-YYYY-NNNNN` in the *CVE tool link* body field are closing
+dispositions (`invalid` / `not CVE worthy` / `duplicate` /
+`wontfix`) — skip the cve.org check entirely and drop the tracker
+from the closed-bucket sweep.
 
 ---
 
@@ -905,19 +967,28 @@ will change and *why*. Group them by category:
 
 - **Status update to the reporter** — **whenever the issue's status has changed
   since the last message we sent to the reporter, propose a Gmail draft that
-  brings the reporter up to date.** The security team commits to keeping the
-  reporter informed at every state transition, per the "Keeping the reporter
-  informed" section of [`README.md`](../../../README.md). Concretely, draft a
-  status update whenever any of the following has happened since our last
-  message in the original mail thread:
+  brings the reporter up to date.** The set of transitions that warrant a
+  status update is enumerated authoritatively in
+  [`README.md` — Keeping the reporter informed](../../../README.md#keeping-the-reporter-informed);
+  the skill must draft an update when any of those has happened since our
+  last message in the original mail thread, including the post-close
+  *"CVE is live on cve.org"* transition surfaced by
+  [Step 1g](#1g-recently-closed-trackers--check-cveorg-publication-state).
 
-  - the report has been acknowledged or assessed (valid / invalid);
-  - a CVE has been allocated;
-  - a fix PR has been opened;
-  - a fix PR has been **merged**;
-  - the issue has been scheduled for a specific release (milestone set);
-  - the release has shipped and the public advisory has been sent;
-  - any credits or fields visible in the eventual public advisory have changed.
+  **Pick the matching canned-response template** rather than
+  free-drafting wording. The active project's
+  [`projects/<PROJECT>/canned-responses.md`](../../../projects/airflow/canned-responses.md)
+  carries one template per lifecycle transition — *"CVE allocated"*,
+  *"Fix PR opened"*, *"Fix PR merged"*, *"Release shipped"*,
+  *"Advisory sent"*, *"CVE published on cve.org"*, *"Credit
+  correction"*. Substitute the SCREAMING_SNAKE_CASE placeholders
+  (`CVE_ID`, `PR_URL`, `VERSION`, `ADVISORY_URL`, `RELEASE_URL`)
+  with the concrete values read from the tracker body and the
+  Step 1b / Step 1g signals. Only draft from scratch if the
+  transition is not in the canned set; if you do, follow the
+  "Brevity: emails state facts, not context" rule in
+  [`AGENTS.md`](../../../AGENTS.md) and offer to add the new
+  wording to the canned-responses file as a follow-up.
 
   Each status update follows the three-paragraph shape from the
   "Brevity: emails state facts, not context" section of
