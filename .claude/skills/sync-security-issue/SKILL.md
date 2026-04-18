@@ -1,9 +1,9 @@
 ---
 name: sync-security-issue
 description: |
-  Synchronize a security issue in airflow-s/airflow-s with the state of its
+  Synchronize a security issue in <tracker> with the state of its
   GitHub discussion, the security@airflow.apache.org mailing thread, and any
-  apache/airflow PRs that fix it. The skill gathers all relevant signals,
+  <upstream> PRs that fix it. The skill gathers all relevant signals,
   proposes label, milestone, assignee, field and draft-email updates, and
   only applies changes the user has explicitly confirmed. Suggests the next
   step in the handling process and prints the CVE allocation link when a CVE
@@ -16,14 +16,24 @@ when_to_use: |
   current state of the world.
 ---
 
+<!-- Placeholder convention (see AGENTS.md#placeholder-convention-used-in-skill-files):
+     <PROJECT>  → value of `active_project:` in config/active-project.md
+                 (for this tree: airflow)
+     <tracker>  → value of `tracker_repo:` in projects/<PROJECT>/project.md
+                 (for this tree: airflow-s/airflow-s)
+     <upstream> → value of `upstream_repo:` in projects/<PROJECT>/project.md
+                 (for this tree: apache/airflow)
+     Before running any bash command below, substitute these with the
+     active-project values read from config/ + projects/<PROJECT>/project.md. -->
+
 # sync-security-issue
 
 This skill reconciles a single security issue in
-[`airflow-s/airflow-s`](https://github.com/airflow-s/airflow-s) with:
+[`<tracker>`](https://github.com/<tracker>) with:
 
 1. the **GitHub issue** itself — comments, labels, milestone, assignee, description fields;
 2. the **email thread** on `security@airflow.apache.org` that originated the report (and any follow-ups);
-3. any **pull requests** in `apache/airflow` or `airflow-s/airflow-s` that reference or fix the issue;
+3. any **pull requests** in `<upstream>` or `<tracker>` that reference or fix the issue;
 4. the **handling process** documented in [`README.md`](../../../README.md).
 
 **Golden rule 1 — propose before applying.** Every change this skill
@@ -33,39 +43,39 @@ not send email, do not create, close, or edit anything without a clear
 "yes" from the user for that specific action. Drafts are always created
 as Gmail **drafts**, never sent directly.
 
-**Golden rule 2 — every `airflow-s/airflow-s` reference is a clickable
+**Golden rule 2 — every `<tracker>` reference is a clickable
 link.** Whenever this skill mentions the tracking issue, any other
-`airflow-s/airflow-s` issue, a `airflow-s/airflow-s` PR, a specific
+`<tracker>` issue, a `<tracker>` PR, a specific
 issue comment, a milestone, or a label from this repository — in the
 observed-state dump, in the proposal, in the confirmation prompt, in
 the apply-loop output, in the regeneration output, in the recap, in
 status-change comments posted to the issue itself, anywhere — render
 it as a markdown link the user can click, **never** as a bare `#NNN`
-or `airflow-s/airflow-s#NNN` or plain-text number. The link form is
-defined in the "Linking `airflow-s/airflow-s` issues and PRs" section
+or `<tracker>#NNN` or plain-text number. The link form is
+defined in the "Linking `<tracker>` issues and PRs" section
 of [`AGENTS.md`](../../../AGENTS.md):
 
-- **Issue**: `[airflow-s/airflow-s#221](https://github.com/airflow-s/airflow-s/issues/221)`
-  (or `[#221](https://github.com/airflow-s/airflow-s/issues/221)` when
+- **Issue**: `[<tracker>#221](https://github.com/<tracker>/issues/221)`
+  (or `[#221](https://github.com/<tracker>/issues/221)` when
   the repository is already obvious from context, e.g. inside a
   status-change comment *on* that same issue).
-- **PR**: `[airflow-s/airflow-s#NNN](https://github.com/airflow-s/airflow-s/pull/NNN)`
+- **PR**: `[<tracker>#NNN](https://github.com/<tracker>/pull/NNN)`
   (`.../pull/N`, not `.../issues/N`).
 - **Comment**: link to the `#issuecomment-<C>` anchor, e.g.
-  `[airflow-s/airflow-s#216 — issuecomment-4252393493](https://github.com/airflow-s/airflow-s/issues/216#issuecomment-4252393493)`.
-- **Milestone**: link to `https://github.com/airflow-s/airflow-s/milestone/<number>`
+  `[<tracker>#216 — issuecomment-4252393493](https://github.com/<tracker>/issues/216#issuecomment-4252393493)`.
+- **Milestone**: link to `https://github.com/<tracker>/milestone/<number>`
   (not the title), because milestone titles can change and the number
-  is stable. Example: `[3.2.2](https://github.com/airflow-s/airflow-s/milestone/42)`.
+  is stable. Example: `[3.2.2](https://github.com/<tracker>/milestone/42)`.
 
 **Self-check before presenting any user-visible text** (proposal body,
 recap body, status-comment body, apply-loop progress messages): grep
-the text for bare `#\d+` tokens and bare `airflow-s/airflow-s#\d+`
+the text for bare `#\d+` tokens and bare `<tracker>#\d+`
 tokens and convert any match to the link form. If the scrub finds a
 reference the skill does not have the full URL for yet, look it up
-with `gh issue view <N> --repo airflow-s/airflow-s --json url --jq .url`
+with `gh issue view <N> --repo <tracker> --json url --jq .url`
 before emitting. The confidentiality rule still applies: these linked
 references belong to the private surfaces listed in the
-"Confidentiality of `airflow-s/airflow-s`" section of
+"Confidentiality of `<tracker>`" section of
 [`AGENTS.md`](../../../AGENTS.md) and must **never** appear in any
 public surface.
 
@@ -123,11 +133,11 @@ concurrently, which is exactly what the sync needs.
 
    | User input | Resolves to |
    |---|---|
-   | `sync all` (or `sync all open`) | every open issue in `airflow-s/airflow-s` — run `gh issue list --repo airflow-s/airflow-s --state open --limit 100 --json number,title,labels` and use the full result |
+   | `sync all` (or `sync all open`) | every open issue in `<tracker>` — run `gh issue list --repo <tracker> --state open --limit 100 --json number,title,labels` and use the full result |
    | `sync #212`, `sync 212`, `sync #212, #214, #218`, `sync #212-#218` | the issue number(s) verbatim — no resolution needed |
-   | `sync CVE-2026-40913` or `sync CVE-2026-40913, CVE-2026-40690` | look up each CVE ID with `gh search issues "CVE-YYYY-NNNNN" --repo airflow-s/airflow-s --json number,title,body --jq '.[] | select(.body \| contains("CVE-YYYY-NNNNN")) \| .number'` (match against the body's *CVE tool link* field) and expand |
-   | `sync <free-text>` (e.g. `sync JWT`, `sync KubernetesExecutor`) | title-substring match — run `gh issue list --repo airflow-s/airflow-s --state open --search "<free-text> in:title" --json number,title` and surface the matches back to the user for confirmation before dispatching (title matches are the fuzziest selector — always confirm, never auto-dispatch) |
-   | `sync <label>` (e.g. `sync announced`, `sync pr merged`) | all open issues carrying that label — run `gh issue list --repo airflow-s/airflow-s --state open --label "<label>" --json number,title` |
+   | `sync CVE-2026-40913` or `sync CVE-2026-40913, CVE-2026-40690` | look up each CVE ID with `gh search issues "CVE-YYYY-NNNNN" --repo <tracker> --json number,title,body --jq '.[] | select(.body \| contains("CVE-YYYY-NNNNN")) \| .number'` (match against the body's *CVE tool link* field) and expand |
+   | `sync <free-text>` (e.g. `sync JWT`, `sync KubernetesExecutor`) | title-substring match — run `gh issue list --repo <tracker> --state open --search "<free-text> in:title" --json number,title` and surface the matches back to the user for confirmation before dispatching (title matches are the fuzziest selector — always confirm, never auto-dispatch) |
+   | `sync <label>` (e.g. `sync announced`, `sync pr merged`) | all open issues carrying that label — run `gh issue list --repo <tracker> --state open --label "<label>" --json number,title` |
    | `sync open` | same as `sync all` (explicit alias) |
    | `sync closed` | open *and* closed issues — only run on explicit request; most sync actions are no-ops on closed issues |
 
@@ -187,7 +197,7 @@ current_labels: [<label>, ...]
 current_milestone: <title or null>
 current_assignees: [<login>, ...]
 fix_pr:
-  url: <apache/airflow PR URL or null>
+  url: <<upstream> PR URL or null>
   state: open | merged | closed | null
   author: <login or null>
   author_is_security_team: true | false | null
@@ -233,7 +243,7 @@ or an ambiguous credit line).
   confirmation, and only from the orchestrator's main context. This
   keeps the drafts queue linear and auditable.
 - **Confidentiality still applies.** Subagents are bound by the
-  same rule: no `airflow-s/airflow-s` content may leak into any
+  same rule: no `<tracker>` content may leak into any
   public surface. This is a no-op for read-only subagents but worth
   stating.
 - **Link-form self-check still applies** to the orchestrator's
@@ -262,7 +272,7 @@ The skill needs:
   `security@airflow.apache.org`. Required for reading the reporter
   thread and drafting status updates.
 - **`gh` CLI authenticated** with collaborator access to
-  `airflow-s/airflow-s` (read + issue-write) and `apache/airflow`
+  `<tracker>` (read + issue-write) and `<upstream>`
   (read is enough — the sync only reads PR state on that repo).
 - Outbound HTTPS to `pypi.org`, `artifacthub.io`, and
   `lists.apache.org` — the sync curls these to detect released
@@ -282,13 +292,13 @@ Before reading any tracker state, verify:
    `mcp__claude_ai_Gmail__search_threads` with `pageSize: 1`; an
    auth error here means Gmail MCP is not configured, stop and
    say so.
-2. **`gh` is authenticated** with access to `airflow-s/airflow-s` —
-   `gh api repos/airflow-s/airflow-s --jq .name` must return
+2. **`gh` is authenticated** with access to `<tracker>` —
+   `gh api repos/<tracker> --jq .name` must return
    `airflow-s`. A 401/403/404 means the user needs
    `gh auth login` or collaborator access.
 3. **Selector resolves to a concrete issue (or set of issues)** —
    if the user said `sync NNN` but the number does not exist in
-   `airflow-s/airflow-s`, stop before Step 1 and ask which issue
+   `<tracker>`, stop before Step 1 and ask which issue
    they meant.
 
 If any check fails, stop and surface what is missing. Do **not**
@@ -304,7 +314,7 @@ Run these reads in parallel where possible. Do **not** make any changes yet.
 ### 1a. Read the GitHub issue
 
 ```bash
-gh issue view <N> --repo airflow-s/airflow-s \
+gh issue view <N> --repo <tracker> \
   --json number,title,state,body,labels,milestone,assignees,author,createdAt,updatedAt,closedAt,comments
 ```
 
@@ -335,7 +345,7 @@ The GraphQL introspection recipe for the board lives in
 [`tools/github/project-board.md`](../../../tools/github/project-board.md#introspection--find-the-itemid-and-current-column).
 The per-project board URL, node IDs, and label → column mapping live
 in
-[`projects/airflow/project.md`](../../../projects/airflow/project.md#github-project-board).
+[`projects/<PROJECT>/project.md`](../../../projects/<PROJECT>/project.md#github-project-board).
 
 Substitute the project's `<tracker-owner>` / `<tracker-name>` /
 `<project-number>` into the introspection query, then record the
@@ -348,7 +358,7 @@ First, get the PRs that GitHub itself has linked to the issue via "fixes" /
 "closes" / "resolves" keywords:
 
 ```bash
-gh issue view <N> --repo airflow-s/airflow-s --json closedByPullRequestsReferences
+gh issue view <N> --repo <tracker> --json closedByPullRequestsReferences
 ```
 
 Then look for any PR in either repo that mentions the issue number, in either
@@ -356,25 +366,25 @@ state. `gh search prs --state` only accepts `open` or `closed`, so run two
 queries (or omit `--state` entirely for "any state"):
 
 ```bash
-gh search prs "airflow-s#<N>" --repo apache/airflow         --json number,title,state,url,milestone,mergedAt
-gh search prs "#<N>"          --repo airflow-s/airflow-s    --json number,title,state,url,milestone,mergedAt
+gh search prs "airflow-s#<N>" --repo <upstream>         --json number,title,state,url,milestone,mergedAt
+gh search prs "#<N>"          --repo <tracker>    --json number,title,state,url,milestone,mergedAt
 ```
 
 If the issue body itself contains a PR URL (the report template has a "PR with
 the fix" field), fetch that PR directly and trust it more than the search:
 
 ```bash
-gh pr view <PR-NUMBER> --repo apache/airflow \
+gh pr view <PR-NUMBER> --repo <upstream> \
   --json number,title,state,url,milestone,mergedAt,mergeCommit,labels,reviews,isDraft
 ```
 
 For each PR found, record: number, repo, title, state (open / merged / closed),
-merge date, milestone. A PR that is merged into `apache/airflow` with a milestone
+merge date, milestone. A PR that is merged into `<upstream>` with a milestone
 set is the strongest signal for what milestone the security issue should carry.
 
 ### 1c. Find the **real** reporter and read the mailing-list thread
 
-> The author of the GitHub issue in `airflow-s/airflow-s` is **not** necessarily
+> The author of the GitHub issue in `<tracker>` is **not** necessarily
 > the person who reported the vulnerability. Per [`README.md`](../../../README.md)
 > step 1, the security team copies reports from the
 > `security@airflow.apache.org` mailing list into GitHub issues, so the GitHub
@@ -387,7 +397,7 @@ Process for finding the real reporter and the original thread:
 1. **Do not stop at the GitHub-notification mirror thread.** Searching Gmail
    for the issue title typically returns the GitHub-notification thread
    (`From: <user> via security <security@airflow.apache.org>`,
-   `To: airflow-s/airflow-s <airflow-s@noreply.github.com>`) first. That is
+   `To: <tracker> <airflow-s@noreply.github.com>`) first. That is
    *not* the original report — it is a mirror of the GitHub issue and its
    comments. Filter it out and keep digging.
 
@@ -400,7 +410,7 @@ Process for finding the real reporter and the original thread:
    [`tools/gmail/search-queries.md`](../../../tools/gmail/search-queries.md#sync-security-issue--reporter-thread-lookup-by-distinctive-phrase)
    (the GitHub-notification exclusions used for this project are
    declared in
-   [`projects/airflow/project.md`](../../../projects/airflow/project.md#gmail-and-ponymail)).
+   [`projects/<PROJECT>/project.md`](../../../projects/<PROJECT>/project.md#gmail-and-ponymail)).
 
 3. **Identify the original sender.** In the result set, look for the message
    whose `In-Reply-To` is empty (i.e. the root of its thread) and whose
@@ -487,13 +497,13 @@ update, label change, or next-step recommendation in Step 2:
 | Reporter explicit opt-out of credit (*"do not credit me"*, *"anonymous"*) | Set the field to `anonymous` and flag the advisory to use that form. |
 | Release manager's `[RESULT][VOTE] Release Airflow <version>` on `dev@airflow.apache.org` for a version that carries the fix | Record the release manager in the "Known release managers" subsection of [`AGENTS.md`](../../../AGENTS.md) if not already there; flag Step 13 (advisory) as assigned to that person. |
 | Advisory message sent to `announce@apache.org` / `users@airflow.apache.org` for the CVE on the tracker | Propose adding the `announced - emails sent` label and removing `fix released`. **Do not propose closing the issue here** — closing is gated on the archived public advisory URL being captured (see the next row). |
-| Advisory archived on `users@airflow.apache.org` (the announcement message is now visible in `lists.apache.org/list.html?users@airflow.apache.org` — scan the archive with the CVE ID when `announced - emails sent` is set and the *"Public advisory URL"* body field is empty) | Propose populating the *"Public advisory URL"* body field with the archive URL, regenerating the CVE JSON attachment (the generator picks the URL up automatically and tags it `vendor-advisory`), adding the `announced` label, **and moving the project-board column from `Fix released` to `Announced`** on [`airflow-s/airflow-s` Project 2](https://github.com/orgs/airflow-s/projects/2). The `Announced` column is the board's representation of Step 14 — the advisory has landed and the CVE record is staged with `CNA_private.state = "PUBLIC"` ready for the release manager's single-paste Step 15. **Do not close the issue and do not add the `vendor-advisory` label** — that is Step 15, owned by the release manager after they move the record to PUBLIC in Vulnogram. |
+| Advisory archived on `users@airflow.apache.org` (the announcement message is now visible in `lists.apache.org/list.html?users@airflow.apache.org` — scan the archive with the CVE ID when `announced - emails sent` is set and the *"Public advisory URL"* body field is empty) | Propose populating the *"Public advisory URL"* body field with the archive URL, regenerating the CVE JSON attachment (the generator picks the URL up automatically and tags it `vendor-advisory`), adding the `announced` label, **and moving the project-board column from `Fix released` to `Announced`** on [`<tracker>` Project 2](https://github.com/orgs/airflow-s/projects/2). The `Announced` column is the board's representation of Step 14 — the advisory has landed and the CVE record is staged with `CNA_private.state = "PUBLIC"` ready for the release manager's single-paste Step 15. **Do not close the issue and do not add the `vendor-advisory` label** — that is Step 15, owned by the release manager after they move the record to PUBLIC in Vulnogram. |
 | Project-board column drifted from the issue's label-derived state (e.g. a tracker carries `pr merged` but is still in the `PR created` column on [Project 2](https://github.com/orgs/airflow-s/projects/2), or `announced` + *Public advisory URL* body field populated but the column is still `Fix released`) | Propose moving the project item to the correct column per the mapping table in Step 2b. The board is the primary security-team overview surface; a stale column hides ownership handoffs from the team at a glance. |
 | `announced` label set and CVE record on `cveprocess.apache.org` now reports state PUBLISHED (checked via `curl -s https://cveprocess.apache.org/cve5/<CVE-ID>.json` / the ASF CVE tool API, or an explicit release-manager comment on the issue stating the Vulnogram push is done) | Propose closing the issue. Do not update any labels. This is the terminal transition. |
 | CVE record has open **review comments / reviewer proposals** (detected via the Gmail-search path in Step 1e — reviewer-comment notifications from Vulnogram land on `security@airflow.apache.org` with the CVE ID in the subject line; the `cveprocess.apache.org/cve5/<CVE-ID>.json` endpoint is behind ASF OAuth and is not readable from this skill's context, so Gmail is the load-bearing signal source). | Surface each open review comment in Step 2a with **clickable links** to the Gmail thread and to the CVE record on `cveprocess.apache.org` (the reader can authenticate in-browser to see live state), verbatim-quoted; then for each one that maps cleanly to a tracking-issue body field (CWE, Affected versions, Reporter credited as, Public advisory URL, Short public summary), **propose the matching body-field update** as a numbered item in Step 2b. The body is the source of truth for the CVE JSON — regeneration in Step 5 will pull the update back into the paste-ready attachment, and the release manager's only remaining action is the Vulnogram paste + comment-resolution click. Comments that do not map to a body field (severity/CVSS, out-of-scope challenges, free-form rewrites) are surfaced verbatim and flagged for human decision. See Step 1e for the full Gmail-search recipe and the reviewer-comment-to-field mapping table. |
-| The referenced `apache/airflow` PR has been opened but is still in `open` state | Propose `pr created` label; update the *"PR with the fix"* body field with the PR URL. |
-| The referenced `apache/airflow` PR moved to `merged` | Propose swapping `pr created` → `pr merged`; update milestone to the shipping release if now known. |
-| A release carrying the fix has shipped (PR's milestone release is on PyPI / Helm registry, or an explicit *"fix shipped in X.Y.Z"* comment) | Propose swapping `pr merged` → `fix released` (Step 12). This is the release manager's cue to own Steps 13–15 (advisory send → URL capture → Vulnogram PUBLIC → close). **Also propose swapping the assignee from the remediation developer to the release manager** (looked up via the three-source cascade in Step 2c — [`projects/airflow/release-trains.md`](../../../projects/airflow/release-trains.md) "Release managers for releases currently relevant to the security tracker" → Release Plan wiki → `[RESULT][VOTE]` thread on `dev@`), so the issue list reflects ownership hand-off. See the *Assignee hand-off at the `fix released` transition* paragraph under **Assignees** in Step 2b for the full rule. |
+| The referenced `<upstream>` PR has been opened but is still in `open` state | Propose `pr created` label; update the *"PR with the fix"* body field with the PR URL. |
+| The referenced `<upstream>` PR moved to `merged` | Propose swapping `pr created` → `pr merged`; update milestone to the shipping release if now known. |
+| A release carrying the fix has shipped (PR's milestone release is on PyPI / Helm registry, or an explicit *"fix shipped in X.Y.Z"* comment) | Propose swapping `pr merged` → `fix released` (Step 12). This is the release manager's cue to own Steps 13–15 (advisory send → URL capture → Vulnogram PUBLIC → close). **Also propose swapping the assignee from the remediation developer to the release manager** (looked up via the three-source cascade in Step 2c — [`projects/<PROJECT>/release-trains.md`](../../../projects/<PROJECT>/release-trains.md) "Release managers for releases currently relevant to the security tracker" → Release Plan wiki → `[RESULT][VOTE]` thread on `dev@`), so the issue list reflects ownership hand-off. See the *Assignee hand-off at the `fix released` transition* paragraph under **Assignees** in Step 2b for the full rule. |
 | GHSA state transition (opened, accepted, published, rejected) in a GHSA-forwarded email | If the GHSA is closed as "not accepted" but the security team accepted the report on `security@`, flag the divergence in the status comment so it is not lost. |
 | Team member saying *"let's also backport to v3-2-test"* / *"please mark X for backport"* | Note the requested backport label on the public PR as an item for Step 9 of the `fix-security-issue` workflow. |
 | Reporter flagging a second distinct vulnerability on the same thread | Surface as an explicit question to the user — it may warrant a separate tracking issue. |
@@ -545,7 +555,7 @@ uses for reporter threads. That is the load-bearing signal path.
 [`tools/gmail/search-queries.md`](../../../tools/gmail/search-queries.md#sync-security-issue--cve-review-comment-search);
 substitute the active project's `<security-list-domain>` (Airflow:
 `security.airflow.apache.org`, declared in
-[`projects/airflow/project.md`](../../../projects/airflow/project.md#gmail-and-ponymail))
+[`projects/<PROJECT>/project.md`](../../../projects/<PROJECT>/project.md#gmail-and-ponymail))
 and run via `search_threads` per
 [`tools/gmail/operations.md`](../../../tools/gmail/operations.md#search-threads).
 
@@ -711,12 +721,12 @@ will change and *why*. Group them by category:
 - **Milestone** — propose the matching release milestone on the
   issue. The milestone format depends on the scope label and is
   project-specific; for the active project see
-  [`projects/airflow/milestones.md`](../../../projects/airflow/milestones.md)
+  [`projects/<PROJECT>/milestones.md`](../../../projects/<PROJECT>/milestones.md)
   (the scope → milestone-format mapping and the rule that a merged PR's
   own milestone wins over the release-train default). The current
   release-train default used when no PR milestone is available lives
   in
-  [`projects/airflow/release-trains.md`](../../../projects/airflow/release-trains.md).
+  [`projects/<PROJECT>/release-trains.md`](../../../projects/<PROJECT>/release-trains.md).
 
   **If the milestone does not yet exist**, the proposal must say
   so and include the exact `gh api` command to create it. For a
@@ -725,12 +735,12 @@ will change and *why*. Group them by category:
 
   ```bash
   # Core or chart:
-  gh api repos/airflow-s/airflow-s/milestones \
+  gh api repos/<tracker>/milestones \
     -f title='<Milestone>' -f state=open \
     -f description='<optional>'
 
   # Provider wave (cut date + RM from the Release Plan wiki):
-  gh api repos/airflow-s/airflow-s/milestones \
+  gh api repos/<tracker>/milestones \
     -f title='Providers YYYY-MM-DD' -f state=open \
     -f description='Providers release cut on YYYY-MM-DD, RM: <Name>'
   ```
@@ -739,12 +749,12 @@ will change and *why*. Group them by category:
   `gh issue edit <N> --milestone 'Providers YYYY-MM-DD'` (or by
   milestone number via the REST API if the milestone is closed).
 
-- **Assignees** — when a fix PR exists in `apache/airflow` (found in
+- **Assignees** — when a fix PR exists in `<upstream>` (found in
   Step 1b or named in the *"PR with the fix"* body field) **and the
   PR author is a member of the Airflow security team** (their GitHub
   handle appears in the security-team roster in
-  [`projects/airflow/release-trains.md`](../../../projects/airflow/release-trains.md) — when in doubt,
-  run `gh api repos/airflow-s/airflow-s/collaborators --jq '.[].login'`
+  [`projects/<PROJECT>/release-trains.md`](../../../projects/<PROJECT>/release-trains.md) — when in doubt,
+  run `gh api repos/<tracker>/collaborators --jq '.[].login'`
   as the authoritative check; **every collaborator counts regardless
   of their permission level** — read, triage, write, maintain, and
   admin are all valid), **propose setting the tracking issue's
@@ -780,7 +790,7 @@ will change and *why*. Group them by category:
   then the `[RESULT][VOTE] Release Airflow <version>` thread on
   `dev@airflow.apache.org`), and propose the swap as a concrete
   numbered item in Step 2b. If the release manager is not a
-  collaborator on `airflow-s/airflow-s` yet, surface that as a
+  collaborator on `<tracker>` yet, surface that as a
   blocker and ask the user whether to invite them before assigning
   — GitHub silently ignores assignee writes for non-collaborators.
 
@@ -830,7 +840,7 @@ will change and *why*. Group them by category:
      the PonyMail API + `list.html` fallback pattern documented in
      [`tools/gmail/ponymail-archive.md`](../../../tools/gmail/ponymail-archive.md#use-case--sync-security-issue).
      The active project's URL templates are declared in
-     [`projects/airflow/project.md`](../../../projects/airflow/project.md#gmail-and-ponymail)
+     [`projects/<PROJECT>/project.md`](../../../projects/<PROJECT>/project.md#gmail-and-ponymail)
      (`ponymail_api_url_template`, `ponymail_public_search_url_template`,
      `ponymail_thread_url_template`).
      If the archive returns a hit, propose populating the field with
@@ -874,7 +884,7 @@ will change and *why*. Group them by category:
   "Reporter-supplied CVSS scores are informational only" subsection of
   [`AGENTS.md`](../../../AGENTS.md).
 - **Status transitions** — e.g. *"close the issue as invalid"*, *"add `Not yet
-  announced` now that apache/airflow#NNNN has merged"*, *"add `vendor-advisory
+  announced` now that <upstream>#NNNN has merged"*, *"add `vendor-advisory
   ready` now that the users@ advisory URL has been captured — the release
   manager will copy the CVE JSON to Vulnogram and close the issue"*.
 
@@ -887,7 +897,7 @@ will change and *why*. Group them by category:
 
   The label + body-state → board-column mapping and the board URL
   live in
-  [`projects/airflow/project.md`](../../../projects/airflow/project.md#github-project-board).
+  [`projects/<PROJECT>/project.md`](../../../projects/<PROJECT>/project.md#github-project-board).
   Board-column mutations are applied via the GraphQL
   `updateProjectV2ItemFieldValue` mutation; the recipe lives in
   [`tools/github/project-board.md`](../../../tools/github/project-board.md#write--move-a-tracker-to-a-different-column)
@@ -925,17 +935,17 @@ will change and *why*. Group them by category:
 
   **Use full, clickable URLs for every reference in the email body.**
   Gmail renders plain URLs as clickable links; shorthand like
-  ``apache/airflow#65346`` or ``airflow-s/airflow-s#261`` does **not**
+  ``<upstream>#65346`` or ``<tracker>#261`` does **not**
   render as a link and forces the reporter to reconstruct the URL by
   hand. Concretely:
 
   - For the internal tracking issue (allowed on the private mail
     thread), write the **full** URL:
-    ``https://github.com/airflow-s/airflow-s/issues/<N>``. Do not use
-    ``#<N>`` or ``airflow-s/airflow-s#<N>`` shorthand.
-  - For fix PRs on ``apache/airflow``, write the **full** URL:
-    ``https://github.com/apache/airflow/pull/<N>``. Do not use
-    ``apache/airflow#<N>`` shorthand.
+    ``https://github.com/<tracker>/issues/<N>``. Do not use
+    ``#<N>`` or ``<tracker>#<N>`` shorthand.
+  - For fix PRs on ``<upstream>``, write the **full** URL:
+    ``https://github.com/<upstream>/pull/<N>``. Do not use
+    ``<upstream>#<N>`` shorthand.
   - Same rule for any other GitHub reference you mention in the body
     (public issues, commits, security advisories): always the full
     URL. Markdown-link syntax (``[text](url)``) does **not** render
@@ -948,19 +958,19 @@ will change and *why*. Group them by category:
     already full URLs; just paste them as-is.
 
   This is specific to the **email** path. Comments on the
-  ``airflow-s/airflow-s`` issue itself should still use the
-  markdown-linked ``[#<N>](url)`` / ``[apache/airflow#<N>](url)``
+  ``<tracker>`` issue itself should still use the
+  markdown-linked ``[#<N>](url)`` / ``[<upstream>#<N>](url)``
   form per Golden rule 2, because GitHub does render that markdown.
 
-  **Confidentiality:** the existence of `airflow-s/airflow-s` is private (see
-  the "Confidentiality of `airflow-s/airflow-s`" section of
+  **Confidentiality:** the existence of `<tracker>` is private (see
+  the "Confidentiality of `<tracker>`" section of
   [`AGENTS.md`](../../../AGENTS.md)). A status-update email to the reporter on
   the `security@airflow.apache.org` thread *may* include the `airflow-s`
   tracking-issue URL — the reporter is already on the private thread — but
   the same text **must not** be reused in any public location: do not put it
-  in the public `apache/airflow` PR description, in any public comment, or in
+  in the public `<upstream>` PR description, in any public comment, or in
   the eventual public advisory. When linking from public surfaces, link to
-  the public artifact instead (the merged `apache/airflow` PR, the published
+  the public artifact instead (the merged `<upstream>` PR, the published
   CVE on `cve.org`, the `users@` advisory archive).
 
   **Do not re-ask questions that have already been asked.** Before drafting,
@@ -980,7 +990,7 @@ will change and *why*. Group them by category:
   the reporter has not replied, the credit question is **already pending** —
   do not re-ask.
 
-- **Status update on the GitHub issue (`airflow-s/airflow-s`)** — **every
+- **Status update on the GitHub issue (`<tracker>`)** — **every
   status change must also be recorded as a comment on the issue itself**, not
   only sent by email. The two channels serve different audiences: the email
   keeps the reporter informed; the issue comment keeps the rest of the
@@ -1019,13 +1029,13 @@ will change and *why*. Group them by category:
   under roughly **six lines** of rendered markdown. If a single
   item cannot be compressed to one bullet, break it into an action
   headline at the top and push the reasoning into `<details>`.
-  Clickable `airflow-s/airflow-s` references (Golden rule 2) apply
+  Clickable `<tracker>` references (Golden rule 2) apply
   to both the visible part and the `<details>` interior.
 
   **The first line of every status-change comment MUST be a bold-
   markdown headline.** It starts with `**` and ends with `**` (or
   `**...**.`), and it names the kind of change inline — `**Sync …`,
-  `**Status update …`, `**Merged [airflow-s/airflow-s#<drop>] …`,
+  `**Status update …`, `**Merged [<tracker>#<drop>] …`,
   `**Closing as duplicate of …`, `**Split for scope clarity …`,
   `**Imported on YYYY-MM-DD …`. Do **not** open with a plain
   `Sync status (sync-security-issue skill, YYYY-MM-DD)`-style line:
@@ -1061,7 +1071,7 @@ will change and *why*. Group them by category:
   replace the opening with a short two- or three-line bold-headline
   + `**Next:**` + reporter-notification line that matches the
   current shape. Apply the rewrite with `gh api -X PATCH
-  repos/airflow-s/airflow-s/issues/comments/<id> --input <json>`
+  repos/<tracker>/issues/comments/<id> --input <json>`
   (where `<json>` is a `{"body": "..."}` payload — `--field
   body=@file` URL-encodes the newlines). Do not silently rewrite
   history: surface each rewrite as its own proposal item so the
@@ -1085,7 +1095,7 @@ will change and *why*. Group them by category:
   reporter, a follow-up needed for triage, communicating a negative
   assessment), propose a **Gmail draft** reply (not a sent message). State
   the intent of the draft in one line and prefer to reuse a canned response
-  from [`canned-responses.md`](../../../projects/airflow/canned-responses.md) verbatim where
+  from [`canned-responses.md`](../../../projects/<PROJECT>/canned-responses.md) verbatim where
   one applies. Show the exact subject, recipients, In-Reply-To, and body in
   the proposal.
 
@@ -1111,7 +1121,7 @@ updates land, based on the process step. Examples:
 - *"Step 3: start the CVE-worthiness discussion in a comment on the issue, tagging at least one other security team member."*
 - *"Step 4: draft a consultation message for `private@airflow.apache.org` — the discussion has been stalled for 34 days."*
 - *"Step 6: allocate a CVE. Run the [`allocate-cve`](../allocate-cve/SKILL.md) skill (it prints the ASF Vulnogram form URL plus a CVE-ready title and wires the allocated ID back into the tracker)."*
-- *"Step 10: close the private PR at airflow-s/airflow-s#NNN now that apache/airflow#NNNN has merged."*
+- *"Step 10: close the private PR at <tracker>#NNN now that <upstream>#NNNN has merged."*
 - *"Step 11: `pr merged` — tracker parked until the release train ships. No action needed from the security team; the next sync run will detect the PyPI / Helm release and propose the `fix released` swap (Step 12)."*
 - *"Step 12: `fix released` — the release carrying the fix is now on PyPI / the Helm registry. Ownership of the issue has transferred to the release manager; the label swap was the hand-off."*
 - *"Step 13: the release manager should now fill in the CVE tool fields taken from the issue — CWE, product, versions, severity, patch link, credits — move the CVE to REVIEW → READY, and send the advisory to `announce@apache.org` / `users@airflow.apache.org`."*
@@ -1144,7 +1154,7 @@ the actual person, in this order:
    Narrow with a date range if needed.
 
 If the release manager is not yet in
-[`projects/airflow/release-trains.md`](../../../projects/airflow/release-trains.md)
+[`projects/<PROJECT>/release-trains.md`](../../../projects/<PROJECT>/release-trains.md)
 after you look them up, surface that in the proposal and propose
 appending them (with the source link to the `[RESULT][VOTE]` thread
 and the release date) to the "Release managers for releases currently
@@ -1181,8 +1191,8 @@ the recap — render it as a clickable link per the "Linking CVEs" section of
 Do not emit bare `CVE-YYYY-NNNNN` text — always link.
 
 See **Golden rule 2** at the top of this skill: every
-`airflow-s/airflow-s` reference in the proposal must be a clickable
-markdown link. Do not emit bare `#NNN` or `airflow-s/airflow-s#NNN`.
+`<tracker>` reference in the proposal must be a clickable
+markdown link. Do not emit bare `#NNN` or `<tracker>#NNN`.
 
 ---
 
@@ -1206,13 +1216,13 @@ Never assume confirmation. If the user replies ambiguously, ask again.
 For each confirmed item, run exactly one command and report the result
 before moving on to the next item. Use:
 
-- **Labels:** `gh issue edit <N> --repo airflow-s/airflow-s --add-label "..." --remove-label "..."`
-- **Milestone (existing):** `gh issue edit <N> --repo airflow-s/airflow-s --milestone "<title>"`
+- **Labels:** `gh issue edit <N> --repo <tracker> --add-label "..." --remove-label "..."`
+- **Milestone (existing):** `gh issue edit <N> --repo <tracker> --milestone "<title>"`
 - **Milestone (create then assign):** run the create call from 2b, then the edit.
-- **Assignees:** `gh issue edit <N> --repo airflow-s/airflow-s --add-assignee @me` (or a named user).
-- **Description:** `gh issue edit <N> --repo airflow-s/airflow-s --body-file <tmpfile>` — write the
+- **Assignees:** `gh issue edit <N> --repo <tracker> --add-assignee @me` (or a named user).
+- **Description:** `gh issue edit <N> --repo <tracker> --body-file <tmpfile>` — write the
   new body to a temporary file first so nothing is lost to shell quoting.
-- **Comments:** `gh issue comment <N> --repo airflow-s/airflow-s --body-file <tmpfile>`.
+- **Comments:** `gh issue comment <N> --repo <tracker> --body-file <tmpfile>`.
   Before posting, **scrub the comment body for bare-name mentions** of
   anyone on the "Current release managers" or rotation-roster lists in
   [`AGENTS.md`](../../../AGENTS.md), and of known security-team members.
@@ -1226,13 +1236,13 @@ before moving on to the next item. Use:
   `Rahul Vats`, `Aritra Basu`, `Pierre Jeambrun`, `Kaxil Naik`,
   `Amogh Desai`, plus any name that appears in a `Reporter credited
   as` field without a confirmed external-credit decision.
-- **Close / reopen:** `gh issue close <N> --repo airflow-s/airflow-s --reason completed` (or `not planned`).
+- **Close / reopen:** `gh issue close <N> --repo <tracker> --reason completed` (or `not planned`).
 - **Project-board column:** apply via the `updateProjectV2ItemFieldValue`
   GraphQL recipe in
   [`tools/github/project-board.md`](../../../tools/github/project-board.md#write--move-a-tracker-to-a-different-column).
   Substitute the project's board node ID, status-field node ID, and
   target-column option ID from
-  [`projects/airflow/project.md`](../../../projects/airflow/project.md#github-project-board).
+  [`projects/<PROJECT>/project.md`](../../../projects/<PROJECT>/project.md#github-project-board).
   Use the `itemId` captured in Step 1a's board read. If the issue
   does not yet have a project item, use the orphan-issue path from
   the same reference (`addProjectV2ItemById` then
@@ -1256,7 +1266,7 @@ how to proceed — do not guess.
 
 After the apply loop finishes — **every time**, not as a proposal — regenerate the
 CVE artifact via the project's declared CVE tool. For the active project (`cve_tool: vulnogram` —
-see [`projects/airflow/project.md`](../../../projects/airflow/project.md#cve-tooling)) that means
+see [`projects/<PROJECT>/project.md`](../../../projects/<PROJECT>/project.md#cve-tooling)) that means
 running the
 [`generate-cve-json`](../../../tools/vulnogram/generate-cve-json/SKILL.md) script with `--attach`
 to refresh the CVE JSON attachment on the tracking issue. The Vulnogram-side
@@ -1301,7 +1311,7 @@ In every other case — including already-published CVEs — regenerate.
 
 ### How to run it
 
-The minimum command, from the `airflow-s/airflow-s` clone root:
+The minimum command, from the `<tracker>` clone root:
 
 ```bash
 uv run --project tools/vulnogram/generate-cve-json generate-cve-json <N> --attach
@@ -1319,29 +1329,29 @@ of the PR mentioned in the *PR with the fix* body field and pass it via
 `--remediation-developer`.
 
 **Scope the URL extraction to the *PR with the fix* section only** —
-the issue body routinely mentions unrelated `apache/airflow/pull/NNN`
+the issue body routinely mentions unrelated `<upstream>/pull/NNN`
 URLs elsewhere (prior-art references, cross-link to sibling
 scope-split trackers, "similar to…" context). A naive
 `grep … | head -n1` against the whole body will happily pick the
 first of those and credit the wrong person. Caught on
-[airflow-s/airflow-s#241](https://github.com/airflow-s/airflow-s/issues/241)
-where the body mentioned `apache/airflow#44322` as context before the
-actual fix `apache/airflow#63028` — the CVE JSON ended up with the
+[<tracker>#241](https://github.com/<tracker>/issues/241)
+where the body mentioned `<upstream>#44322` as context before the
+actual fix `<upstream>#63028` — the CVE JSON ended up with the
 wrong author on the first regen and had to be re-run with
 `--remediation-developer` passed explicitly.
 
 ```bash
 # Extract the PR URL from the "PR with the fix" body section only —
 # awk keeps lines from the "### PR with the fix" heading up to the
-# next "### " heading, and the grep then scopes to apache/airflow PRs.
-pr_url=$(gh issue view <N> --repo airflow-s/airflow-s --json body --jq .body \
+# next "### " heading, and the grep then scopes to <upstream> PRs.
+pr_url=$(gh issue view <N> --repo <tracker> --json body --jq .body \
   | awk '/^### PR with the fix$/{flag=1; next} /^### /{flag=0} flag' \
-  | grep -oE 'https://github\.com/apache/airflow/pull/[0-9]+' | head -n1)
+  | grep -oE 'https://github\.com/<upstream>/pull/[0-9]+' | head -n1)
 
 author_name=""
 if [[ -n "$pr_url" ]]; then
   pr_number=${pr_url##*/}
-  author_name=$(gh pr view "$pr_number" --repo apache/airflow \
+  author_name=$(gh pr view "$pr_number" --repo <upstream> \
     --json author --jq '(.author.name // "") | select(length > 0) // .author.login' 2>/dev/null || echo "")
 fi
 
@@ -1375,10 +1385,10 @@ patches the same embedded attachment block.
 
 The script prints one of two lines on success:
 
-- `Embedded CVE JSON in issue body on airflow-s/airflow-s#<N>` — first
+- `Embedded CVE JSON in issue body on <tracker>#<N>` — first
   run (or first run after the legacy comment-based attachment was
   cleaned up).
-- `Replaced CVE JSON in issue body on airflow-s/airflow-s#<N>` —
+- `Replaced CVE JSON in issue body on <tracker>#<N>` —
   subsequent run; the existing embedded block was replaced in place.
 
 Capture the printed URL — it deep-links to the `## CVE JSON — paste-ready
@@ -1402,7 +1412,7 @@ After the regeneration step finishes, print a short recap:
 
 **Before presenting the recap**, apply the Golden rule 2 self-check to
 the entire recap text: any mention of the tracking issue, any
-cross-referenced `airflow-s/airflow-s` issue, any PR, any specific
+cross-referenced `<tracker>` issue, any PR, any specific
 comment anchor and any milestone must be a clickable markdown link.
 The user has to be able to click every `airflow-s` reference in the
 recap without manually pasting the number into the URL bar.
@@ -1410,14 +1420,14 @@ recap without manually pasting the number into the URL bar.
 Concrete minimum that every recap must include as clickable links:
 
 - the **tracking issue header** (e.g. *"Sync complete on
-  [`airflow-s/airflow-s#233`](https://github.com/airflow-s/airflow-s/issues/233)"*);
+  [`<tracker>#233`](https://github.com/<tracker>/issues/233)"*);
 - the **status-change comment** the sync just posted, as a
   `#issuecomment-<C>` anchor link;
 - the **embedded CVE JSON section** from Step 5, deep-linked via the
   body's heading anchor (e.g.
-  `https://github.com/airflow-s/airflow-s/issues/<N>#cve-json--paste-ready-for-<cve-id-slug>`);
+  `https://github.com/<tracker>/issues/<N>#cve-json--paste-ready-for-<cve-id-slug>`);
 - any **cross-referenced issues** mentioned by the proposal (for
-  example *"similar to [`airflow-s/airflow-s#214`](…)"*);
+  example *"similar to [`<tracker>#214`](…)"*);
 - any **milestone** the sync moved the issue to, as a
   `…/milestone/<number>` link.
 
@@ -1457,17 +1467,17 @@ finalising the recap.
 - **Milestone naming** must follow the project's convention. For the
   active project the formats (and the create-missing-milestone recipe)
   live in
-  [`projects/airflow/milestones.md`](../../../projects/airflow/milestones.md).
+  [`projects/<PROJECT>/milestones.md`](../../../projects/<PROJECT>/milestones.md).
   When a milestone does not yet exist in the tracker, the sync proposal
   creates it via `gh api` and then assigns the issue.
 - **Scope label is mandatory once triage is complete** — exactly one
   of the scope labels defined in
-  [`projects/airflow/scope-labels.md`](../../../projects/airflow/scope-labels.md).
+  [`projects/<PROJECT>/scope-labels.md`](../../../projects/<PROJECT>/scope-labels.md).
   The `task-sdk` note (through Airflow 3.2.x the Task SDK ships bundled
   into `apache-airflow` and Task-SDK-only reports are classified under
   `airflow`; from 3.3+ a new `task-sdk` label is needed) lives with the
   release-train state in
-  [`projects/airflow/release-trains.md`](../../../projects/airflow/release-trains.md).
+  [`projects/<PROJECT>/release-trains.md`](../../../projects/<PROJECT>/release-trains.md).
 - **Multi-scope reports must be split into one tracking issue per
   scope.** When an incoming report turns out to affect more than one
   scope (for example a bug whose root cause lives in
@@ -1481,7 +1491,7 @@ finalising the recap.
      patch releases cut on a faster cadence, so core is typically the
      anchor). Drop the extra scope label from that issue.
   2. Create one new issue per remaining scope via `gh issue create
-     --repo airflow-s/airflow-s`, copying the report body
+     --repo <tracker>`, copying the report body
      verbatim but with a one-line preamble that says *"Split from
      [#NNN](...) for the `<scope>` scope — see that issue for the
      full discussion history."* This preamble keeps the scope's
@@ -1489,7 +1499,7 @@ finalising the recap.
      scroll through comments in another tracker.
   3. Apply to each split issue:
      - exactly one scope label (see
-       [`projects/airflow/scope-labels.md`](../../../projects/airflow/scope-labels.md));
+       [`projects/<PROJECT>/scope-labels.md`](../../../projects/<PROJECT>/scope-labels.md));
      - the same `cve allocated` label if a CVE is shared across
        scopes — CVE reuse is correct when the same upstream bug
        affects multiple products, with one `affected[]` entry per
@@ -1498,7 +1508,7 @@ finalising the recap.
        `fix released`) derived independently per scope from the same
        fix PR, because each scope rides a different release train;
      - the matching milestone for that scope (see
-       [`projects/airflow/milestones.md`](../../../projects/airflow/milestones.md));
+       [`projects/<PROJECT>/milestones.md`](../../../projects/<PROJECT>/milestones.md));
      - the same assignee set as the anchor issue.
   4. Post a cross-link comment on **each** issue pointing at the
      other(s), so the maintainers and the reporter can see the full
@@ -1527,7 +1537,7 @@ disagree, surface the disagreement in the proposal and let the user decide.
 ## Canned responses
 
 When drafting an email reply, prefer a verbatim canned response from
-[`canned-responses.md`](../../../projects/airflow/canned-responses.md) over ad-hoc text. The
+[`canned-responses.md`](../../../projects/<PROJECT>/canned-responses.md) over ad-hoc text. The
 currently available canned responses include: confirmation of receipt (now
 including the credit-preference question), invalid Simple Auth Manager report,
 invalid automated report, consolidated multi-issue report rejection, "not an
@@ -1537,5 +1547,5 @@ by authenticated users, positive and negative assessment, automated scanning
 results, DoS/RCE/arbitrary read via connection configuration, and media-report
 requests. If none of them fit, draft a new reply that follows the editorial
 rules in `AGENTS.md` and offer to add it to
-[`projects/airflow/canned-responses.md`](../../../projects/airflow/canned-responses.md)
+[`projects/<PROJECT>/canned-responses.md`](../../../projects/<PROJECT>/canned-responses.md)
 as a follow-up.

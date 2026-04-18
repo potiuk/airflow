@@ -1,7 +1,7 @@
 ---
 name: deduplicate-security-issue
 description: |
-  Merge two airflow-s/airflow-s tracking issues that describe the same
+  Merge two <tracker> tracking issues that describe the same
   root-cause vulnerability (typically discovered independently by two
   reporters, arriving via different channels), preserving every
   reporter's credit, every mailing-list thread reference, and every
@@ -18,9 +18,19 @@ when_to_use: |
   open trackers describing the same bug from different angles.
 ---
 
+<!-- Placeholder convention (see AGENTS.md#placeholder-convention-used-in-skill-files):
+     <PROJECT>  → value of `active_project:` in config/active-project.md
+                 (for this tree: airflow)
+     <tracker>  → value of `tracker_repo:` in projects/<PROJECT>/project.md
+                 (for this tree: airflow-s/airflow-s)
+     <upstream> → value of `upstream_repo:` in projects/<PROJECT>/project.md
+                 (for this tree: apache/airflow)
+     Before running any bash command below, substitute these with the
+     active-project values read from config/ + projects/<PROJECT>/project.md. -->
+
 # deduplicate-security-issue
 
-Merges two `airflow-s/airflow-s` tracking issues that describe the
+Merges two `<tracker>` tracking issues that describe the
 same underlying vulnerability. The output is a single tracker
 ("the **kept** issue") that carries every reporter's credit, every
 mailing-list thread, and every independent report's body, with the
@@ -30,7 +40,7 @@ other tracker ("the **dropped** issue") closed and labelled
 This is **one of the few places in the security workflow** where a
 piece of reporter-supplied content (the dropped issue's body) moves
 from one tracker to another. Since the target tracker is private to
-`airflow-s/airflow-s`, no confidentiality boundary is crossed, but
+`<tracker>`, no confidentiality boundary is crossed, but
 the skill must still preserve every reporter's credit verbatim and
 surface the merge in a status comment on both trackers so the audit
 trail stays complete.
@@ -78,7 +88,7 @@ does **not** auto-pick. Practical guidance to offer when asked:
 ## Prerequisites
 
 - **`gh` CLI authenticated** with collaborator access to
-  `airflow-s/airflow-s` — the skill reads both trackers, edits
+  `<tracker>` — the skill reads both trackers, edits
   the kept tracker's body, closes the dropped tracker, and adds
   / removes labels.
 - **`uv` installed** — the Step 5 CVE-JSON regeneration is a
@@ -92,10 +102,10 @@ in `README.md`.
 
 ## Step 0 — Pre-flight check
 
-1. `gh api repos/airflow-s/airflow-s --jq .name` returns
+1. `gh api repos/<tracker> --jq .name` returns
    `airflow-s`.
 2. Both issue numbers resolve —
-   `gh issue view <kept> --repo airflow-s/airflow-s --json number`
+   `gh issue view <kept> --repo <tracker> --json number`
    and the same for `<dropped>` — before any write.
 3. `uv --version` returns.
 
@@ -108,8 +118,8 @@ than no dedup.
 ## Step 1 — Fetch and classify both trackers
 
 ```bash
-gh issue view <keep>  --repo airflow-s/airflow-s --json number,title,state,body,labels,milestone,assignees,author,comments
-gh issue view <drop>  --repo airflow-s/airflow-s --json number,title,state,body,labels,milestone,assignees,author,comments
+gh issue view <keep>  --repo <tracker> --json number,title,state,body,labels,milestone,assignees,author,comments
+gh issue view <drop>  --repo <tracker> --json number,title,state,body,labels,milestone,assignees,author,comments
 ```
 
 Verify:
@@ -167,7 +177,7 @@ verbatim. The body-field schema (role names, empty-field convention,
 body-field-surgery pattern) is documented in
 [`tools/github/issue-template.md`](../../../tools/github/issue-template.md);
 the concrete field names for the active project live in
-[`projects/airflow/project.md`](../../../projects/airflow/project.md#issue-template-fields).
+[`projects/<PROJECT>/project.md`](../../../projects/<PROJECT>/project.md#issue-template-fields).
 Structure:
 
 ```markdown
@@ -177,7 +187,7 @@ Structure:
 
 ---
 
-**Second independent report: [airflow-s/airflow-s#<drop>](https://github.com/airflow-s/airflow-s/issues/<drop>) — merged on <YYYY-MM-DD>.** <one-sentence headline: same root-cause bug, different attack vector / affected process.>
+**Second independent report: [<tracker>#<drop>](https://github.com/<tracker>/issues/<drop>) — merged on <YYYY-MM-DD>.** <one-sentence headline: same root-cause bug, different attack vector / affected process.>
 
 <details>
 <summary>Full report from <drop.reporter> (click to expand)</summary>
@@ -285,12 +295,12 @@ scrolling reader sees two or three lines, the auditor clicks
 ### On the kept tracker
 
 ```markdown
-**Merged [airflow-s/airflow-s#<drop>](https://github.com/airflow-s/airflow-s/issues/<drop>) into this tracker.** <one-sentence headline: same root-cause bug, different attack vector / affected process.>
+**Merged [<tracker>#<drop>](https://github.com/<tracker>/issues/<drop>) into this tracker.** <one-sentence headline: same root-cause bug, different attack vector / affected process.>
 
 - Body: <keep.reporter>'s original report preserved; <drop.reporter>'s report appended as *"Second independent report"*.
 - Credits: **<keep credit>** + **<drop credit>**.
 - Mailing threads: both listed.
-- CVE: [<CVE-N>-<M>](https://cveprocess.apache.org/cve5/<CVE-N>-<M>) stays allocated here; [airflow-s/airflow-s#<drop>](...) being closed as duplicate.
+- CVE: [<CVE-N>-<M>](https://cveprocess.apache.org/cve5/<CVE-N>-<M>) stays allocated here; [<tracker>#<drop>](...) being closed as duplicate.
 
 **Next:** <one-line next step — e.g. credit-preference confirmation for both, or Step 6 CVE refinement>.
 
@@ -318,9 +328,9 @@ pending questions, relay-channel notes>.
 ### On the dropped tracker
 
 ```markdown
-**Closing as duplicate of [airflow-s/airflow-s#<keep>](https://github.com/airflow-s/airflow-s/issues/<keep>).** <one-sentence headline.>
+**Closing as duplicate of [<tracker>#<keep>](https://github.com/<tracker>/issues/<keep>).** <one-sentence headline.>
 
-Full content merged into [airflow-s/airflow-s#<keep>](...) as *"Second independent report"*; <drop.reporter> credited alongside <keep.reporter> there.
+Full content merged into [<tracker>#<keep>](...) as *"Second independent report"*; <drop.reporter> credited alongside <keep.reporter> there.
 
 **Next:** all triage and advisory work continues on [#<keep>](...).
 
@@ -331,7 +341,7 @@ Full content merged into [airflow-s/airflow-s#<keep>](...) as *"Second independe
 
 Specific artifacts merged: <CVSS scoring, attack chain, PoC, remediation options, etc.>.
 
-See [the merge comment on airflow-s/airflow-s#<keep>](…) for the full hand-off record.
+See [the merge comment on <tracker>#<keep>](…) for the full hand-off record.
 
 Reporter notification status: <full state — draft IDs, pending questions>.
 
@@ -339,7 +349,7 @@ Reporter notification status: <full state — draft IDs, pending questions>.
 ```
 
 Both comments must render every cross-issue reference as a
-clickable markdown link per the *Linking `airflow-s/airflow-s`
+clickable markdown link per the *Linking `<tracker>`
 issues and PRs* convention in [`AGENTS.md`](../../../AGENTS.md).
 The six-line visible-cap rule from the sync skill applies here
 too: the scroller-facing part should fit on one screen.
@@ -374,8 +384,8 @@ After confirmation, apply **sequentially** (never in parallel):
    comment
 3. `gh issue comment <drop> --body-file <tmpfile>` — duplicate
    status comment
-4. `gh issue edit <drop> --repo airflow-s/airflow-s --add-label duplicate`
-5. `gh issue close <drop> --repo airflow-s/airflow-s --reason "not planned"`
+4. `gh issue edit <drop> --repo <tracker> --add-label duplicate`
+5. `gh issue close <drop> --repo <tracker> --reason "not planned"`
    (GitHub's `duplicate` close-reason is not exposed by `gh` on
    all versions; `not planned` combined with the `duplicate` label
    carries the same signal)
@@ -393,7 +403,7 @@ guess. Partial merges are recoverable as long as the body update
 After the apply loop, print a short recap:
 
 - The kept tracker as a clickable
-  [`airflow-s/airflow-s#<keep>`](...) link with a short summary of
+  [`<tracker>#<keep>`](...) link with a short summary of
   its new state (label set, credit list, both threads).
 - The dropped tracker as a clickable link with its new closed
   state.
@@ -402,7 +412,7 @@ After the apply loop, print a short recap:
   credits, stale drafts, etc.) repeated here so the user does not
   have to scroll.
 
-Apply the `airflow-s/airflow-s` link-form self-check to the entire
+Apply the `<tracker>` link-form self-check to the entire
 recap before presenting.
 
 ---

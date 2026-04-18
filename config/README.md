@@ -7,6 +7,7 @@
   - [What the project layer does](#what-the-project-layer-does)
   - [What the user layer does](#what-the-user-layer-does)
   - [How skills consume these layers](#how-skills-consume-these-layers)
+  - [Placeholder convention](#placeholder-convention)
   - [Tutorial — setting up your configuration end-to-end](#tutorial--setting-up-your-configuration-end-to-end)
     - [0. Prerequisites](#0-prerequisites)
     - [1. Confirm the active project](#1-confirm-the-active-project)
@@ -127,6 +128,30 @@ Future skills (and future tool adapters) will add more reads. The
 template file will grow alongside them; existing `user.md` files stay
 compatible — unrecognised keys are ignored, missing keys fall back to
 "ask".
+
+## Placeholder convention
+
+Skill files and tool-adapter docs use a small set of substitution
+placeholders instead of hard-coded project / repo names, so every
+skill stays project-agnostic. A skill that today reads
+`projects/<PROJECT>/canned-responses.md` is one `config/active-project.md`
+swap away from reading `projects/foo/canned-responses.md` for a
+completely different project.
+
+The full contract lives in
+[`../AGENTS.md` — *Placeholder convention used in skill files*](../AGENTS.md#placeholder-convention-used-in-skill-files).
+Short version:
+
+| Placeholder | Source value | Active-project value |
+|---|---|---|
+| `<PROJECT>` | `config/active-project.md` → `active_project` | `airflow` |
+| `<tracker>` | `projects/<PROJECT>/project.md` → `tracker_repo` | `airflow-s/airflow-s` |
+| `<upstream>` | `projects/<PROJECT>/project.md` → `upstream_repo` | `apache/airflow` |
+
+Before running any bash command from a skill, the agent substitutes
+these with the active-project values from the config files above. A
+literal `airflow` / `airflow-s/airflow-s` / `apache/airflow` in a
+skill file is a bug — report it so the refactor stays clean.
 
 ## Tutorial — setting up your configuration end-to-end
 

@@ -1,18 +1,18 @@
 ---
 name: fix-security-issue
 description: |
-  Attempt to fix a security issue tracked in airflow-s/airflow-s by
-  implementing the change in a public apache/airflow PR. Runs the
+  Attempt to fix a security issue tracked in <tracker> by
+  implementing the change in a public <upstream> PR. Runs the
   sync-security-issue skill first to reconcile the issue's state, then
   analyses the discussion to decide whether the issue is easily fixable
   (clear consensus, small scope, known location). If it is, proposes an
   implementation plan, waits for explicit user confirmation, writes the
-  change in the user's local apache/airflow clone, runs the local checks
+  change in the user's local <upstream> clone, runs the local checks
   and tests, opens a PR from the user's fork via `gh pr create --web`,
   and updates the airflow-s tracking issue with the new PR link and any
   relevant labels. Public PR content is checked to make sure it does
   **not** reveal the CVE, the security nature of the change, or any link
-  back to airflow-s/airflow-s.
+  back to <tracker>.
 when_to_use: |
   Invoke when a security team member says "try to fix issue NNN", "see
   if you can land a fix for NNN", "draft a PR for NNN", or similar —
@@ -20,32 +20,42 @@ when_to_use: |
   on what the fix should look like. Not appropriate for issues that are
   still being assessed, for reports that haven't been classified as
   valid vulnerabilities, or for changes that require private
-  code-review in `airflow-s/airflow-s` itself (the private-PR fallback
+  code-review in `<tracker>` itself (the private-PR fallback
   in process step 9 of README.md).
 ---
+
+<!-- Placeholder convention (see AGENTS.md#placeholder-convention-used-in-skill-files):
+     <PROJECT>  → value of `active_project:` in config/active-project.md
+                 (for this tree: airflow)
+     <tracker>  → value of `tracker_repo:` in projects/<PROJECT>/project.md
+                 (for this tree: airflow-s/airflow-s)
+     <upstream> → value of `upstream_repo:` in projects/<PROJECT>/project.md
+                 (for this tree: apache/airflow)
+     Before running any bash command below, substitute these with the
+     active-project values read from config/ + projects/<PROJECT>/project.md. -->
 
 # fix-security-issue
 
 This skill automates the "attempt a fix" step of the security handling
-process for issues in [`airflow-s/airflow-s`](https://github.com/airflow-s/airflow-s).
+process for issues in [`<tracker>`](https://github.com/<tracker>).
 It composes with the [`sync-security-issue`](../sync-security-issue/SKILL.md)
 skill — it always runs the sync first so that the issue's state is
 reconciled with the mail thread and any existing PRs before attempting
 any new work.
 
 **Golden rule:** Every state-changing action — writing files in the
-local `apache/airflow` clone, committing, pushing to the user's fork,
-opening a public PR, editing or commenting on `airflow-s/airflow-s`,
+local `<upstream>` clone, committing, pushing to the user's fork,
+opening a public PR, editing or commenting on `<tracker>`,
 drafting mail on the `security@` thread — is a *proposal* that requires
 explicit confirmation from the user before it runs. The fact that the
 user invoked the skill is not a blanket "yes". In particular, **nothing
 public is pushed without the user explicitly approving the exact PR
 title, body and diff first.**
 
-**Confidentiality is paramount.** The resulting PR in `apache/airflow`
+**Confidentiality is paramount.** The resulting PR in `<upstream>`
 is public to the world. It must not reveal the CVE ID, the security
-nature of the change, or any link back to `airflow-s/airflow-s`. See
-the "Confidentiality of `airflow-s/airflow-s`" section of
+nature of the change, or any link back to `<tracker>`. See
+the "Confidentiality of `<tracker>`" section of
 [`AGENTS.md`](../../../AGENTS.md) and process step 8 of
 [`README.md`](../../../README.md).
 
@@ -55,9 +65,9 @@ the "Confidentiality of `airflow-s/airflow-s`" section of
 
 Before running the skill, you need:
 
-- **Issue number** in `airflow-s/airflow-s` (required) — e.g. `#216` or
+- **Issue number** in `<tracker>` (required) — e.g. `#216` or
   just `216`.
-- **Path to local `apache/airflow` clone** (optional — the skill will
+- **Path to local `<upstream>` clone** (optional — the skill will
   probe the usual locations if omitted). The clone must have a fork
   remote configured; the user's fork is the only push target the skill
   will accept.
@@ -75,12 +85,12 @@ invest 10+ minutes reading, planning, and writing code against a
 tracker only to discover you cannot push the branch.
 
 - **`gh` CLI authenticated** with:
-  - collaborator access to `airflow-s/airflow-s` (the skill
+  - collaborator access to `<tracker>` (the skill
     updates the tracker after the PR is open);
-  - push access to **your personal fork of `apache/airflow`** on
-    GitHub. The skill will **not** push to `apache/airflow`
+  - push access to **your personal fork of `<upstream>`** on
+    GitHub. The skill will **not** push to `<upstream>`
     directly — a fork is required.
-- **A clean local clone of `apache/airflow`** reachable from the
+- **A clean local clone of `<upstream>`** reachable from the
   agent's working directory. The path comes from the user's
   [`config/user.md`](../../../config/user.md) →
   `environment.apache_airflow_clone`; if the file or key is missing,
@@ -93,9 +103,9 @@ tracker only to discover you cannot push the branch.
     the skill will create a new branch from that base;
   - have the project's dev toolchain available — for the active
     project see
-    [`projects/airflow/fix-workflow.md`](../../../projects/airflow/fix-workflow.md#toolchain)
+    [`projects/<PROJECT>/fix-workflow.md`](../../../projects/<PROJECT>/fix-workflow.md#toolchain)
     (`uv`, Python 3.x, `breeze` when needed) and
-    [`apache/airflow/contributing-docs`](https://github.com/apache/airflow/blob/main/contributing-docs/README.md).
+    [`<upstream>/contributing-docs`](https://github.com/<upstream>/blob/main/contributing-docs/README.md).
 - **Outbound HTTPS to `pypi.org` / `github.com`** for dependency
   resolution and `gh` API calls.
 
@@ -112,19 +122,19 @@ immediate stop — do not partial-fix half the environment and
 continue.
 
 1. **`gh` authenticated** —
-   `gh api repos/airflow-s/airflow-s --jq .name` and
-   `gh api repos/apache/airflow --jq .name` both return. A 401/403
+   `gh api repos/<tracker> --jq .name` and
+   `gh api repos/<upstream> --jq .name` both return. A 401/403
    on the first means no airflow-s access; on the second it is a
    quota/auth issue — both require user action, stop.
 2. **Fork exists and is pushable** —
    `gh repo view <your-login>/airflow --json name --jq .name`
    returns `airflow`. If there is no fork, tell the user to run
-   `gh repo fork apache/airflow --clone=false` and re-invoke.
+   `gh repo fork <upstream> --clone=false` and re-invoke.
 3. **Local clone is found and clean** — probe the usual locations
    (the input path if supplied, else `~/code/airflow`,
    `~/src/airflow`, `~/airflow`, or a sibling of the current
    working directory) for a directory whose `origin` remote
-   points at `apache/airflow`. Then verify `git status
+   points at `<upstream>`. Then verify `git status
    --porcelain` is empty. Uncommitted work would collide with the
    branch the skill is about to create; stop and ask the user to
    stash / commit / clean first.
@@ -178,7 +188,7 @@ true)
   discussed and no one has disagreed, or a maintainer has concretely
   said "we should just do X".
 - **Known location.** The discussion points to specific file paths,
-  function names, or line numbers in `apache/airflow` where the fix
+  function names, or line numbers in `<upstream>` where the fix
   should land. Bonus: there is an explicit code snippet in the
   discussion showing what the change should look like.
 - **Small scope.** The fix touches a handful of files, one component,
@@ -210,7 +220,7 @@ true)
   private-PR fallback (process step 9).
 - The affected component is a third-party provider code path where
   the correct fix belongs in the provider's own repository, not in
-  `apache/airflow` main.
+  `<upstream>` main.
 
 ### Report the classification
 
@@ -234,16 +244,16 @@ If **easily fixable**, extract and write down:
 - any backport label that should be applied to the eventual PR, based
   on the milestone on the `airflow-s` issue (the active project's
   backport-label policy and current release branches live in
-  [`projects/airflow/fix-workflow.md`](../../../projects/airflow/fix-workflow.md#backport-labels)
+  [`projects/<PROJECT>/fix-workflow.md`](../../../projects/<PROJECT>/fix-workflow.md#backport-labels)
   and
-  [`projects/airflow/release-trains.md`](../../../projects/airflow/release-trains.md)).
+  [`projects/<PROJECT>/release-trains.md`](../../../projects/<PROJECT>/release-trains.md)).
 
 ---
 
-## Step 3 — Locate and verify the local `apache/airflow` clone
+## Step 3 — Locate and verify the local `<upstream>` clone
 
-The skill will never write into `airflow-s/airflow-s` for a code
-change; it writes into a local clone of `apache/airflow`. Before
+The skill will never write into `<tracker>` for a code
+change; it writes into a local clone of `<upstream>`. Before
 touching any files:
 
 1. Resolve the clone path from the user's
@@ -252,21 +262,21 @@ touching any files:
    [`config/README.md`](../../../config/README.md) for the config
    layer explainer). If the file is missing, the key is unset, or
    the stored path does not resolve to a git repo with a remote
-   pointing at `apache/airflow` or the user's fork, **ask the user
+   pointing at `<upstream>` or the user's fork, **ask the user
    for the path interactively** and offer to save their answer back
    into `config/user.md` so the next run is silent. Do **not**
    probe hard-coded paths like `~/code/airflow` — filesystem layouts
    vary per user and a wrong guess masks a misconfigured clone.
 
 2. Check `git remote -v`. Identify which remote is the **user's fork**
-   and which is the upstream `apache/airflow`. Per the rule in
-   [`apache/airflow/AGENTS.md`](https://github.com/apache/airflow/blob/main/AGENTS.md),
-   push only to the user's fork, never to `apache/airflow` directly.
+   and which is the upstream `<upstream>`. Per the rule in
+   [`<upstream>/AGENTS.md`](https://github.com/<upstream>/blob/main/AGENTS.md),
+   push only to the user's fork, never to `<upstream>` directly.
    If the user's `config/user.md` has
    `environment.apache_airflow_fork_remote` set, prefer that remote
    name; otherwise use the first non-`origin` remote that looks like
    a fork. If no fork remote is configured, **stop and ask the user
-   to configure one** (`gh repo fork apache/airflow --remote
+   to configure one** (`gh repo fork <upstream> --remote
    --remote-name <name>`); do not auto-create one.
 
 3. Check that the working tree is clean (`git status` shows no
@@ -274,7 +284,7 @@ touching any files:
    If it is dirty, stop and ask the user how to proceed.
 
 4. Check that `prek` is installed and hooks are enabled per
-   `apache/airflow/AGENTS.md` — `uv tool install prek` and
+   `<upstream>/AGENTS.md` — `uv tool install prek` and
    `prek install` if not.
 
 5. Fast-forward the base branch to the latest upstream. For a typical
@@ -321,7 +331,7 @@ improvement language**. They must not contain any of:
 
 - `CVE-YYYY-NNNNN`
 - `CVE`, `vulnerability`, `security fix`, `advisory`
-- `airflow-s`, `airflow-s/airflow-s`, `#216`, `airflow-s#216`
+- `airflow-s`, `<tracker>`, `#216`, `airflow-s#216`
 - any reporter name tied to a security finding
 - the word *"sensitive"* in a way that points at an unmasked-credential
   bug
@@ -347,7 +357,7 @@ List:
 - new tests to be added that exercise the fix (required unless the
   change is a pure rename / typo fix),
 - the exact commands the skill will run locally before pushing, taken
-  from `apache/airflow/AGENTS.md`:
+  from `<upstream>/AGENTS.md`:
 
   - `uv run --project airflow-core pytest path/to/test.py::TestClass::test_method -xvs` (unit test),
   - `prek run --from-ref main --stage pre-commit` (fast static checks),
@@ -364,7 +374,7 @@ milestone is the next `main`-branch release), say so explicitly.
 
 ### 4f. Newsfragment
 
-Per `apache/airflow/AGENTS.md`, newsfragments are only added for
+Per `<upstream>/AGENTS.md`, newsfragments are only added for
 major or breaking user-visible changes, and usually coordinated
 during review. For a security-adjacent bug fix, default to **not**
 adding a newsfragment in the initial PR — reviewers will ask for one
@@ -380,7 +390,7 @@ Write out the exact `--body` the skill will pass to
 - a brief description of the user-visible change,
 - the test plan (markdown checklist),
 - the standard Gen-AI disclosure block per
-  [`apache/airflow/contributing-docs/05_pull_requests.rst`](https://github.com/apache/airflow/blob/main/contributing-docs/05_pull_requests.rst#gen-ai-assisted-contributions):
+  [`<upstream>/contributing-docs/05_pull_requests.rst`](https://github.com/<upstream>/blob/main/contributing-docs/05_pull_requests.rst#gen-ai-assisted-contributions):
 
   ```
   ##### Was generative AI tooling used to co-author this PR?
@@ -388,7 +398,7 @@ Write out the exact `--body` the skill will pass to
   - [X] Yes — Claude Opus 4.6 (1M context)
 
   Generated-by: Claude Opus 4.6 (1M context) following the guidelines at
-  https://github.com/apache/airflow/blob/main/contributing-docs/05_pull_requests.rst#gen-ai-assisted-contributions
+  https://github.com/<upstream>/blob/main/contributing-docs/05_pull_requests.rst#gen-ai-assisted-contributions
   ```
 
 Before presenting the body, **grep it for the forbidden terms** listed
@@ -448,7 +458,7 @@ After the user confirms the diff:
    ```
 
 4. Push the branch to the **user's fork** — never to
-   `apache/airflow` directly, never with `--force` unless the user
+   `<upstream>` directly, never with `--force` unless the user
    explicitly asked (and then only with `--force-with-lease`):
 
    ```bash
@@ -457,7 +467,7 @@ After the user confirms the diff:
 
 ---
 
-## Step 8 — Open the PR on the public apache/airflow repo
+## Step 8 — Open the PR on the public <upstream> repo
 
 Use `gh pr create --web` with the pre-filled title and body from 4c
 and 4g. The user reviews the title, body and gen-AI disclosure in the
@@ -465,7 +475,7 @@ browser before actually submitting the PR — matching the rule in
 [`AGENTS.md`](../../../AGENTS.md).
 
 ```bash
-gh pr create --web --repo apache/airflow --base <base-branch> \
+gh pr create --web --repo <upstream> --base <base-branch> \
   --title "<neutral title>" \
   --body "$(cat /tmp/pr-body-<issue>.md)"
 ```
@@ -474,7 +484,7 @@ If a backport label is needed, apply it via `gh` after the PR is
 created:
 
 ```bash
-gh pr edit <PR-NUMBER> --repo apache/airflow --add-label "backport-to-v3-2-test"
+gh pr edit <PR-NUMBER> --repo <upstream> --add-label "backport-to-v3-2-test"
 ```
 
 This is safe to do immediately after PR creation — the backport bot
@@ -499,10 +509,10 @@ Now that a public PR exists, update the private tracking issue:
 1. **Add a comment** on the private issue announcing the new PR, the
    branch name, and the intended backport (if any). Render the issue
    reference, the PR reference, and any CVE as clickable markdown links
-   per the "Linking CVEs" and "Linking `airflow-s/airflow-s` issues and
+   per the "Linking CVEs" and "Linking `<tracker>` issues and
    PRs" rules in [`AGENTS.md`](../../../AGENTS.md). A comment lives
    inside the private repo so it may freely contain the
-   `apache/airflow` PR URL, the branch name, and the CVE reference.
+   `<upstream>` PR URL, the branch name, and the CVE reference.
 
    Before posting, **scrub the comment body for bare-name mentions**
    of project maintainers, release managers, and security-team
@@ -510,8 +520,8 @@ Now that a public PR exists, update the private tracking issue:
    GitHub actually notifies the person. The rule itself lives in
    [`AGENTS.md` — *Mentioning project maintainers and security-team members*](../../../AGENTS.md#mentioning-project-maintainers-and-security-team-members);
    the authoritative list of handles for the active project is in
-   [`projects/airflow/release-trains.md`](../../../projects/airflow/release-trains.md).
-   The public `apache/airflow` PR description and any follow-up public
+   [`projects/<PROJECT>/release-trains.md`](../../../projects/<PROJECT>/release-trains.md).
+   The public `<upstream>` PR description and any follow-up public
    comments must also obey the rule, but under the usual public-surface
    confidentiality constraints (no `CVE-`, `airflow-s`, *"security fix"*,
    etc. alongside the mention).
@@ -532,7 +542,7 @@ Now that a public PR exists, update the private tracking issue:
    reporter email directly in this skill — it is the sync skill's
    responsibility.
 
-### Maintaining milestones and labels on `airflow-s/airflow-s`
+### Maintaining milestones and labels on `<tracker>`
 
 The fix skill is responsible for leaving the private issue in a
 consistent "fix-proposed, awaiting review" state by the time it
@@ -549,14 +559,14 @@ The default milestone for a patch-release fix is whatever
 Before assigning, check that the milestone exists:
 
 ```bash
-gh api 'repos/airflow-s/airflow-s/milestones?state=all&per_page=100' \
+gh api 'repos/<tracker>/milestones?state=all&per_page=100' \
   --jq '.[] | select(.title == "<target>") | {number, state}'
 ```
 
 If the query returns nothing, **propose creating the milestone**:
 
 ```bash
-gh api repos/airflow-s/airflow-s/milestones \
+gh api repos/<tracker>/milestones \
   -f title='<target>' \
   -f state=open \
   -f description='Airflow <target> release tracking.'
@@ -573,7 +583,7 @@ will fail with `'<title>' not found`. Fall back to the REST API and
 reference it by number:
 
 ```bash
-gh api repos/airflow-s/airflow-s/issues/<N> -X PATCH -F milestone=<milestone-number>
+gh api repos/<tracker>/issues/<N> -X PATCH -F milestone=<milestone-number>
 ```
 
 #### 9b. Assign the issue to the target milestone
@@ -584,9 +594,9 @@ placeholder), propose moving it to the current default and apply
 with user confirmation:
 
 ```bash
-gh issue edit <N> --repo airflow-s/airflow-s --milestone '<target>'
+gh issue edit <N> --repo <tracker> --milestone '<target>'
 # or, for closed milestones, via REST:
-gh api repos/airflow-s/airflow-s/issues/<N> -X PATCH -F milestone=<number>
+gh api repos/<tracker>/issues/<N> -X PATCH -F milestone=<number>
 ```
 
 Do **not** silently move an issue that is intentionally parked on
@@ -596,10 +606,10 @@ instead of moving it.
 
 #### 9c. Ensure the required labels exist
 
-The current label set on `airflow-s/airflow-s` can be listed with:
+The current label set on `<tracker>` can be listed with:
 
 ```bash
-gh label list --repo airflow-s/airflow-s --limit 100 \
+gh label list --repo <tracker> --limit 100 \
   --json name,description,color --jq '.[].name'
 ```
 
@@ -626,7 +636,7 @@ should be discussed.
 If the user confirms creating a label, do it explicitly:
 
 ```bash
-gh label create '<name>' --repo airflow-s/airflow-s \
+gh label create '<name>' --repo <tracker> \
   --description '<short description>' \
   --color '<hex>'
 ```
@@ -638,7 +648,7 @@ operations in a single `gh issue edit` call so the change lands as
 one audit trail entry:
 
 ```bash
-gh issue edit <N> --repo airflow-s/airflow-s \
+gh issue edit <N> --repo <tracker> \
   --add-label 'airflow,cve allocated' \
   --remove-label 'needs triage'
 ```
@@ -684,8 +694,8 @@ Print a short recap:
   `security@`, the issue number preceded by `airflow-s#`, and any
   reporter name on every piece of text headed for a public surface —
   commit message, PR title, PR body, branch name, newsfragment,
-  comments on `apache/airflow`. If any hit, abort and ask the user.
-- **Fork only.** Never push to `apache/airflow` directly.
+  comments on `<upstream>`. If any hit, abort and ask the user.
+- **Fork only.** Never push to `<upstream>` directly.
 - **No force push** to a shared branch or to `main` on any remote.
   `--force-with-lease` on the user's own feature branch is allowed
   only with explicit approval.
@@ -713,5 +723,5 @@ Print a short recap:
 - [`sync-security-issue` skill](../sync-security-issue/SKILL.md) — run this first.
 - [`README.md`](../../../README.md) — canonical process description, especially steps 7–9 (implementing the fix).
 - [`AGENTS.md`](../../../AGENTS.md) — repo-wide rules (confidentiality, commit trailers, tone, CVE linking).
-- [`apache/airflow/AGENTS.md`](https://github.com/apache/airflow/blob/main/AGENTS.md) — parent conventions this skill defers to.
-- [`apache/airflow/contributing-docs/05_pull_requests.rst`](https://github.com/apache/airflow/blob/main/contributing-docs/05_pull_requests.rst) — public PR conventions and Gen-AI disclosure block.
+- [`<upstream>/AGENTS.md`](https://github.com/<upstream>/blob/main/AGENTS.md) — parent conventions this skill defers to.
+- [`<upstream>/contributing-docs/05_pull_requests.rst`](https://github.com/<upstream>/blob/main/contributing-docs/05_pull_requests.rst) — public PR conventions and Gen-AI disclosure block.

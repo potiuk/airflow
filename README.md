@@ -67,7 +67,7 @@ everything project-specific (identity, repositories, mailing lists,
 canned responses, release trains, security model, scope labels,
 milestone formats, title-normalisation rules, fix-workflow specifics)
 is declared in the active project's directory under
-[`projects/<active>/`](projects/) and indexed from its manifest — for
+[`projects/<PROJECT>/`](projects/) and indexed from its manifest — for
 Airflow, see
 [`projects/airflow/project.md`](projects/airflow/project.md). The
 currently active project is declared in

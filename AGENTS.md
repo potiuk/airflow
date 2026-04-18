@@ -5,6 +5,7 @@
 - [AGENTS instructions](#agents-instructions)
   - [Repository purpose](#repository-purpose)
   - [Per-project and per-user configuration](#per-project-and-per-user-configuration)
+    - [Placeholder convention used in skill files](#placeholder-convention-used-in-skill-files)
   - [Local setup](#local-setup)
   - [Commit and PR conventions](#commit-and-pr-conventions)
   - [Confidentiality of `airflow-s/airflow-s`](#confidentiality-of-airflow-sairflow-s)
@@ -63,7 +64,7 @@ Repo-root files:
 - [`config/README.md`](config/README.md) — tutorial for the two configuration layers (project + user).
 - [`config/active-project.md`](config/active-project.md) — declares which project under `projects/` this working tree targets.
 - [`config/user.md`](config/user.md) (each user's local copy of [`config/user.md.example`](config/user.md.example), **gitignored**) — per-user identity, PMC status, tool preferences, local environment paths.
-- [`projects/<active>/`](projects/) — project-specific content (canned responses, release trains, security model, milestones, …).
+- [`projects/<PROJECT>/`](projects/) — project-specific content (canned responses, release trains, security model, milestones, …).
 - [`tools/<name>/`](tools/) — tool adapters (GitHub operations, issue-template schema, project-board GraphQL, …) for the external tools the skills invoke.
 
 There is no source code to build or test. Changes are reviewed and merged by the security team.
@@ -105,12 +106,48 @@ the list of knobs the file exposes today.
 
 When this document (or any skill) says *"the tracker repo"*, *"the
 upstream repo"*, *"the security list"*, *"the canned responses"*,
-it means the value declared in `projects/<active>/project.md` and
+it means the value declared in `projects/<PROJECT>/project.md` and
 its sibling files. When it says *"the user's GitHub handle"*, *"PMC
-status"*, *"the local apache/airflow clone"*, it means the value in
+status"*, *"the local upstream clone"*, it means the value in
 `config/user.md`. When a fact is truly project-agnostic (a lifecycle
 rule, a confidentiality principle, a brevity rule), it lives in this
 file or in [`README.md`](README.md).
+
+### Placeholder convention used in skill files
+
+Skill files, tool-adapter docs, and this file use a small set of
+substitution placeholders instead of baking in one project's
+concrete values. Agents reading a skill must resolve these against
+the active configuration before executing any command:
+
+| Placeholder | Resolves to | Source |
+|---|---|---|
+| `<PROJECT>` | The active project's directory name under `projects/` — for this tree, `airflow`. | `config/active-project.md` → `active_project:` |
+| `<tracker>` | The GitHub slug of the tracker repo — for this tree, `airflow-s/airflow-s`. | `projects/<PROJECT>/project.md` → `tracker_repo` |
+| `<upstream>` | The GitHub slug of the upstream codebase the fixes land in — for this tree, `apache/airflow`. | `projects/<PROJECT>/project.md` → `upstream_repo` |
+| `<N>` | An issue or PR number. | The user's input to the skill |
+| `<CVE-ID>` | A CVE identifier of the form `CVE-YYYY-NNNNN`. | Per-tracker |
+
+The case split (`<PROJECT>` uppercase, `<tracker>` / `<upstream>`
+lowercase) is deliberate: `<PROJECT>` is the *identity* placeholder
+the whole framework pivots on, so it gets the template-variable
+styling; `<tracker>` / `<upstream>` are per-capability tool targets
+that already use the lowercase convention in
+[`tools/github/operations.md`](tools/github/operations.md). Do not
+invent new placeholders; if a skill needs a value that isn't on the
+list above, thread it in via the project manifest or the user
+config rather than reaching for a fresh convention.
+
+Concretely: in a bash snippet, `gh issue view <N> --repo <tracker>`
+means *"before running this, substitute `<tracker>` for the value in
+`projects/<PROJECT>/project.md` → `tracker_repo`"*. In a markdown
+link, `[…](../../../projects/<PROJECT>/canned-responses.md)` means
+*"substitute `<PROJECT>` for the value in
+`config/active-project.md` → `active_project`, then follow the
+link"*. Writing the literal value directly (e.g. `airflow-s/airflow-s`
+or `projects/airflow/`) in a skill is a refactor bug — skills must
+stay project-agnostic so swapping projects is a config change, not
+a code change.
 
 ## Local setup
 
@@ -179,7 +216,7 @@ to non-security-team members** — must not contain:
 These references are allowed **only** in:
 
 - documents that live inside this private repository (this file, `README.md`,
-  `projects/<active>/canned-responses.md`, `SKILL.md` files, etc.);
+  `projects/<PROJECT>/canned-responses.md`, `SKILL.md` files, etc.);
 - private mail threads on `security@airflow.apache.org` with the original
   reporter (where letting them know we have a tracking issue is part of the
   status update they receive);
