@@ -263,7 +263,7 @@ Decide the candidate's class from the root message:
 | **Report**: a reporter describes a vulnerability | The body has a description, a PoC / reproduction steps, an impact claim. Sender is an external address (not `@apache.org`, not on the security-team roster in [`AGENTS.md`](../../../AGENTS.md)). | Proceed to Step 4. |
 | **ASF-security relay**: `security@apache.org` forwarded a report from a reporter via the Foundation channel | Sender is `security@apache.org`. The body almost always starts with the ASF forwarding preamble — *"Dear PMC, The security vulnerability report has been received by the Apache Security Team and is being passed to you for action …"* — and contains the original report underneath (often after a `====GHSA-…` separator when the report came in via GitHub Security Advisory). The preamble is the load-bearing signal: if you see it, treat as a report regardless of what follows. | Proceed to Step 4. **Credit extraction**: the forwarded body usually ends with a `Credit` line naming the discoverer (e.g. *"This vulnerability was discovered and reported by bugbunny.ai"*) — use that verbatim for the Reporter-credited-as placeholder, not the `From:` header (which is always `security@apache.org`). If the report has no credit line, fall back to the GHSA number or to the phrase *"ASF-relayed"* so the credit-preference question can be routed through `@raboof` / Arnout. |
 | **CVE-tool bookkeeping**: an automated or human status-change notification on the ASF CVE tool | Sender is `security@apache.org` (or one of the security-team members acting on behalf of the CVE tool). Subject matches one of: `"CVE-YYYY-NNNNN reserved for airflow"`, `"Comment added on CVE-YYYY-NNNNN"`, `"CVE-YYYY-NNNNN is now READY"`, `"CVE-YYYY-NNNNN is now PUBLIC"`, `"CVE-YYYY-NNNNN is now PUBLISHED"`, `"CVE-YYYY-NNNNN REJECTED"`, or a verbatim `"<state-change>"` line in the body pointing at `cveprocess.apache.org/cve5/CVE-YYYY-NNNNN`. | Do **not** import and do **not** draft a reply — the CVE-tool notifications are consumed by the `sync-security-issue` skill's Step 1e review-comment check. Classify as `cve-tool-bookkeeping` and drop. |
-| **Automated scanner dump**: SAST/DAST tool output, CodeQL/Dependabot alert paste, a string of "issues" with no human PoC | Body is machine-generated, contains multiple unrelated findings, no explanation of Security Model violation | Surface as a candidate with class `automated-scanner` and **do not** propose auto-import. In Step 5 the skill proposes a Gmail draft from the *"Automated scanning results"* canned response in [`canned-responses.md`](../../../canned-responses.md) instead. |
+| **Automated scanner dump**: SAST/DAST tool output, CodeQL/Dependabot alert paste, a string of "issues" with no human PoC | Body is machine-generated, contains multiple unrelated findings, no explanation of Security Model violation | Surface as a candidate with class `automated-scanner` and **do not** propose auto-import. In Step 5 the skill proposes a Gmail draft from the *"Automated scanning results"* canned response in [`canned-responses.md`](../../../projects/airflow/canned-responses.md) instead. |
 | **Consolidated multi-issue report**: one email bundles ≥3 unrelated vulnerabilities | The root message has headings like *"Issue 1"*, *"Issue 2"*, each of which would be its own tracker | Surface class `consolidated-multi-issue`; do not auto-import. Propose the "Sending multiple issues in consolidated report" canned reply. |
 | **Media / research-disclosure request**: reporter wants to publish a blog or talk about a finding we already know about | Body asks about disclosure timing, mentions a talk / blog / CVE on another vendor | Surface class `media-request`; do not auto-import. Propose the "When someone submits a media report" canned reply. |
 | **Obvious spam / scam / phishing / crypto-scheme** | Cryptocurrency addresses, "bug bounty program" framing on a project that does not have one, no actual Airflow-specific content | Surface class `spam`; propose no action (user deletes in Gmail). |
@@ -431,7 +431,7 @@ For each confirmed `Report` / `ASF-security relay`:
      `toRecipients` is the reporter's email (the `From:` of the
      inbound root message). Body is the *"Confirmation of receiving
      the report"* canned response verbatim from
-     [`canned-responses.md`](../../../canned-responses.md). That
+     [`canned-responses.md`](../../../projects/airflow/canned-responses.md). That
      canned response already includes the credit-preference
      question, so no additional wording is needed.
 
@@ -557,7 +557,7 @@ before presenting.
   automates.
 - [`AGENTS.md`](../../../AGENTS.md) — confidentiality, release managers,
   CVSS rules, and security-team roster.
-- [`canned-responses.md`](../../../canned-responses.md) — the canned
+- [`canned-responses.md`](../../../projects/airflow/canned-responses.md) — the canned
   email bodies the skill uses for receipt-of-confirmation, invalid
   reports, automated scans, etc.
 - [`sync-security-issue`](../sync-security-issue/SKILL.md) — the

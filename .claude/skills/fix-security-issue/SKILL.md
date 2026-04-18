@@ -86,9 +86,10 @@ tracker only to discover you cannot push the branch.
   - have a remote pointing at your fork;
   - be on a non-dirty `main` (or the appropriate base branch) —
     the skill will create a new branch from that base;
-  - have the Airflow dev toolchain available (`uv`, Python 3.x,
-    and `breeze` if the change touches the Airflow CLI / images
-    layer) — see
+  - have the project's dev toolchain available — for the active
+    project see
+    [`projects/airflow/fix-workflow.md`](../../../projects/airflow/fix-workflow.md#toolchain)
+    (`uv`, Python 3.x, `breeze` when needed) and
     [`apache/airflow/contributing-docs`](https://github.com/apache/airflow/blob/main/contributing-docs/README.md).
 - **Outbound HTTPS to `pypi.org` / `github.com`** for dependency
   resolution and `gh` API calls.
@@ -226,9 +227,11 @@ If **easily fixable**, extract and write down:
 - the target branch (`main` almost always; a release branch only if
   the user explicitly says so),
 - any backport label that should be applied to the eventual PR, based
-  on the milestone on the `airflow-s` issue (e.g.
-  `backport-to-v3-1-test` when the milestone is a `3.1.x` release
-  that hasn't been cut yet).
+  on the milestone on the `airflow-s` issue (the active project's
+  backport-label policy and current release branches live in
+  [`projects/airflow/fix-workflow.md`](../../../projects/airflow/fix-workflow.md#backport-labels)
+  and
+  [`projects/airflow/release-trains.md`](../../../projects/airflow/release-trains.md)).
 
 ---
 
@@ -488,16 +491,16 @@ Now that a public PR exists, update the private tracking issue:
    `apache/airflow` PR URL, the branch name, and the CVE reference.
 
    Before posting, **scrub the comment body for bare-name mentions**
-   of Airflow maintainers, release managers, and security-team
-   members, and replace them with the corresponding ``@``-handle so
-   GitHub actually notifies the person. See the "Mentioning Airflow
-   maintainers and security-team members" section of
-   [`AGENTS.md`](../../../AGENTS.md) for the full rule and the
-   authoritative list of handles. The public ``apache/airflow`` PR
-   description and any follow-up public comments must also obey the
-   rule, but under the usual public-surface confidentiality
-   constraints (no ``CVE-``, ``airflow-s``, *"security fix"*, etc.
-   alongside the mention).
+   of project maintainers, release managers, and security-team
+   members, and replace them with the corresponding `@`-handle so
+   GitHub actually notifies the person. The rule itself lives in
+   [`AGENTS.md` — *Mentioning project maintainers and security-team members*](../../../AGENTS.md#mentioning-project-maintainers-and-security-team-members);
+   the authoritative list of handles for the active project is in
+   [`projects/airflow/release-trains.md`](../../../projects/airflow/release-trains.md).
+   The public `apache/airflow` PR description and any follow-up public
+   comments must also obey the rule, but under the usual public-surface
+   confidentiality constraints (no `CVE-`, `airflow-s`, *"security fix"*,
+   etc. alongside the mention).
 
 2. **Update the issue body "PR with the fix" field** if it is empty
    or points to a stale PR. Use `gh issue view --json body`, patch

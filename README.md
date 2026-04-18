@@ -60,12 +60,26 @@
 
 ## Overview
 
-This private `airflow-s/airflow-s` repository is the security team's shared
-tracker for Apache Airflow vulnerability reports. Only members of the security
-team have access. Issues are created from reports raised on
-`security@airflow.apache.org` and copied here by security-team members — the
-GitHub author of a tracker is therefore **not always the reporter**, and the
-real reporter is whoever sent the original email.
+This repository hosts a reusable framework for running an ASF project's
+security-issue handling process, currently configured for **Apache
+Airflow**. The lifecycle and conventions below are project-agnostic;
+everything project-specific (identity, repositories, mailing lists,
+canned responses, release trains, security model, scope labels,
+milestone formats, title-normalisation rules, fix-workflow specifics)
+is declared in the active project's directory under
+[`projects/<active>/`](projects/) and indexed from its manifest — for
+Airflow, see
+[`projects/airflow/project.md`](projects/airflow/project.md). The
+currently active project is declared in
+[`config/active-project.md`](config/active-project.md).
+
+For the active project (Airflow), the private `airflow-s/airflow-s`
+repository is the security team's shared tracker for Apache Airflow
+vulnerability reports. Only members of the security team have access.
+Issues are created from reports raised on
+`security@airflow.apache.org` and copied here by security-team members —
+the GitHub author of a tracker is therefore **not always the reporter**,
+and the real reporter is whoever sent the original email.
 
 Every tracker flows through two channels at the same time:
 
@@ -237,7 +251,7 @@ the reporter's full name from the original email if they do not respond
 before publication.
 
 Reusable wording for the common cases lives in
-[`canned-responses.md`](canned-responses.md) — consult it before drafting a
+[`projects/airflow/canned-responses.md`](projects/airflow/canned-responses.md) — consult it before drafting a
 reply from scratch.
 
 ### Recording status transitions on the tracker
@@ -301,7 +315,7 @@ proposal engine, not an auto-pilot.
 
 For each `needs triage` tracker, drive the validity assessment in comments,
 pulling at least one other security-team member into the discussion. Use the
-canned-response templates from [`canned-responses.md`](canned-responses.md)
+canned-response templates from [`projects/airflow/canned-responses.md`](projects/airflow/canned-responses.md)
 for negative assessments so the tone stays polite-but-firm.
 
 When the report is confirmed valid, apply exactly one scope label (`airflow`
@@ -529,7 +543,7 @@ Gmail for the triager to review and send.
 If the report is "obviously invalid" (we've seen such issues before and
 triaged or responded to them) — for example an automated-scanner dump or a
 consolidated multi-issue report — the skill proposes the matching canned
-response from [`canned-responses.md`](canned-responses.md) as a Gmail draft
+response from [`projects/airflow/canned-responses.md`](projects/airflow/canned-responses.md) as a Gmail draft
 and does **not** create a tracker, so the invalid class never enters the
 board.
 
@@ -649,25 +663,14 @@ issue and mark the issue with the `pr created` label in `airflow-s`.
 member merging it should move the issue from `pr created` to `pr merged`.
 If there is a private variant of the PR in the `airflow-s/airflow-s`
 repository, it should be closed. The milestone of the issue should be set
-to the milestone when it is planned to be released. Milestones follow
-these formats:
+to the milestone of the release it is planned to ship in.
 
-* **`Airflow-X.Y.Z`** — core Airflow releases (e.g. `Airflow-2.6.2`, `3.2.2`).
-* **`Providers YYYY-MM-DD`** — provider-wave cuts, keyed by the cut date
-  listed on the
-  [Release Plan wiki](https://cwiki.apache.org/confluence/display/AIRFLOW/Release+Plan).
-  The cut date, not the publish date on PyPI, is used as the milestone
-  title.
-* **`Chart-X.Y.Z`** — Airflow Helm Chart releases (e.g. `Chart-1.9.0`).
-
-New milestones are created when needed. The `sync-security-issue` skill
-will create a missing provider-wave milestone via `gh api` and assign the
-issue to it in the same proposal. Sometimes, as a result of the triage
-discussions, the fix should not be applied in the next patch-level
-release — for example, because of high risk involved or because it needs
-to be correlated with other changes. In such cases, the milestone in the
-issue and the corresponding PR should be set to the next minor release
-rather than the next patch-level release.
+The **milestone naming conventions** are project-specific; for the
+currently active project see
+[`projects/airflow/milestones.md`](projects/airflow/milestones.md), which
+also records the policy for creating missing milestones via `gh api` and
+for bumping a fix to the next minor release instead of the next patch
+when triage warrants it.
 
 **The issue stays at `pr merged` until the release containing the fix
 actually ships.** That may be hours (for core patch releases cut on a
