@@ -357,12 +357,14 @@ user to confirm. Numbered items:
    Re-ask the credit-preference question **only if it has not yet
    been asked** on the thread — never ping twice. **Never send.**
    Always create a Gmail draft **with `threadId` set to the
-   inbound report thread** (resolved from the tracker's *"Security
-   mailing list thread"* body field) and subject
-   `Re: <root subject>`, per the "Threading: drafts stay on the
-   inbound Gmail thread" rule in
-   [`AGENTS.md`](../../../AGENTS.md). Never fabricate a new
-   thread or a new subject.
+   inbound report thread** (resolved from the tracker's *security-
+   thread* body field — for Airflow, *"Security mailing list
+   thread"*). Subject is `Re: <root subject>`, never fabricated.
+   See
+   [`tools/gmail/threading.md`](../../../tools/gmail/threading.md)
+   for the threading rule and
+   [`tools/gmail/operations.md`](../../../tools/gmail/operations.md#create-draft)
+   for the call signature.
 
 ### Status-change comment template
 

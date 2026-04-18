@@ -9,6 +9,7 @@
   - [Tools enabled](#tools-enabled)
   - [CVE tooling](#cve-tooling)
   - [GitHub project board](#github-project-board)
+  - [Gmail and PonyMail](#gmail-and-ponymail)
   - [Issue-template fields](#issue-template-fields)
   - [Scope labels and CVE product mapping](#scope-labels-and-cve-product-mapping)
   - [Release trains, release managers, security team roster](#release-trains-release-managers-security-team-roster)
@@ -93,7 +94,7 @@ PR series).
 | Capability | Tool | Adapter directory | Config knobs declared here |
 |---|---|---|---|
 | Issue tracking + source control + project board | `github` | [`../../tools/github/`](../../tools/github/) | `tracker_repo`, `upstream_repo`, `github_project_board_*`, `issue_template_fields` |
-| Inbound email / drafts | `gmail` | *(to land in PR 3)* | via `security_list` subscription |
+| Inbound email / drafts | `gmail` | [`../../tools/gmail/`](../../tools/gmail/) | `security_list` subscription; PonyMail archive URL templates below |
 | CVE allocation + record mgmt | `vulnogram` | *(to land in PR 4)* | see [CVE tooling](#cve-tooling) below |
 | Release voting / announce | ASF mailing lists | — | via `dev_list` / `announce_list` / `users_list` |
 
@@ -171,6 +172,41 @@ column; closed issues simply leave the board. The `announced` label
 stays meaningful on the tracker (it is the load-bearing signal for
 the CVE JSON's `CNA_private.state` REVIEW → PUBLIC transition) but
 does not map to a separate column.
+
+## Gmail and PonyMail
+
+The active project's Gmail / PonyMail configuration. Gmail-side
+mechanics (MCP call shapes, threading rule, search-query patterns,
+archive URL construction) live under
+[`../../tools/gmail/`](../../tools/gmail/); the concrete per-project
+values below are what the generic recipes substitute in.
+
+| Key | Value | Used by |
+|---|---|---|
+| `security_list` | `security@airflow.apache.org` | `list:` filter, draft `Cc:` target — see [`../../tools/gmail/search-queries.md`](../../tools/gmail/search-queries.md) |
+| `security_list_domain` | `security.airflow.apache.org` | Gmail `list:` operator — the domain form, not the plain address |
+| `users_list` | `users@airflow.apache.org` | Public advisory archive scans — see [`../../tools/gmail/ponymail-archive.md`](../../tools/gmail/ponymail-archive.md) |
+| `dev_list` | `dev@airflow.apache.org` | `[RESULT][VOTE]` attribution search — see [`../../tools/gmail/search-queries.md`](../../tools/gmail/search-queries.md#release-resultvote-attribution) |
+| `ponymail_private_search_url_template` | `https://lists.apache.org/list?security@airflow.apache.org:YYYY-M:<url-encoded subject>` | `import-security-issue` Step 4 — user pastes back the resolved thread URL |
+| `ponymail_public_search_url_template` | `https://lists.apache.org/list.html?users@airflow.apache.org:YYYY:<CVE-ID>` | `sync-security-issue` Step 2b — scans the public archive for the advisory |
+| `ponymail_api_url_template` | `https://lists.apache.org/api/thread.lua?list=users&domain=airflow.apache.org&q=<CVE-ID>` | Machine-readable variant of the public-archive scan |
+| `ponymail_thread_url_template` | `https://lists.apache.org/thread/<hash>?<list>` | Canonical resolved-thread URL form — used in the *security-thread* and *public-advisory-url* body fields |
+
+The `YYYY-M` token in the private-search template uses a 1- or 2-digit
+month without a leading zero (e.g. `2026-4` for April 2026), per the
+PonyMail URL-construction note in
+[`../../tools/gmail/ponymail-archive.md`](../../tools/gmail/ponymail-archive.md#url-shapes).
+
+**GitHub-notification mirror senders** (excluded from most Gmail
+searches — the project's GitHub tracker mirrors issue activity to the
+security list):
+
+```text
+-from:notifications@github.com
+-from:noreply@github.com
+-from:airflow-s@noreply.github.com
+-from:security-noreply@github.com
+```
 
 ## Issue-template fields
 

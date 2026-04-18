@@ -395,13 +395,12 @@ Process for finding the real reporter and the original thread:
    title is usually paraphrased by the security team member who copied it.
    The original email had a different subject line. Pick a *distinctive
    phrase* from the issue body (a function name, an endpoint, an error
-   message) and search Gmail with it, **excluding GitHub notifications**:
-
-   ```text
-   "<distinctive phrase>" -from:notifications@github.com -from:noreply@github.com
-   ```
-
-   For example: `"HITL" "ui/dags" -from:notifications@github.com -from:noreply@github.com`.
+   message) and search Gmail with it, **excluding GitHub notifications**.
+   The canonical query template for this search lives in
+   [`tools/gmail/search-queries.md`](../../../tools/gmail/search-queries.md#sync-security-issue--reporter-thread-lookup-by-distinctive-phrase)
+   (the GitHub-notification exclusions used for this project are
+   declared in
+   [`projects/airflow/project.md`](../../../projects/airflow/project.md#gmail-and-ponymail)).
 
 3. **Identify the original sender.** In the result set, look for the message
    whose `In-Reply-To` is empty (i.e. the root of its thread) and whose
@@ -542,25 +541,13 @@ comment / TODO on the record, and those emails are readable from Gmail
 through the normal `mcp__claude_ai_Gmail__*` tools the skill already
 uses for reporter threads. That is the load-bearing signal path.
 
-**Search recipe.** Use Gmail's `search_threads` with the CVE ID in the
-subject line and `security@airflow.apache.org` as a recipient, and
-exclude the GitHub-notification mirror so the tracker's own comments do
-not pollute the results:
-
-```
-<CVE-ID> -from:notifications@github.com -from:noreply@github.com -from:airflow-s@noreply.github.com list:security.airflow.apache.org
-```
-
-That narrows to messages where the CVE ID appears (Vulnogram puts the
-CVE ID in the subject of every review-comment notification) and the
-`security@` list is in `To:` / `Cc:`. Also search once without the list
-filter (some ASF-CNA tooling emails go to individual security-team
-members first), using just the CVE ID plus the GitHub-notification
-exclusions:
-
-```
-<CVE-ID> -from:notifications@github.com -from:noreply@github.com -from:airflow-s@noreply.github.com
-```
+**Search recipe.** Use the CVE-review-comment query templates in
+[`tools/gmail/search-queries.md`](../../../tools/gmail/search-queries.md#sync-security-issue--cve-review-comment-search);
+substitute the active project's `<security-list-domain>` (Airflow:
+`security.airflow.apache.org`, declared in
+[`projects/airflow/project.md`](../../../projects/airflow/project.md#gmail-and-ponymail))
+and run via `search_threads` per
+[`tools/gmail/operations.md`](../../../tools/gmail/operations.md#search-threads).
 
 Stay inside the skill's Gmail budget: **≤ 2 extra searches per issue**
 for the CVE-review path (on top of the Step 1c reporter-thread search
@@ -839,13 +826,15 @@ will change and *why*. Group them by category:
   Every sync run must:
 
   1. If `announced - emails sent` is set and the field is still
-     empty, **scan the users@ archive for the CVE ID**:
-     ```
-     gh api "https://lists.apache.org/api/thread.lua?list=users&domain=airflow.apache.org&q=<CVE-ID>" 2>/dev/null \
-       || curl -s "https://lists.apache.org/list.html?users@airflow.apache.org:2026:<CVE-ID>"
-     ```
+     empty, **scan the public users@ archive for the CVE ID** using
+     the PonyMail API + `list.html` fallback pattern documented in
+     [`tools/gmail/ponymail-archive.md`](../../../tools/gmail/ponymail-archive.md#use-case--sync-security-issue).
+     The active project's URL templates are declared in
+     [`projects/airflow/project.md`](../../../projects/airflow/project.md#gmail-and-ponymail)
+     (`ponymail_api_url_template`, `ponymail_public_search_url_template`,
+     `ponymail_thread_url_template`).
      If the archive returns a hit, propose populating the field with
-     the `lists.apache.org/thread/<id>?users@airflow.apache.org` URL,
+     the resolved thread URL (per `ponymail_thread_url_template`),
      regenerating the CVE JSON attachment, and adding the
      `announced` label.
   2. If the field is already populated, treat it as authoritative —
@@ -1106,14 +1095,13 @@ will change and *why*. Group them by category:
   artifact link. See the "Brevity: emails state facts, not context"
   section of [`AGENTS.md`](../../../AGENTS.md).
 
-  **Never send.** Always create a draft. The draft must always be created on
-  the original mail thread (`threadId` from Step 1c) so that
-  In-Reply-To/References are set automatically and the reply lands in the
-  right conversation. Note that the Gmail MCP exposes only `create`, `list`
-  and `read` for drafts — there is no update or delete tool, so if you find
-  yourself drafting a *correction* to a prior draft from this same sync,
-  surface that explicitly to the user and tell them which prior `draftId` to
-  discard manually in Gmail.
+  **Never send.** Always create a draft, on the original mail thread
+  (`threadId` from Step 1c) per the threading rule in
+  [`tools/gmail/threading.md`](../../../tools/gmail/threading.md).
+  The Gmail MCP's no-update-no-delete limitation — and the resulting
+  rule that corrections surface the prior `draftId` for manual
+  discard rather than silently shadowing it — is documented in
+  [`tools/gmail/operations.md`](../../../tools/gmail/operations.md#hard-limitation--no-update-no-delete).
 
 ### 2c. Next-step recommendation
 
@@ -1252,14 +1240,12 @@ before moving on to the next item. Use:
   introspection query in the same reference if a write mutation
   starts returning `not found`.
 - **Gmail draft:** `mcp__claude_ai_Gmail__create_draft` — **always**
-  pass the `threadId` from Step 1c so the draft threads onto the
-  inbound Gmail thread. Gmail does not thread by subject string;
-  omitting `threadId` creates a fabricated new thread that neither
-  the reporter's client nor the ASF security team will recognise
-  as a reply. Subject is `Re: <root subject>`, never a fabricated
-  one. See the "Threading: drafts stay on the inbound Gmail thread"
-  rule in [`AGENTS.md`](../../../AGENTS.md). **Never send.** Tell
-  the user the draft is waiting for their review in Gmail.
+  pass the `threadId` from Step 1c. See the threading rule in
+  [`tools/gmail/threading.md`](../../../tools/gmail/threading.md) and
+  the call signature in
+  [`tools/gmail/operations.md`](../../../tools/gmail/operations.md#create-draft).
+  **Never send.** Tell the user the draft is waiting for their
+  review in Gmail.
 
 If any command fails, stop the apply loop, report the failure, and ask the user
 how to proceed — do not guess.

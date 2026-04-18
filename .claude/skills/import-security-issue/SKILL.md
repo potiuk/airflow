@@ -108,21 +108,16 @@ Search `security@airflow.apache.org` for inbound reports, excluding the
 tooling / GitHub-notification / mailing-list chatter that isn't a
 report:
 
-```text
-list:security.airflow.apache.org
-  -from:notifications@github.com
-  -from:noreply@github.com
-  -from:airflow-s@noreply.github.com
-  -from:security-noreply@github.com
-  newer_than:30d
-```
+Use the canonical candidate-listing query template from
+[`tools/gmail/search-queries.md`](../../../tools/gmail/search-queries.md#import-security-issue--candidate-listing-query);
+substitute the active project's `<security-list-domain>` (Airflow:
+`security.airflow.apache.org`) and the project's GitHub-notification
+exclusions — both declared in
+[`projects/airflow/project.md`](../../../projects/airflow/project.md#gmail-and-ponymail).
 
 **Do not exclude `-from:security@apache.org`.** That address is used
-for three very different message types — CVE-tool bookkeeping
-(*"CVE-YYYY-NNNNN reserved for airflow"* / *"Comment added on CVE-…"*),
-**ASF Security Team forwarding of inbound reports** (*"Dear PMC, The
-security vulnerability report has been received by the Apache Security
-Team and is being passed to you for action …"*), and ad-hoc ASF
+for three very different message types — CVE-tool bookkeeping,
+**ASF Security Team forwarding of inbound reports**, and ad-hoc ASF
 Security discussion / advice. Blanket-excluding the sender would drop
 the forwarded reports along with the bookkeeping noise, so the
 bookkeeping emails are filtered out at Step 3 by subject pattern
@@ -132,9 +127,10 @@ table.
 Adjust the time window per the user's selector (`since:` → `newer_than:`
 or `after:`; `import all` → `newer_than:90d`).
 
-Use `mcp__claude_ai_Gmail__search_threads` to run the query. For each
-result, record `threadId` — the downstream de-duplication hinges on
-this.
+Run the query via `mcp__claude_ai_Gmail__search_threads` (see
+[`tools/gmail/operations.md`](../../../tools/gmail/operations.md#search-threads)).
+For each result, record `threadId` — the downstream de-duplication
+hinges on this.
 
 **Do not read the thread bodies yet.** Body reads cost Gmail budget and
 most threads will be filtered out at Step 2.
@@ -299,7 +295,7 @@ here.
 | **The issue description** | The root email body, **verbatim** (preserve paragraphs, PoC code blocks, and any quoted sections). The body is private — the triager will copy it into a public CVE description only after Step 13. |
 | **Short public summary for publish** | Leave `_No response_`. Filled by the release manager at Step 13 in sanitised form. |
 | **Affected versions** | Extract `Airflow <version>` / `>= X, < Y` / `<Y` phrases from the body. If the reporter gave only a single version they tested on (e.g. `3.1.5`), record that verbatim; the triager can widen the range later. Leave `_No response_` if no version is mentioned. |
-| **Security mailing list thread** | **Keep the private thread handle, and — if possible — also link the PonyMail archive entry.** The security@ PonyMail archive is **not anonymously queryable** (the list is gated behind ASF LDAP), so the skill cannot fetch the archive URL programmatically. Instead, **construct a PonyMail search URL in the month the message was received** and propose it to the user at Step 5 as a one-click lookup. The search URL format is: `https://lists.apache.org/list?security@airflow.apache.org:YYYY-M:<url-encoded subject>` — where `YYYY-M` is the year plus the 1- or 2-digit month of the root message's `Date:` header (e.g. `2026-4` for April 2026, no leading zero), and `<url-encoded subject>` is the root message's subject with spaces encoded as `%20` (other punctuation can pass through literally — PonyMail tolerates `()`, `:`, and `/` in the query string). Tell the user *"open this URL in your ASF-logged-in browser, click into the thread, and paste the resulting `lists.apache.org/thread/<hash>?security@airflow.apache.org` URL back"*, and wait for the user's response before writing the issue body. Once the user pastes the URL back, record **both** lines in the *"Security mailing list thread"* field — the PonyMail `lists.apache.org/thread/<hash>?security@airflow.apache.org` URL on the first line, and *"Gmail thread `<threadId>`"* on the second line for cross-reference. If the user does not paste a URL back (the message is not in the archive yet, LDAP access is unavailable, whatever), fall back to the Gmail-threadId-only textual note: *"No public archive URL — tracked privately on Gmail thread `<threadId>`"*. Either way, the URL is **internal-only** and the `generate-cve-json` script will not export it to `references[]` — see the "CVE references must never point at non-public mailing-list threads" section of [`AGENTS.md`](../../../AGENTS.md). |
+| **Security mailing list thread** | **Keep the private thread handle, and — if possible — also link the PonyMail archive entry.** The full URL-construction recipe (search URL template, month-token format, user-pastes-back flow, Gmail-threadId fallback) lives in [`tools/gmail/ponymail-archive.md`](../../../tools/gmail/ponymail-archive.md#use-case--import-security-issue); the active project's private-search URL template is declared in [`projects/airflow/project.md`](../../../projects/airflow/project.md#gmail-and-ponymail). Propose the constructed search URL to the user at Step 5, wait for them to paste back the resolved `lists.apache.org/thread/<hash>?<security-list>` URL, and record both the PonyMail URL and the Gmail `threadId` in this field. The URL is **internal-only** — the `generate-cve-json` script will not export it to `references[]` — see the "CVE references must never point at non-public mailing-list threads" section of [`AGENTS.md`](../../../AGENTS.md). |
 | **Public advisory URL** | `_No response_`. Populated at Step 14 by `sync-security-issue` once the advisory is archived. |
 | **Reporter credited as** | The reporter's full display name from the email `From:` header (e.g. `Alice Example` from `"Alice Example" <alice@example.com>`). This is a **placeholder** — the receipt-of-confirmation reply in Step 7 asks the reporter to confirm their preferred credit form. |
 | **PR with the fix** | `_No response_`. |
@@ -413,26 +409,15 @@ For each confirmed `Report` / `ASF-security relay`:
 
 3. Draft the receipt-of-confirmation reply. **The draft must be
    created on the inbound Gmail thread** — always pass the candidate's
-   `threadId` to `mcp__claude_ai_Gmail__create_draft`. Gmail does
-   **not** thread by subject string; a fabricated `Re:` prefix on a
-   new thread will not attach to the inbound thread. This is the
-   "Threading: drafts stay on the inbound Gmail thread" rule in
-   [`AGENTS.md`](../../../AGENTS.md).
-
-   Shape of every create_draft call at this step:
-
-   ```
-   mcp__claude_ai_Gmail__create_draft(
-     threadId="<candidate threadId from Step 1>",   # MANDATORY
-     subject="Re: <root subject of the inbound thread>",
-     toRecipients=[...],
-     ccRecipients=["security@airflow.apache.org"],
-     plaintextBody="<body>",
-   )
-   ```
-
-   Never fabricate a new subject — subject is always
-   `Re: <root subject>`, even when the recipient changes.
+   `threadId` to `mcp__claude_ai_Gmail__create_draft`. See
+   [`tools/gmail/threading.md`](../../../tools/gmail/threading.md) for
+   the full threading rule and
+   [`tools/gmail/operations.md`](../../../tools/gmail/operations.md#create-draft)
+   for the call signature. Never fabricate a new subject — subject is
+   always `Re: <root subject>`, even when the recipient changes.
+   `ccRecipients` always includes the active project's `security_list`
+   (for Airflow: `security@airflow.apache.org`; see
+   [`projects/airflow/project.md`](../../../projects/airflow/project.md#gmail-and-ponymail)).
 
    **Two variants depending on the candidate class:**
 
