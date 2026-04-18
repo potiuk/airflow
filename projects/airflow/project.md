@@ -8,6 +8,8 @@
   - [Mailing lists](#mailing-lists)
   - [Tools enabled](#tools-enabled)
   - [CVE tooling](#cve-tooling)
+  - [GitHub project board](#github-project-board)
+  - [Issue-template fields](#issue-template-fields)
   - [Scope labels and CVE product mapping](#scope-labels-and-cve-product-mapping)
   - [Release trains, release managers, security team roster](#release-trains-release-managers-security-team-roster)
   - [Milestone conventions](#milestone-conventions)
@@ -85,15 +87,15 @@ as `vendor-advisory`; see `../../AGENTS.md` and
 ## Tools enabled
 
 This project uses the following tools; each has a corresponding
-directory under `tools/` (to be populated in subsequent refactor PRs).
+directory under `tools/` (populated incrementally across the refactor
+PR series).
 
-| Capability | Tool | Config knobs declared here |
-|---|---|---|
-| Issue tracking | `github` | `tracker_repo`, `upstream_repo` above |
-| Inbound email / drafts | `gmail` | via `security_list` subscription |
-| CVE allocation + record mgmt | `vulnogram` | see [CVE tooling](#cve-tooling) below |
-| Source control | `git` | via `tracker_repo` + `upstream_repo` |
-| Release voting / announce | ASF mailing lists | via `dev_list` / `announce_list` / `users_list` |
+| Capability | Tool | Adapter directory | Config knobs declared here |
+|---|---|---|---|
+| Issue tracking + source control + project board | `github` | [`../../tools/github/`](../../tools/github/) | `tracker_repo`, `upstream_repo`, `github_project_board_*`, `issue_template_fields` |
+| Inbound email / drafts | `gmail` | *(to land in PR 3)* | via `security_list` subscription |
+| CVE allocation + record mgmt | `vulnogram` | *(to land in PR 4)* | see [CVE tooling](#cve-tooling) below |
+| Release voting / announce | ASF mailing lists | — | via `dev_list` / `announce_list` / `users_list` |
 
 To replace a tool (e.g. swap GitHub issues for JIRA), declare an
 alternate tool in the table above, add a `tools/<name>/` adapter
@@ -121,6 +123,81 @@ The full Vulnogram-specific allocation / record / state-machine flow
 will live in `tools/vulnogram/` once PR 4 lands; until then the
 Vulnogram-specific details are inlined in the skill files and read
 alongside this manifest.
+
+## GitHub project board
+
+The security team runs a Projects V2 board ("Security issues") as its
+primary overview surface. Every tracker sits in exactly one `Status`
+column. The GitHub-side mechanics (introspection, GraphQL write path,
+orphan-issue fallback) live in
+[`../../tools/github/project-board.md`](../../tools/github/project-board.md);
+the per-project IDs below are what that generic recipe substitutes in.
+
+| Key | Value |
+|---|---|
+| `project_board_url` | <https://github.com/orgs/airflow-s/projects/2> |
+| `project_board_number` | `2` |
+| `project_board_node_id` | `PVT_kwDOCAwKzs4BUzbt` |
+| `status_field_node_id` | `PVTSSF_lADOCAwKzs4BUzbtzhD08bw` |
+
+**`Status` column → option-ID mapping** (re-fetch with the
+introspection query in `project-board.md` if any write returns
+`not found`):
+
+| Column | Option ID |
+|---|---|
+| `Needs triage` | `aee65beb` |
+| `Assessed` | `ce6377ce` |
+| `CVE allocated` | `aae2beb3` |
+| `PR created` | `af56c90c` |
+| `PR merged` | `b21b5352` |
+| `Fix released` | `1f2dbb6c` |
+| `Announced` | `12e22331` |
+
+**Label + body state → `Status` column mapping**:
+
+| Issue state | Correct `Status` column |
+|---|---|
+| `needs triage` label set, no scope label yet | `Needs triage` |
+| Scope label applied, no CVE yet | `Assessed` |
+| `cve allocated` label set, no fix PR yet | `CVE allocated` |
+| `pr created` label set | `PR created` |
+| `pr merged` label set (release has not shipped) | `PR merged` |
+| `fix released` label set, advisory not yet sent | `Fix released` |
+| `announced - emails sent` label set (Step 13) **or** *Public advisory URL* body field populated + `announced` label set (Step 14) | `Announced` — one column for both steps; next move is Step 15 |
+
+**One column covers Step 13 *and* Step 14.** There is no `Closed`
+column; closed issues simply leave the board. The `announced` label
+stays meaningful on the tracker (it is the load-bearing signal for
+the CVE JSON's `CNA_private.state` REVIEW → PUBLIC transition) but
+does not map to a separate column.
+
+## Issue-template fields
+
+The skills' body-field roles map to the following concrete `###`
+headings in the Airflow issue template at
+[`.github/ISSUE_TEMPLATE/issue_report.yml`](../../.github/ISSUE_TEMPLATE/issue_report.yml).
+The generic role → GitHub-field mapping contract lives in
+[`../../tools/github/issue-template.md`](../../tools/github/issue-template.md);
+the concrete names below are what skills read and write for this
+project.
+
+| Role (generic) | Field name (Airflow) | Template type | Required? |
+|---|---|---|---|
+| `issue-description` | `The issue description` | `textarea` | yes |
+| `public-summary` | `Short public summary for publish` | `textarea` | no |
+| `affected-versions` | `Affected versions` | `input` | no |
+| `security-thread` | `Security mailing list thread` | `input` | yes |
+| `public-advisory-url` | `Public advisory URL` | `input` | no |
+| `reporter-credit` | `Reporter credited as` | `input` | no |
+| `pr-with-fix` | `PR with the fix` | `input` | no |
+| `cwe` | `CWE` | `input` | no |
+| `severity` | `Severity` | `dropdown` (`Unknown`, `Low`, `Moderate`, `Important`, `Critical`) | yes |
+| `cve-tool-link` | `CVE tool link` | `input` | no |
+
+**Empty-field convention:** GitHub renders `_No response_` for unset
+fields, and the skills honour that literal on both read and write;
+see [`../../tools/github/issue-template.md`](../../tools/github/issue-template.md#empty-field-convention).
 
 ## Scope labels and CVE product mapping
 
