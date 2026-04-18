@@ -379,7 +379,7 @@ After confirmation, apply **sequentially** (never in parallel):
    (GitHub's `duplicate` close-reason is not exposed by `gh` on
    all versions; `not planned` combined with the `duplicate` label
    carries the same signal)
-6. `uv run --project .claude/skills/generate-cve-json generate-cve-json <keep> --attach`
+6. `uv run --project tools/vulnogram/generate-cve-json generate-cve-json <keep> --attach`
    with the standard remediation-developer auto-resolution
 
 If any step fails, stop and ask the user how to proceed — do not
@@ -459,6 +459,6 @@ recap before presenting.
 - [`sync-security-issue`](../sync-security-issue/SKILL.md) — runs
   on the kept tracker after the merge to reconcile labels /
   milestone / credit-preference drafts for both reporters.
-- [`generate-cve-json`](../generate-cve-json/SKILL.md) —
+- [`generate-cve-json`](../../../tools/vulnogram/generate-cve-json/SKILL.md) —
   regenerates the kept tracker's CVE JSON attachment so both
   finders land in `credits[]`.

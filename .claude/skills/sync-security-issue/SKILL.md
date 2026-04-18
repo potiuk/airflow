@@ -1252,11 +1252,16 @@ how to proceed — do not guess.
 
 ---
 
-## Step 5 — Regenerate the CVE JSON attachment (embedded in the issue body)
+## Step 5 — Regenerate the CVE artifact via the project's CVE tool
 
-After the apply loop finishes — **every time**, not as a proposal — run the
-[`generate-cve-json`](../generate-cve-json/SKILL.md) script with `--attach`
-to refresh the CVE JSON attachment on the tracking issue. The attachment
+After the apply loop finishes — **every time**, not as a proposal — regenerate the
+CVE artifact via the project's declared CVE tool. For the active project (`cve_tool: vulnogram` —
+see [`projects/airflow/project.md`](../../../projects/airflow/project.md#cve-tooling)) that means
+running the
+[`generate-cve-json`](../../../tools/vulnogram/generate-cve-json/SKILL.md) script with `--attach`
+to refresh the CVE JSON attachment on the tracking issue. The Vulnogram-side
+record mechanics (DRAFT / REVIEW / PUBLIC state machine, `#source` paste flow) live
+in [`tools/vulnogram/record.md`](../../../tools/vulnogram/record.md). The attachment
 lives **embedded in the issue body** (at the very end, right after the
 *CVE tool link* field), not as a separate comment — this way it stays
 above every status-change comment in the timeline and reads as part of
@@ -1299,7 +1304,7 @@ In every other case — including already-published CVEs — regenerate.
 The minimum command, from the `airflow-s/airflow-s` clone root:
 
 ```bash
-uv run --project .claude/skills/generate-cve-json generate-cve-json <N> --attach
+uv run --project tools/vulnogram/generate-cve-json generate-cve-json <N> --attach
 ```
 
 That alone is enough. The script reads every template field from the
@@ -1344,10 +1349,10 @@ fi
 # ${var:+--flag "$var"} trick, it breaks quoting when the name has
 # spaces (e.g. "Amogh Desai" splits into two arg words).
 if [[ -n "$author_name" ]]; then
-  uv run --project .claude/skills/generate-cve-json generate-cve-json <N> --attach \
+  uv run --project tools/vulnogram/generate-cve-json generate-cve-json <N> --attach \
     --remediation-developer "$author_name"
 else
-  uv run --project .claude/skills/generate-cve-json generate-cve-json <N> --attach
+  uv run --project tools/vulnogram/generate-cve-json generate-cve-json <N> --attach
 fi
 ```
 

@@ -43,11 +43,14 @@ the user to click through.
 
 **Golden rule — only Apache Airflow PMC members can allocate CVEs.**
 The ASF Vulnogram form at `https://cveprocess.apache.org/allocatecve`
-requires ASF OAuth with PMC-level access on the Airflow project. A
-triager (or any other security-team member) who is **not** on the
-Airflow PMC will see the form load but will not be able to submit —
-the allocation button is PMC-gated on the server side. This is not
-something the skill can work around.
+requires ASF OAuth with PMC-level access on the Airflow project. The
+full allocation mechanics (form-fill recipe, PMC-gated access, form
+fields, fatal mis-allocation, after-allocation wire-back) live in
+[`tools/vulnogram/allocation.md`](../../../tools/vulnogram/allocation.md);
+the per-project URL templates live in
+[`projects/airflow/project.md`](../../../projects/airflow/project.md#cve-tooling).
+This is not something the skill can work around — a non-PMC user who
+clicks *Allocate* sees the button grey out.
 
 The current Airflow PMC roster lives on the ASF project page:
 <https://projects.apache.org/committee.html?airflow>. Authoritative
@@ -341,7 +344,7 @@ user to confirm. Numbered items:
 4. **Regenerate the CVE JSON attachment** in the tracker body by
    running
    ```bash
-   uv run --project .claude/skills/generate-cve-json generate-cve-json <N> --attach
+   uv run --project tools/vulnogram/generate-cve-json generate-cve-json <N> --attach
    ```
    This is how the CVE record first gets seeded with the allocated
    ID. Pass `--remediation-developer "<author>"` if the *PR with
@@ -394,7 +397,7 @@ Vulnogram paste-ready JSON was regenerated from the current body
 state (CWE `<CWE>`, severity `<severity>`, affected
 `<affected versions>`, `<N>` credits, `<N>` references) and
 embedded in the issue body. Re-run
-`uv run --project .claude/skills/generate-cve-json
+`uv run --project tools/vulnogram/generate-cve-json
 generate-cve-json <N> --attach` after any body change to keep the
 JSON in sync.
 
@@ -442,7 +445,7 @@ partial failures stay legible:
 2. `gh issue edit <N> --repo airflow-s/airflow-s --add-label "cve allocated"`.
 3. `gh issue comment <N> --repo airflow-s/airflow-s --body-file <tmp>`
    — status-change comment.
-4. `uv run --project .claude/skills/generate-cve-json generate-cve-json <N> --attach`
+4. `uv run --project tools/vulnogram/generate-cve-json generate-cve-json <N> --attach`
    — embeds the CVE JSON in the body.
 5. `mcp__claude_ai_Gmail__gmail_create_draft` on the original
    thread — reporter notification, if applicable.
@@ -565,7 +568,7 @@ presenting.
   tracker, the mail thread, and any fix PR after the CVE landing
   touches labels, body fields, and comments. Always runs; only
   skipped in the explicit edge cases listed in Step 6.
-- [`generate-cve-json`](../generate-cve-json/SKILL.md) — Step 4
+- [`generate-cve-json`](../../../tools/vulnogram/generate-cve-json/SKILL.md) — Step 4
   regenerates the CVE JSON attachment in the body so Vulnogram can
   be seeded via the `#source` tab paste.
 - [`import-security-issue`](../import-security-issue/SKILL.md) /
