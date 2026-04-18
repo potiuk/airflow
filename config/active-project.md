@@ -25,22 +25,37 @@ active_project: airflow
 
 The value above is the directory name under `projects/`. The skills
 resolve project-scoped references by concatenating
-`projects/<active_project>/<file>.md`, for example
-`projects/airflow/canned-responses.md`.
+`projects/<active_project>/<file>.md` — for this tree
+(`active_project: airflow`), that means
+`projects/airflow/canned-responses.md` and siblings. For the full
+index of files in the active project's directory, see that project's
+`README.md` (for Airflow:
+[`projects/airflow/README.md`](../projects/airflow/README.md)).
 
 ## Adding a new project
 
 To onboard a new ASF project (or any other project reusing this
-framework):
+framework), use the skeleton at
+[`../projects/_template/`](../projects/_template/):
 
-1. Create a sibling directory under `projects/`, e.g.
-   `projects/<name>/`.
-2. Populate it with, at a minimum, a `project.md` manifest following
-   the same shape as [`projects/airflow/project.md`](../projects/airflow/project.md).
-3. Add the per-project files the skills reference — the manifest
-   lists the expected filenames.
-4. Update `active_project:` above when the new project is the one the
-   current working tree targets.
+```bash
+# From the repo root:
+cp -R projects/_template projects/<name>
+$EDITOR projects/<name>/project.md              # fill in identity, repos, lists, tools, CVE tooling
+# then walk through the rest of the files — each one has a grep-friendly TODO list.
+grep -rn TODO projects/<name>                    # see what still needs filling in
+```
+
+Once the skeleton is filled in:
+
+1. Update `active_project:` above to the new directory name (if this
+   working tree should target the new project).
+2. Validate with a prek run; the skills pick up the change on the
+   next invocation.
+
+The full bootstrap walk-through (with a "Current projects" table and
+tips for swapping tools per project) lives in
+[`../projects/README.md`](../projects/README.md).
 
 If a project does not use one of the optional tools (e.g. it uses
 JIRA instead of GitHub issues), that preference is declared in its

@@ -60,7 +60,7 @@ button grey out.
   the CVE ID as an override to resume from the wire-back step.
 
 Concrete PMC-member handles live in the project's roster file (for
-Airflow, `projects/airflow/release-trains.md`); the canonical live
+Airflow, `projects/<PROJECT>/release-trains.md`); the canonical live
 source is the ASF project page,
 `https://projects.apache.org/committee.html?<project>`.
 
@@ -68,9 +68,9 @@ source is the ASF project page,
 
 | Vulnogram form field | Source in the tracker |
 |---|---|
-| **Title** | Tracker title, passed through the project's title-normalisation cascade (for Airflow, `projects/airflow/title-normalization.md`). The CNA container already scopes the title to the product, so any project prefix (`Apache Airflow:` etc.) must be stripped before pasting. |
-| **Product** | Derived from the tracker's scope label via the per-project scope → product mapping (for Airflow, `projects/airflow/scope-labels.md`). |
-| **CWE** | Tracker body's *cwe* field (role-name — `projects/airflow/project.md` declares the concrete GitHub heading for this project). `_No response_` → the allocator fills it at form time. |
+| **Title** | Tracker title, passed through the project's title-normalisation cascade (for Airflow, `projects/<PROJECT>/title-normalization.md`). The CNA container already scopes the title to the product, so any project prefix (`Apache Airflow:` etc.) must be stripped before pasting. |
+| **Product** | Derived from the tracker's scope label via the per-project scope → product mapping (for Airflow, `projects/<PROJECT>/scope-labels.md`). |
+| **CWE** | Tracker body's *cwe* field (role-name — `projects/<PROJECT>/project.md` declares the concrete GitHub heading for this project). `_No response_` → the allocator fills it at form time. |
 | **Affected versions** | Tracker body's *affected-versions* field. |
 | **Summary** | Tracker body's *public-summary* field. |
 | **Reporter credits** | Tracker body's *reporter-credit* field. |

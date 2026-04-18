@@ -78,7 +78,7 @@ in [`config/README.md`](config/README.md).
 **Project layer — shared, checked in.** Every project-specific fact
 the skills need is declared in a single manifest per project. For the
 currently active project, see
-[`projects/airflow/project.md`](projects/airflow/project.md). The
+[`projects/<PROJECT>/project.md`](projects/airflow/project.md). The
 active project is picked by
 [`config/active-project.md`](config/active-project.md). The manifest
 lists:
@@ -145,7 +145,7 @@ link, `[…](../../../projects/<PROJECT>/canned-responses.md)` means
 *"substitute `<PROJECT>` for the value in
 `config/active-project.md` → `active_project`, then follow the
 link"*. Writing the literal value directly (e.g. `<tracker>`
-or `projects/airflow/`) in a skill is a refactor bug — skills must
+or `projects/<PROJECT>/`) in a skill is a refactor bug — skills must
 stay project-agnostic so swapping projects is a config change, not
 a code change.
 
@@ -182,12 +182,12 @@ if a hook is failing, fix the underlying issue or update the hook configuration 
 - **Never use `Co-Authored-By:` with an AI agent as co-author.** Agents are
   assistants, not authors. Use a `Generated-by:` trailer instead. The exact
   trailer wording is project-specific — for the currently active project see
-  [`projects/airflow/fix-workflow.md`](projects/airflow/fix-workflow.md#commit-trailer).
+  [`projects/<PROJECT>/fix-workflow.md`](projects/airflow/fix-workflow.md#commit-trailer).
 - **Always open PRs with `gh pr create --web`** so the human reviewer can check the title,
   body, and the generative-AI disclosure in the browser before submission. Pre-fill `--title`
   and `--body` (including the Gen-AI disclosure block) so they only need to review, not edit.
 - **Target branch for this repository is declared in the project manifest** — see
-  [`projects/airflow/project.md`](projects/airflow/project.md#repositories)
+  [`projects/<PROJECT>/project.md`](projects/airflow/project.md#repositories)
   (`tracker_default_branch`). The non-default branch (`main`) is used only as a
   staging branch for the private-PR fallback described in
   [`README.md`](README.md). Unless the user explicitly says otherwise, base
@@ -233,12 +233,12 @@ In particular:
   back to `<tracker>`. This is already required by process step 8 of
   [`README.md`](README.md) and the rule above reinforces it.
 - **Canned responses** (for the active project,
-  [`projects/airflow/canned-responses.md`](projects/airflow/canned-responses.md))
+  [`projects/<PROJECT>/canned-responses.md`](projects/airflow/canned-responses.md))
   must remain free of `<tracker>` URLs, because they are sent
   verbatim as email replies. If you are tempted to add one, link to
   the project's public Security Model or security policy instead —
   for Airflow, see
-  [`projects/airflow/security-model.md`](projects/airflow/security-model.md).
+  [`projects/<PROJECT>/security-model.md`](projects/airflow/security-model.md).
 - **Status updates the skill drafts to reporters** *may* include the
   `<tracker>` tracking-issue URL — the reporter is on the private
   `<security-list>` thread and is expected to keep it confidential —
@@ -366,7 +366,7 @@ targeted improvements over rewrites, and preserve the existing structure (includ
 ### Tone: polite but firm — no room to wiggle
 
 The canned responses in
-[`projects/airflow/canned-responses.md`](projects/airflow/canned-responses.md)
+[`projects/<PROJECT>/canned-responses.md`](projects/airflow/canned-responses.md)
 are the public face of the security team. They are often sent to reporters
 whose submissions have been assessed as invalid or out of scope. The tone
 must be:
@@ -458,7 +458,7 @@ the Vulnogram tool, and the CVE-5 schema. A message to them is a
 message the security team sends to a new reporter, drafted by the
 `import-security-issue` skill, uses the *"Confirmation of receiving
 the report"* canned response from
-[`projects/airflow/canned-responses.md`](projects/airflow/canned-responses.md)
+[`projects/<PROJECT>/canned-responses.md`](projects/airflow/canned-responses.md)
 **verbatim**. That template is longer because it introduces the process
 to a reporter who has not yet seen it and carries the credit-preference
 question; leave it alone and do not trim it per this brevity rule.
@@ -498,7 +498,7 @@ maintained.
 
 The authoritative URL and known-useful anchors for the currently active
 project live in
-[`projects/airflow/security-model.md`](projects/airflow/security-model.md).
+[`projects/<PROJECT>/security-model.md`](projects/airflow/security-model.md).
 When adding a new canned response, identify the matching chapter in the
 Security Model first. If no chapter covers the case, that is a signal
 the Security Model should be updated upstream (in the project's source
@@ -622,9 +622,9 @@ The project-specific roster rules (who the rule applies to, which
 surfaces it applies to, public-surface caveats tied to this project's
 confidentiality constraints, how external reporters are handled) live
 in
-[`projects/airflow/naming-conventions.md`](projects/airflow/naming-conventions.md#mentioning-airflow-maintainers-and-security-team-members).
+[`projects/<PROJECT>/naming-conventions.md`](projects/airflow/naming-conventions.md#mentioning-airflow-maintainers-and-security-team-members).
 The authoritative roster and the release-manager rotation list live in
-[`projects/airflow/release-trains.md`](projects/airflow/release-trains.md).
+[`projects/<PROJECT>/release-trains.md`](projects/airflow/release-trains.md).
 
 The sync-security-issue and fix-security-issue skills should render
 every maintainer / security-team / release-manager reference in the
@@ -637,7 +637,7 @@ bare-name occurrence to the user.
 - Project-specific naming rules (e.g. *"use `Dag` not `DAG`"*,
   *"thousands of contributors"*, acronym casing) live in the active
   project's naming-conventions file — for Airflow, see
-  [`projects/airflow/naming-conventions.md`](projects/airflow/naming-conventions.md).
+  [`projects/<PROJECT>/naming-conventions.md`](projects/airflow/naming-conventions.md).
 - Use em dashes (`—`) sparingly; prefer shorter sentences to dash-heavy ones.
 - Preserve the `doctoc` TOC markers at the top of each document. If you rename a heading, update
   the corresponding TOC entry in the same change.
@@ -661,7 +661,7 @@ Currently available:
   media / spam), extracts the issue-template fields from the root email, and —
   after user confirmation — creates one tracker per valid report plus a Gmail
   draft of the receipt-of-confirmation reply (from
-  [`projects/airflow/canned-responses.md`](projects/airflow/canned-responses.md),
+  [`projects/<PROJECT>/canned-responses.md`](projects/airflow/canned-responses.md),
   including the credit-preference question). Deduplicates against existing
   tracker bodies by searching for the
   Gmail `threadId`. This is Step 2 of the handling process in
@@ -754,7 +754,7 @@ When adding a new skill:
 - Check that any renamed headings have matching TOC updates.
 - Verify that links to the project's Security Model use an anchor that
   exists on the current stable version (active project's anchors:
-  [`projects/airflow/security-model.md`](projects/airflow/security-model.md)).
+  [`projects/<PROJECT>/security-model.md`](projects/airflow/security-model.md)).
 - Self-review the tone of any modified canned response against the "polite but firm" guidance above.
 
 ## References
@@ -762,8 +762,8 @@ When adding a new skill:
 - [`config/README.md`](config/README.md) — two-layer configuration model + step-by-step tutorial (project + user).
 - [`config/active-project.md`](config/active-project.md) — declares which project under `projects/` this working tree targets.
 - [`config/user.md.example`](config/user.md.example) — per-user configuration template (copy to `config/user.md`, which is gitignored).
-- [`projects/airflow/project.md`](projects/airflow/project.md) — the active project's manifest (identity, repositories, mailing lists, tools enabled, CVE tooling, GitHub project board + issue-template field declarations).
-- [`projects/airflow/`](projects/airflow/) — other project-specific files (canned responses, release trains, security model, scope labels, milestones, title-normalization, fix workflow, naming conventions).
+- [`projects/<PROJECT>/project.md`](projects/airflow/project.md) — the active project's manifest (identity, repositories, mailing lists, tools enabled, CVE tooling, GitHub project board + issue-template field declarations).
+- [`projects/<PROJECT>/`](projects/airflow/) — other project-specific files (canned responses, release trains, security model, scope labels, milestones, title-normalization, fix workflow, naming conventions).
 - [`tools/github/`](tools/github/) — GitHub tool adapter: `tool.md` (overview), `operations.md` (`gh` CLI / API catalogue), `issue-template.md` (body-field schema), `labels.md` (lifecycle-label taxonomy), `project-board.md` (Projects V2 GraphQL).
 - [`tools/gmail/`](tools/gmail/) — Gmail tool adapter: `tool.md` (overview), `operations.md` (MCP catalogue + no-update limitation), `threading.md` (always-pass-`threadId` rule), `asf-relay.md` (ASF-security-relay drafting), `search-queries.md` (query templates), `ponymail-archive.md` (ASF PonyMail URL construction).
 - [`tools/vulnogram/`](tools/vulnogram/) — Vulnogram (ASF CVE tool) adapter: `tool.md` (overview), `allocation.md` (PMC-gated allocation flow), `record.md` (record URLs + `#source` paste + `DRAFT`/`REVIEW`/`PUBLIC` state machine + reviewer-comment signal), `generate-cve-json/` (CVE-5.x JSON generator — Python project).

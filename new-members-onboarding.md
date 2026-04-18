@@ -17,7 +17,7 @@
 Hello, new member of the active project's security team. This
 repository hosts a project-agnostic framework for handling security
 issues; the active project (for this clone:
-[`projects/airflow/`](projects/airflow/)) is declared in
+[`projects/<PROJECT>/`](projects/airflow/)) is declared in
 [`config/active-project.md`](config/active-project.md). This document
 is the soft-landing guide — it tells you how the team works, where
 the action happens, and what is expected of you in the first few
@@ -64,7 +64,7 @@ The authoritative source for who is currently on the team is the
 collaborator list of the tracker repository (`<tracker>`) —
 everyone listed, regardless of permission level. For the active
 project, see
-[`projects/airflow/release-trains.md` — Security team roster](projects/airflow/release-trains.md#security-team-roster)
+[`projects/<PROJECT>/release-trains.md` — Security team roster](projects/airflow/release-trains.md#security-team-roster)
 for the lookup command and the latest snapshot.
 
 # Where things happen
@@ -114,7 +114,7 @@ week. A good starting routine:
    mirror means you will see new activity in your inbox. Seeing a few
    issues move from `needs triage` to `cve allocated` and onwards is
    the fastest way to internalise the process.
-4. **Read [`projects/airflow/canned-responses.md`](projects/airflow/canned-responses.md).** These are the
+4. **Read [`projects/<PROJECT>/canned-responses.md`](projects/airflow/canned-responses.md).** These are the
    reply templates we send to reporters. They shape most of the tone
    you will eventually need to match when you draft a reply yourself.
 5. **Read [`AGENTS.md`](AGENTS.md) at least the
@@ -232,12 +232,12 @@ PRs against any part of our process are welcome. The documents that
 shape the team are small enough to read in one sitting:
 
 - [`README.md`](README.md) — the end-to-end handling process.
-- [`projects/airflow/canned-responses.md`](projects/airflow/canned-responses.md) — reply templates.
+- [`projects/<PROJECT>/canned-responses.md`](projects/airflow/canned-responses.md) — reply templates.
 - [`AGENTS.md`](AGENTS.md) — agent-facing conventions and confidentiality rules.
 - [`config/README.md`](config/README.md) — how the per-project and
   per-user configuration layers work, with a tutorial for your own
   `config/user.md`.
-- [`projects/airflow/`](projects/airflow/) — project-specific content
+- [`projects/<PROJECT>/`](projects/airflow/) — project-specific content
   (roster, release trains, security model, scope labels, milestones,
   canned responses, fix-workflow specifics).
 - [`how-to-fix-a-security-issue.md`](how-to-fix-a-security-issue.md) —

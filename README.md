@@ -55,6 +55,7 @@
 - [Label lifecycle](#label-lifecycle)
   - [State diagram](#state-diagram)
   - [Label reference](#label-reference)
+- [Current projects](#current-projects)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -69,7 +70,7 @@ milestone formats, title-normalisation rules, fix-workflow specifics)
 is declared in the active project's directory under
 [`projects/<PROJECT>/`](projects/) and indexed from its manifest — for
 Airflow, see
-[`projects/airflow/project.md`](projects/airflow/project.md). The
+[`projects/<PROJECT>/project.md`](projects/airflow/project.md). The
 currently active project is declared in
 [`config/active-project.md`](config/active-project.md).
 
@@ -177,7 +178,7 @@ CLI directly for some calls. What the skills need:
 - Collaborator access (any permission level) on `<tracker>` — the
   security-team roster is maintained per-project; for the active
   project see
-  [`projects/airflow/release-trains.md`](projects/airflow/release-trains.md#security-team-roster).
+  [`projects/<PROJECT>/release-trains.md`](projects/airflow/release-trains.md#security-team-roster).
 - For `fix-security-issue`: a fork of `<upstream>` on your GitHub
   account (the skill pushes a branch there before opening the PR
   via `gh pr create --web`).
@@ -191,7 +192,7 @@ skill detects this up front (it asks *"are you a PMC member of
 `<PROJECT>`?"*) and produces a relay message for a PMC member to
 click through instead. For Airflow the concrete tool is ASF's
 Vulnogram at <https://cveprocess.apache.org/allocatecve>; see
-[`projects/airflow/project.md → CVE tooling`](projects/airflow/project.md#cve-tooling).
+[`projects/<PROJECT>/project.md → CVE tooling`](projects/airflow/project.md#cve-tooling).
 
 The same PMC gate applies to ponymail URL lookups on private ASF
 lists; until `ponymail-mcp` is wired in with ASF OAuth, only PMC
@@ -217,7 +218,7 @@ checks and tests, pushes a branch to your fork, and opens a PR via
   you run the skill;
 - the active project's dev toolchain installed per its contributing
   docs — for Airflow see
-  [`projects/airflow/fix-workflow.md → Toolchain`](projects/airflow/fix-workflow.md#toolchain);
+  [`projects/<PROJECT>/fix-workflow.md → Toolchain`](projects/airflow/fix-workflow.md#toolchain);
 - a remote named for your GitHub fork that `gh pr create` can push
   to.
 
@@ -258,7 +259,7 @@ the reporter's full name from the original email if they do not respond
 before publication.
 
 Reusable wording for the common cases lives in
-[`projects/airflow/canned-responses.md`](projects/airflow/canned-responses.md) — consult it before drafting a
+[`projects/<PROJECT>/canned-responses.md`](projects/airflow/canned-responses.md) — consult it before drafting a
 reply from scratch.
 
 ### Recording status transitions on the tracker
@@ -323,7 +324,7 @@ proposal engine, not an auto-pilot.
 
 For each `needs triage` tracker, drive the validity assessment in comments,
 pulling at least one other security-team member into the discussion. Use the
-canned-response templates from [`projects/airflow/canned-responses.md`](projects/airflow/canned-responses.md)
+canned-response templates from [`projects/<PROJECT>/canned-responses.md`](projects/airflow/canned-responses.md)
 for negative assessments so the tone stays polite-but-firm.
 
 When the report is confirmed valid, apply exactly one scope label (`airflow`
@@ -551,7 +552,7 @@ Gmail for the triager to review and send.
 If the report is "obviously invalid" (we've seen such issues before and
 triaged or responded to them) — for example an automated-scanner dump or a
 consolidated multi-issue report — the skill proposes the matching canned
-response from [`projects/airflow/canned-responses.md`](projects/airflow/canned-responses.md) as a Gmail draft
+response from [`projects/<PROJECT>/canned-responses.md`](projects/airflow/canned-responses.md) as a Gmail draft
 and does **not** create a tracker, so the invalid class never enters the
 board.
 
@@ -677,7 +678,7 @@ to the milestone of the release it is planned to ship in.
 
 The **milestone naming conventions** are project-specific; for the
 currently active project see
-[`projects/airflow/milestones.md`](projects/airflow/milestones.md), which
+[`projects/<PROJECT>/milestones.md`](projects/airflow/milestones.md), which
 also records the policy for creating missing milestones via `gh api` and
 for bumping a fix to the next minor release instead of the next patch
 when triage warrants it.
@@ -694,7 +695,7 @@ when the release hits PyPI / the Helm registry (Step 12).
 **Fix released.** When the release carrying the fix actually ships
 to users — the final release artefact (per the active project's
 release-train conventions; for Airflow see
-[`projects/airflow/milestones.md`](projects/airflow/milestones.md))
+[`projects/<PROJECT>/milestones.md`](projects/airflow/milestones.md))
 is live on the project's package index — the issue moves from
 `pr merged` to `fix released`. The `sync-security-issue` skill
 detects the release (by checking the project's package index for
@@ -724,7 +725,7 @@ following fields, taking them from the issue:
   [here](https://cwe.mitre.org/data/index.html)
 * Product name — per the active project's scope-label → product
   mapping (for Airflow, see
-  [`projects/airflow/scope-labels.md`](projects/airflow/scope-labels.md))
+  [`projects/<PROJECT>/scope-labels.md`](projects/airflow/scope-labels.md))
 * Version affected (`0, < Version released`)
 * Short public summary
 * Severity score — based on the
@@ -858,7 +859,7 @@ moves through these labels left-to-right.
 **Scope labels are project-specific** — the active project's concrete
 scope labels live in
 [`projects/<PROJECT>/scope-labels.md`](projects/) (for the currently
-active project, [`projects/airflow/scope-labels.md`](projects/airflow/scope-labels.md)).
+active project, [`projects/<PROJECT>/scope-labels.md`](projects/airflow/scope-labels.md)).
 The table below uses `<scope>` as a placeholder for whichever scope
 labels the active project defines.
 
@@ -878,3 +879,20 @@ The [`sync-security-issue`](.claude/skills/sync-security-issue/SKILL.md)
 skill keeps these labels honest: on every run it detects the current state
 of the issue, the fix PR, and the release train, and proposes the label
 transitions the process requires.
+
+## Current projects
+
+One row per project configured under
+[`projects/`](projects/). The directory name is the resolution key
+for the `<PROJECT>` placeholder used throughout the framework (see
+[`AGENTS.md` — Placeholder convention](AGENTS.md#placeholder-convention-used-in-skill-files)).
+
+| Project | Directory | Index | Manifest |
+|---|---|---|---|
+| [Apache Airflow](https://airflow.apache.org/) | [`projects/airflow/`](projects/airflow/) | [`projects/airflow/README.md`](projects/airflow/README.md) | [`projects/airflow/project.md`](projects/airflow/project.md) |
+
+Add a new project by copying
+[`projects/_template/`](projects/_template/) into
+`projects/<name>/`, filling in the TODO placeholders, and adding a
+row to the table above. The full bootstrap walk-through lives in
+[`projects/README.md`](projects/README.md#bootstrapping-a-new-project).

@@ -15,7 +15,7 @@ report from inbound email through published CVE. This page is
 project-agnostic; the concrete lists, repos, release trains, and
 tooling for the currently active project live under
 [`projects/<PROJECT>/`](projects/) — for Airflow, see
-[`projects/airflow/project.md`](projects/airflow/project.md).
+[`projects/<PROJECT>/project.md`](projects/airflow/project.md).
 
 The end-to-end 16-step lifecycle is in [`README.md`](README.md). This
 page is the two-minute summary.
@@ -66,7 +66,7 @@ page is the two-minute summary.
    The security team encourages responsible vulnerability disclosure
    and continues to improve the project's security posture, security
    features, and handling process. The active project's security
-   model (for Airflow, [`projects/airflow/security-model.md`](projects/airflow/security-model.md))
+   model (for Airflow, [`projects/<PROJECT>/security-model.md`](projects/airflow/security-model.md))
    is the authoritative reference for what counts as a vulnerability.
 
 ## Best practices
