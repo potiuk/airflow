@@ -241,18 +241,25 @@ The skill will never write into `airflow-s/airflow-s` for a code
 change; it writes into a local clone of `apache/airflow`. Before
 touching any files:
 
-1. Detect or ask for the clone path. Common locations:
-   `~/code/airflow`, `~/code/apache-airflow`, `~/projects/airflow`.
-   Verify it is a git repository and its `origin` or one of the
-   remotes points to `github.com:apache/airflow.git` (or the user's
-   fork).
+1. Resolve the clone path. First try
+   [`config/user.md`](../../../config/user.md) →
+   `environment.apache_airflow_clone` (see
+   [`config/README.md`](../../../config/README.md) for the config
+   layer explainer); if set and the path resolves to a git repo with
+   a remote pointing at `apache/airflow` or the user's fork, use it.
+   Otherwise fall back to auto-detection against the common locations
+   (`~/code/airflow`, `~/code/apache-airflow`, `~/projects/airflow`)
+   and, failing that, ask the user for the path interactively.
 
 2. Check `git remote -v`. Identify which remote is the **user's fork**
    and which is the upstream `apache/airflow`. Per the rule in
    [`apache/airflow/AGENTS.md`](https://github.com/apache/airflow/blob/main/AGENTS.md),
    push only to the user's fork, never to `apache/airflow` directly.
-   If no fork remote is configured, **stop and ask the user to
-   configure one** (`gh repo fork apache/airflow --remote
+   If the user's `config/user.md` has
+   `environment.apache_airflow_fork_remote` set, prefer that remote
+   name; otherwise use the first non-`origin` remote that looks like
+   a fork. If no fork remote is configured, **stop and ask the user
+   to configure one** (`gh repo fork apache/airflow --remote
    --remote-name <name>`); do not auto-create one.
 
 3. Check that the working tree is clean (`git status` shows no

@@ -127,11 +127,18 @@ Before touching the tracker, verify:
    CVE-JSON regeneration would fail silently mid-flow; better to
    tell the user up front to install `uv` (one command:
    `curl -LsSf https://astral.sh/uv/install.sh | sh`).
-3. **Ask the PMC question up front** (Step 3 asks it anyway, but
-   prompting here gives the user a chance to abort if they did
-   not realise they needed a PMC member to click through — it is
-   friendlier than generating the relay recipe and then realising
-   no PMC member is available to act on it).
+3. **Resolve the user's PMC status.** First try to read it from
+   [`config/user.md`](../../../config/user.md) → `role_flags.pmc_member`
+   (see [`config/README.md`](../../../config/README.md) for the config
+   layer explainer). If the file exists and the flag is set, use that
+   value and surface it in the Step 0 recap (*"loaded config for
+   `<handle>` (PMC: yes)"*). If the file is missing, the flag is
+   unset, or the user did not copy the template, fall back to asking
+   the PMC question up front (Step 3 asks it anyway, but prompting
+   here gives the user a chance to abort if they did not realise they
+   needed a PMC member to click through — it is friendlier than
+   generating the relay recipe and then realising no PMC member is
+   available to act on it).
 
 If any check fails, stop with a clear message. Do not start
 filling in the tracker until all three are green — a partial

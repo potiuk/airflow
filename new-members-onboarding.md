@@ -110,10 +110,20 @@ week. A good starting routine:
    section.** The rule of thumb: nothing about
    `airflow-s/airflow-s` — issue numbers, labels, discussions, even the
    repo name — leaves the private channels.
+6. **Set up your per-user config** if (and only if) you plan to run
+   the agent skills. Copy
+   [`config/user.md.example`](config/user.md.example) to
+   `config/user.md` and fill in your GitHub handle, email, PMC status,
+   and (for remediation-developer work) the path to your local
+   `apache/airflow` clone. The full tutorial is in
+   [`config/README.md`](config/README.md) — it takes under five
+   minutes. You can skip this step on day one; skills fall back to
+   runtime prompts when `config/user.md` is missing.
 
 You can start commenting on issues on day one. Just commenting,
 voting on validity, suggesting severity — those are valuable
-contributions and do not require you to pick up a role.
+contributions and do not require you to pick up a role or to set up
+any per-user config.
 
 # Picking up a role
 
@@ -208,6 +218,9 @@ shape the team are small enough to read in one sitting:
 - [`README.md`](README.md) — the end-to-end handling process.
 - [`projects/airflow/canned-responses.md`](projects/airflow/canned-responses.md) — reply templates.
 - [`AGENTS.md`](AGENTS.md) — agent-facing conventions and confidentiality rules.
+- [`config/README.md`](config/README.md) — how the per-project and
+  per-user configuration layers work, with a tutorial for your own
+  `config/user.md`.
 - [`projects/airflow/`](projects/airflow/) — project-specific content
   (roster, release trains, security model, scope labels, milestones,
   canned responses, fix-workflow specifics).

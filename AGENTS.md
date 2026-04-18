@@ -4,7 +4,7 @@
 
 - [AGENTS instructions](#agents-instructions)
   - [Repository purpose](#repository-purpose)
-  - [Per-project configuration](#per-project-configuration)
+  - [Per-project and per-user configuration](#per-project-and-per-user-configuration)
   - [Local setup](#local-setup)
   - [Commit and PR conventions](#commit-and-pr-conventions)
   - [Confidentiality of `airflow-s/airflow-s`](#confidentiality-of-airflow-sairflow-s)
@@ -60,17 +60,26 @@ Repo-root files:
 - [`README.md`](README.md) — the end-to-end process for handling security issues (generic lifecycle).
 - [`how-to-fix-a-security-issue.md`](how-to-fix-a-security-issue.md) — high-level description of the fix workflow.
 - [`new-members-onboarding.md`](new-members-onboarding.md) — onboarding guide for new security team members.
+- [`config/README.md`](config/README.md) — tutorial for the two configuration layers (project + user).
 - [`config/active-project.md`](config/active-project.md) — declares which project under `projects/` this working tree targets.
+- [`config/user.md`](config/user.md) (each user's local copy of [`config/user.md.example`](config/user.md.example), **gitignored**) — per-user identity, PMC status, tool preferences, local environment paths.
 - [`projects/<active>/`](projects/) — project-specific content (canned responses, release trains, security model, milestones, …).
 - [`tools/<name>/`](tools/) — tool adapters (GitHub operations, issue-template schema, project-board GraphQL, …) for the external tools the skills invoke.
 
 There is no source code to build or test. Changes are reviewed and merged by the security team.
 
-## Per-project configuration
+## Per-project and per-user configuration
 
-Every project-specific fact the skills need is declared in a single
-manifest per project. For the currently active project, see
-[`projects/airflow/project.md`](projects/airflow/project.md). The manifest
+Two configuration layers tell the skills how this working tree is set
+up. The overview + a step-by-step tutorial for setting both up lives
+in [`config/README.md`](config/README.md).
+
+**Project layer — shared, checked in.** Every project-specific fact
+the skills need is declared in a single manifest per project. For the
+currently active project, see
+[`projects/airflow/project.md`](projects/airflow/project.md). The
+active project is picked by
+[`config/active-project.md`](config/active-project.md). The manifest
 lists:
 
 - project identity (vendor, product, URLs);
@@ -82,10 +91,24 @@ lists:
   scope labels, milestones, security model, title-normalisation rules,
   canned responses, fix workflow, naming conventions).
 
+**User layer — personal, gitignored.** Each triager keeps their own
+[`config/user.md`](config/user.md) (copied from
+[`config/user.md.example`](config/user.md.example)) declaring their
+identity, PMC status, per-capability tool picks, and local
+environment paths (e.g. the apache/airflow clone location). Skills
+read this file at Step 0 pre-flight and skip the corresponding
+prompts when a field is set. Fields that are unset fall back to
+runtime prompts — nothing is broken if `user.md` is missing; it is an
+opt-in convenience. See
+[`config/README.md`](config/README.md#what-the-user-layer-does) for
+the list of knobs the file exposes today.
+
 When this document (or any skill) says *"the tracker repo"*, *"the
 upstream repo"*, *"the security list"*, *"the canned responses"*,
 it means the value declared in `projects/<active>/project.md` and
-its sibling files. When a fact is truly project-agnostic (a lifecycle
+its sibling files. When it says *"the user's GitHub handle"*, *"PMC
+status"*, *"the local apache/airflow clone"*, it means the value in
+`config/user.md`. When a fact is truly project-agnostic (a lifecycle
 rule, a confidentiality principle, a brevity rule), it lives in this
 file or in [`README.md`](README.md).
 
@@ -677,7 +700,9 @@ When adding a new skill:
 
 ## References
 
+- [`config/README.md`](config/README.md) — two-layer configuration model + step-by-step tutorial (project + user).
 - [`config/active-project.md`](config/active-project.md) — declares which project under `projects/` this working tree targets.
+- [`config/user.md.example`](config/user.md.example) — per-user configuration template (copy to `config/user.md`, which is gitignored).
 - [`projects/airflow/project.md`](projects/airflow/project.md) — the active project's manifest (identity, repositories, mailing lists, tools enabled, CVE tooling, GitHub project board + issue-template field declarations).
 - [`projects/airflow/`](projects/airflow/) — other project-specific files (canned responses, release trains, security model, scope labels, milestones, title-normalization, fix workflow, naming conventions).
 - [`tools/github/`](tools/github/) — GitHub tool adapter: `tool.md` (overview), `operations.md` (`gh` CLI / API catalogue), `issue-template.md` (body-field schema), `labels.md` (lifecycle-label taxonomy), `project-board.md` (Projects V2 GraphQL).

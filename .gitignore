@@ -2,3 +2,7 @@
 /airflow-s.iml
 logs
 .build
+
+# Per-user configuration — each team member keeps their own local copy
+# of config/user.md.example; see config/README.md for the tutorial.
+/config/user.md
