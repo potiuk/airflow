@@ -52,9 +52,10 @@ something the skill can work around.
 The current Airflow PMC roster lives on the ASF project page:
 <https://projects.apache.org/committee.html?airflow>. Authoritative
 GitHub handles for the subset of PMC members who also sit on the
-security team are listed in the "Current release managers" and
-related rosters in [`AGENTS.md`](../../../AGENTS.md) — use those as
-the authoritative source when a non-PMC triager needs to ping a PMC
+security team are listed in
+[`projects/airflow/release-trains.md`](../../../projects/airflow/release-trains.md)
+(release-manager rosters + security-team roster) — use those as the
+authoritative source when a non-PMC triager needs to ping a PMC
 member to do the actual click-through.
 
 If the user running this skill is **not** a PMC member, Step 3 will
@@ -173,36 +174,18 @@ Blocker checks — if any fail, stop and surface the failure:
 ## Step 2 — Compute the CVE-ready title
 
 The CVE record's `title` field is scoped to the product by the CNA
-container (`Apache Airflow`, `Apache Airflow Elasticsearch Provider`,
-etc.), so the Vulnogram title should be the **bare description** —
-no `Apache Airflow:` prefix, no redundant version suffix, no
-reporter-added tag like `[ Security Report ]` or `Security Issue`.
+container (e.g. `Apache Airflow`, `Apache Airflow Elasticsearch Provider`),
+so the Vulnogram title should be the **bare description** — no project
+prefix, no redundant version suffix, no reporter-added tag like
+`[ Security Report ]` or `Security Issue`.
 
-Apply the following strip cascade to the issue title, in order:
-
-1. **Leading bracketed tags** — `^[ \t]*\[ ?Security (Report|Issue|Vulnerability|Bug) ?\][ \t:|\-–—]*`
-2. **Leading plain tags** — `^[ \t]*Security (Report|Issue|Vulnerability|Bug)[ \t:|\-–—]+`
-3. **Leading `Apache Airflow` (optional version, optional separator)** —
-   `^[ \t]*Apache[ \t]+Airflow(?:[ \t]+v?\d+(?:\.\d+)*(?:\.x)?)?[ \t]*[:|\-–—]?[ \t]*`
-4. **Leading `Airflow` (optional version, optional separator)** —
-   `^[ \t]*Airflow(?:[ \t]+v?\d+(?:\.\d+)*(?:\.x)?)?[ \t]*[:|\-–—][ \t]*`
-   (note: the separator is required here — *without* a separator
-   `Airflow` is usually meaningful, e.g. "Airflow security model…")
-5. **Re-apply 1 and 2** — after stripping a version prefix the title
-   often reveals a nested `Security Issue |` tag, so run the
-   bracketed- and plain-tag passes a second time.
-6. **Trailing `in (Apache )?Airflow`** — `[ \t]+in[ \t]+(?:Apache[ \t]+)?Airflow[ \t]*\.?$`
-7. **Trailing bare version parens** —
-   `[ \t]*\((?:Apache[ \t]+)?Airflow(?:[ \t]+v?\d+(?:\.\d+)*(?:\.x)?)?\)\.?[ \t]*$`
-8. **Trailing GHSA ID paren** — `[ \t]*\(GHSA-[\w-]+\)\.?[ \t]*$`
-9. **Trailing "split from #NNN" paren** (a note the sync skill adds
-   on scope-split trackers — never belongs in a CVE title) —
-   `[ \t]*\([^)]*split from #\d+[^)]*\)\.?[ \t]*$`
-10. **Trailing trivia** — strip trailing whitespace, trailing `.`,
-    and collapse internal runs of whitespace.
-11. **Capitalize** — upper-case the first letter; leave the rest
-    alone (acronyms like `JWT`, `OAuth`, `DAG`, `RBAC` are load-
-    bearing in these titles).
+The exact strip cascade is project-specific. For the currently active
+project, the rules and their rationale live in
+[`projects/airflow/title-normalization.md`](../../../projects/airflow/title-normalization.md).
+The Python implementation below mirrors the cascade defined there; if
+you are adapting this skill to a different project, replace the
+patterns with that project's rules (and update its
+`title-normalization.md` in lock-step).
 
 Implementation recipe — keep it inline, do not create a separate
 Python project for this one-shot transform:
@@ -284,14 +267,11 @@ one copy-paste pass:
    skill will pick it up and update the tracker automatically.
 ```
 
-Scope → Vulnogram product table:
-
-| Tracker scope label | Vulnogram product | CVE container `packageName` |
-|---|---|---|
-| `airflow` | `Apache Airflow` | `apache-airflow` |
-| `providers` | `Apache Airflow <Provider> Provider` — detect the specific provider from the tracker body (e.g. `Elasticsearch`, `CNCF Kubernetes`, `SMTP`, `Celery`) | `apache-airflow-providers-<name>` |
-| `chart` | `Apache Airflow Helm Chart` | `apache-airflow-helm-chart` |
-| `task-sdk` (Airflow 3.3+) | `Apache Airflow Task SDK` | `apache-airflow-task-sdk` |
+Scope → Vulnogram product table: the active project's scope labels
+and their CVE product / package-name mappings are defined in
+[`projects/airflow/scope-labels.md`](../../../projects/airflow/scope-labels.md).
+Read the label off the tracker and look up the matching product /
+`packageName` there.
 
 Note in the recipe which provider / chart / task-sdk is involved
 when the scope is not bare `airflow`, so the user does not have to

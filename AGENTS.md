@@ -4,12 +4,8 @@
 
 - [AGENTS instructions](#agents-instructions)
   - [Repository purpose](#repository-purpose)
+  - [Per-project configuration](#per-project-configuration)
   - [Local setup](#local-setup)
-  - [Release branches currently in flight](#release-branches-currently-in-flight)
-    - [Current release managers](#current-release-managers)
-    - [Known release-manager rotations](#known-release-manager-rotations)
-    - [Release managers for releases currently relevant to the security tracker](#release-managers-for-releases-currently-relevant-to-the-security-tracker)
-    - [Security team roster](#security-team-roster)
   - [Commit and PR conventions](#commit-and-pr-conventions)
   - [Confidentiality of `airflow-s/airflow-s`](#confidentiality-of-airflow-sairflow-s)
   - [Assessing reports](#assessing-reports)
@@ -20,10 +16,10 @@
     - [Brevity: emails state facts, not context](#brevity-emails-state-facts-not-context)
     - [Threading: drafts stay on the inbound Gmail thread](#threading-drafts-stay-on-the-inbound-gmail-thread)
     - [ASF-security-relay reports: a special case for drafting](#asf-security-relay-reports-a-special-case-for-drafting)
-    - [Point reporters to the Security Model, don't re-explain it](#point-reporters-to-the-security-model-dont-re-explain-it)
+    - [Point reporters to the project's Security Model, don't re-explain it](#point-reporters-to-the-projects-security-model-dont-re-explain-it)
     - [Linking CVEs](#linking-cves)
     - [Linking `airflow-s/airflow-s` issues and PRs](#linking-airflow-sairflow-s-issues-and-prs)
-    - [Mentioning Airflow maintainers and security-team members](#mentioning-airflow-maintainers-and-security-team-members)
+    - [Mentioning project maintainers and security-team members](#mentioning-project-maintainers-and-security-team-members)
     - [Other editorial guidelines](#other-editorial-guidelines)
   - [Reusable skills](#reusable-skills)
   - [Before submitting](#before-submitting)
@@ -37,21 +33,56 @@
 # AGENTS instructions
 
 These instructions apply to any AI agent (or agent-assisted contributor) working on
-this repository. The repository is private and hosts the Airflow security team's
-processes, canned responses, and onboarding documentation — it is read by security
-team members and, through the canned responses, indirectly by external reporters.
-Small wording choices matter.
+this repository. The repository hosts a generic, reusable framework for handling
+security issues for Apache Software Foundation (ASF) projects, currently
+configured for **Apache Airflow**. Processes, canned responses, and onboarding
+documentation are read by security team members and, through the canned
+responses, indirectly by external reporters. Small wording choices matter.
 
 ## Repository purpose
 
-This repository contains:
+The repo has two layers:
 
-- [`README.md`](README.md) — the end-to-end process for handling security issues reported against Apache Airflow.
-- [`canned-responses.md`](canned-responses.md) — reusable replies that the security team sends to reporters.
+1. **Generic** — project-agnostic process, agent conventions, and skill
+   definitions. Lives at the repo root and under `.claude/skills/`.
+2. **Project-specific** — the currently-active project's identity,
+   roster, release trains, canned responses, security-model references,
+   and milestone conventions. Lives under [`projects/<name>/`](projects/).
+   The active project is declared in
+   [`config/active-project.md`](config/active-project.md).
+
+Repo-root files:
+
+- [`README.md`](README.md) — the end-to-end process for handling security issues (generic lifecycle).
 - [`how-to-fix-a-security-issue.md`](how-to-fix-a-security-issue.md) — high-level description of the fix workflow.
 - [`new-members-onboarding.md`](new-members-onboarding.md) — onboarding guide for new security team members.
+- [`config/active-project.md`](config/active-project.md) — declares which project under `projects/` this working tree targets.
+- [`projects/<active>/`](projects/) — project-specific content (canned responses, release trains, security model, milestones, …).
 
 There is no source code to build or test. Changes are reviewed and merged by the security team.
+
+## Per-project configuration
+
+Every project-specific fact the skills need is declared in a single
+manifest per project. For the currently active project, see
+[`projects/airflow/project.md`](projects/airflow/project.md). The manifest
+lists:
+
+- project identity (vendor, product, URLs);
+- repositories (tracker repo, upstream repo, default branches);
+- mailing lists (security, private, public, dev, announce);
+- tools enabled (GitHub, Gmail, Vulnogram, …);
+- CVE tooling (allocation URL, record URL template, CNA container defaults);
+- pointers to the other files in the project directory (release trains,
+  scope labels, milestones, security model, title-normalisation rules,
+  canned responses, fix workflow, naming conventions).
+
+When this document (or any skill) says *"the tracker repo"*, *"the
+upstream repo"*, *"the security list"*, *"the canned responses"*,
+it means the value declared in `projects/<active>/project.md` and
+its sibling files. When a fact is truly project-agnostic (a lifecycle
+rule, a confidentiality principle, a brevity rule), it lives in this
+file or in [`README.md`](README.md).
 
 ## Local setup
 
@@ -81,166 +112,21 @@ If a hook modifies files (for example, `doctoc` regenerating a TOC), the commit 
 re-stage the modified files and commit again. **Do not bypass the hooks with `--no-verify`** —
 if a hook is failing, fix the underlying issue or update the hook configuration in the same PR.
 
-## Release branches currently in flight
-
-As of 2026-04-16, the Airflow release trains are:
-
-- **Airflow `main`** — becomes the next minor release (3.3.x eventually).
-  Note: as of Airflow 3.3 the **Task SDK** ships as a separately-released
-  component rather than being bundled into `apache-airflow` (the `Task
-  SDK 1.2.0` release alongside `3.2.0` was the last one shipped jointly).
-  Through 3.2.x, Task SDK code is part of the `apache-airflow` package and
-  a security report that only touches the Task SDK is therefore classified
-  under the `airflow` scope. Once a Task SDK-specific report lands against
-  3.3+, introduce a new `task-sdk` scope label and extend the
-  sync-security-issue skill's scope list accordingly.
-- **`v3-2-test`** — patch branch for the **Airflow 3.2.x** series. 3.2.1
-  has already been cut; the **next patch release from this branch is
-  `3.2.2`**. New security fixes that need a patch release target this
-  branch.
-- **`v3-1-test`** — **no further 3.1.x releases are planned**. In particular,
-  `3.1.9` will **not** be cut. The `3.1.9` milestone exists in
-  `airflow-s/airflow-s` as an open milestone, but it is a legacy placeholder
-  and should not be used for new security fixes.
-
-### Current release managers
-
-Each Airflow release has a specific release manager (not always the same
-person from one release to the next). The release manager is the committer
-who prepares the release candidate, calls the VOTE on `dev@airflow.apache.org`,
-closes the vote with `[RESULT][VOTE]`, and pushes the final artefacts. That
-same person is also the one who sends the security advisories for every CVE
-that shipped in their release to `announce@apache.org` and
-`users@airflow.apache.org` (Step 13 of the security process).
-
-**Do not assume or guess the release manager.** Two authoritative sources,
-in the order they should be consulted:
-
-1. **The Airflow Release Plan wiki**:
-   <https://cwiki.apache.org/confluence/display/AIRFLOW/Release+Plan>.
-   This is the canonical forward-looking schedule for every release train
-   (core Airflow, Providers, Airflow Ctl, Helm Chart, Airflow 2), and it
-   lists the release manager for each upcoming cut along with the planned
-   cut date. Check this page first when the question is *"who is
-   responsible for the next advisory on release X?"*.
-2. **The `[RESULT][VOTE]` thread on `dev@airflow.apache.org`** — the
-   sender of the `[RESULT][VOTE] Release Airflow <version>` (or
-   `[RESULT][VOTE] Airflow Providers - release preparation date <YYYY-MM-DD>`)
-   message **is** the release manager for that specific cut. Use this
-   when the release has already shipped (the Release Plan wiki only
-   tracks the upcoming schedule). Archive search URL:
-   <https://lists.apache.org/list.html?dev@airflow.apache.org>.
-
-### Known release-manager rotations
-
-The Airflow Release Plan wiki page records the active rotation rosters
-for each release train. As of 2026-04-16 they are:
-
-- **Providers** — Jens Scheffler (@jscheffl), Jarek Potiuk (@potiuk), Vincent BECK (@vincbeck), Shahar Epstein (@shahar1)
-- **Airflow Ctl** — Buğra Öztürk (@bugraoz93), Jarek Potiuk (@potiuk)
-- **Helm Chart** — Jedidiah Cunningham (@jedcunningham), Jens Scheffler (@jscheffl), Buğra Öztürk (@bugraoz93), Jarek Potiuk (@potiuk)
-- **Airflow 2 (core)** — Jarek Potiuk (@potiuk) (single maintainer, no rotation)
-
-Airflow 3 (core) release managers are not yet on a fixed rotation at
-the time of writing — each release is picked up individually; check
-the Release Plan page for the current cut.
-
-### Release managers for releases currently relevant to the security tracker
-
-- **Airflow 3.2.0** (core, shipped 2026-04-07) — **Rahul Vats**
-  (`rah.sharma11@gmail.com`, GitHub: `vatsrahul1001`). Source: his
-  `[RESULT][VOTE] Release Airflow 3.2.0 from 3.2.0rc2 & Task SDK 1.2.0
-  from 1.2.0rc2` on `dev@airflow.apache.org`, 2026-04-07. Responsible
-  for the advisories for CVE-2026-30898, CVE-2026-30912, CVE-2026-31987,
-  CVE-2026-32228, CVE-2026-32690 and any other CVE that shipped in 3.2.0.
-- **Airflow Providers — release preparation date 2026-03-24** (wave that
-  shipped `apache-airflow-providers-keycloak` 0.7.0 on 2026-03-28) —
-  **Jens Scheffler** (`jscheffl@apache.org`, GitHub: `jscheffl`). Source:
-  his `[RESULT][VOTE] Airflow Providers - release preparation date
-  2026-03-24` on `dev@airflow.apache.org`, 2026-03-28. Responsible for
-  the advisory for CVE-2026-40948 (Keycloak OAuth login-CSRF).
-- **Airflow Providers — release preparation date 2026-04-08** (wave that
-  shipped `apache-airflow-providers-keycloak` 0.7.1 on 2026-04-12) —
-  **Jarek Potiuk** (`jarek@potiuk.com`, GitHub: `potiuk`). Source: the
-  `[VOTE] Airflow Providers, release preparation date 2026-04-08` thread
-  on `dev@airflow.apache.org`. Relevant as the "forward-carry" owner for
-  CVE-2026-40948 since 0.7.1 is now the current Keycloak provider
-  version users should upgrade to.
-
-When you update this list (because a new release has shipped), record
-the date the release went out and the archive link to the
-`[RESULT][VOTE]` thread so the attribution is auditable. Update the
-rotation rosters above whenever the Release Plan wiki page changes.
-
-### Security team roster
-
-The authoritative source for **who is a member of the Airflow security
-team** is the collaborator list of the private
-[`airflow-s/airflow-s`](https://github.com/airflow-s/airflow-s)
-repository — **anyone listed as a collaborator**, regardless of
-permission level (read, triage, write, maintain, admin), is on the
-security team. Do not filter by permission level; some members have
-triage or read access and still actively participate in assessments,
-fixes, and advisory coordination.
-
-Look it up with:
-
-```bash
-gh api repos/airflow-s/airflow-s/collaborators --jq '.[].login'
-```
-
-Snapshot as of 2026-04-16 (GitHub handles, 24 people): `ashb`,
-`raboof`, `potiuk`, `uranusjr`, `ephraimbuddy`, `Lee-W`, `sunank200`,
-`kaxil`, `bugraoz93`, `ch4n3-yoon`, `pierrejeambrun`, `hussein-awala`,
-`aritra24`, `amoghrajesh`, `happyhacking-k`, `vatsrahul1001`,
-`eladkal`, `shubhamraj-git`, `shahar1`, `jedcunningham`, `sjyangkevin`,
-`jscheffl`, `vincbeck`, `pankajastro` (plus the `airflow-sec` service
-account, which is not a person).
-
-When this list becomes stale (a new member is added, someone rotates
-off), re-run the `gh api` call above and update the snapshot in the
-same change. The snapshot is the fast lookup; the `gh api` call is the
-authoritative truth.
-
-**What this means for sync and fix skills**
-
-- When selecting a milestone for a newly-triaged security issue, default to
-  **`3.2.2`** (via the `v3-2-test` backport) for anything that needs a patch
-  release. Do **not** propose `3.1.9` unless the user explicitly asks for
-  it. If the `sync-security-issue` skill finds an issue currently parked on
-  `3.1.9` (or on `3.2.1` now that it has been cut), propose moving it to
-  `3.2.2`.
-- When selecting backport labels on public `apache/airflow` PRs, use
-  `backport-to-v3-2-test` only — do **not** also apply
-  `backport-to-v3-1-test` by default. A `v3-1-test` backport is only
-  appropriate if the user explicitly requests it for a specific issue and
-  is prepared to cut a 3.1.x patch release out-of-band.
-- If the `3.2.2` milestone does **not** yet exist in `airflow-s/airflow-s`
-  when the skill needs it, create it via `gh api` and then assign the issue
-  to it — see the "Maintaining milestones and labels" section of the
-  `fix-security-issue` skill.
-- This section is the authoritative answer to *"which branches do we back
-  fixes to?"* — when this changes (for example, when 3.3.x is cut, when
-  `3.2.2` is released, or when `v3-2-test` goes into patch-only mode),
-  update it in the same change that ships the release.
-
 ## Commit and PR conventions
 
-- **Never use `Co-Authored-By:` with an AI agent as co-author.** Agents are assistants, not authors. This matches the
-  rule in [`apache/airflow/AGENTS.md`](https://github.com/apache/airflow/blob/main/AGENTS.md). Use a
-  `Generated-by:` trailer instead, e.g.:
-
-  ```
-  Generated-by: Claude Opus 4.6 (1M context) following the guidelines at
-  https://github.com/apache/airflow/blob/main/contributing-docs/05_pull_requests.rst#gen-ai-assisted-contributions
-  ```
-
+- **Never use `Co-Authored-By:` with an AI agent as co-author.** Agents are
+  assistants, not authors. Use a `Generated-by:` trailer instead. The exact
+  trailer wording is project-specific — for the currently active project see
+  [`projects/airflow/fix-workflow.md`](projects/airflow/fix-workflow.md#commit-trailer).
 - **Always open PRs with `gh pr create --web`** so the human reviewer can check the title,
   body, and the generative-AI disclosure in the browser before submission. Pre-fill `--title`
   and `--body` (including the Gen-AI disclosure block) so they only need to review, not edit.
-- **Target branch is `airflow-s`**, not `main`. The default branch of this repository is `airflow-s`;
-  `main` exists only as a staging branch for the occasional private-PR workflow described in
-  [`README.md`](README.md). Unless the user explicitly says otherwise, base PRs on `airflow-s`.
+- **Target branch for this repository is declared in the project manifest** — see
+  [`projects/airflow/project.md`](projects/airflow/project.md#repositories)
+  (`tracker_default_branch`). The non-default branch (`main`) is used only as a
+  staging branch for the private-PR fallback described in
+  [`README.md`](README.md). Unless the user explicitly says otherwise, base
+  PRs on the tracker's default branch.
 - Keep the commit message focused on the user-visible change, not the mechanics of how the edit
   was made.
 
@@ -265,7 +151,7 @@ to non-security-team members** — must not contain:
 These references are allowed **only** in:
 
 - documents that live inside this private repository (this file, `README.md`,
-  `canned-responses.md`, `SKILL.md` files, etc.);
+  `projects/<active>/canned-responses.md`, `SKILL.md` files, etc.);
 - private mail threads on `security@airflow.apache.org` with the original
   reporter (where letting them know we have a tracking issue is part of the
   status update they receive);
@@ -278,10 +164,12 @@ In particular:
   reveal the CVE, the security nature of the change, or any link back to
   `airflow-s/airflow-s`. This is already required by process step 8 of
   [`README.md`](README.md) and the rule above reinforces it.
-- **Canned responses** (`canned-responses.md`) must remain free of
-  `airflow-s/airflow-s` URLs, because they are sent verbatim as email replies.
-  If you are tempted to add one, link to the public Airflow Security Model or
-  policy instead.
+- **Canned responses**
+  ([`projects/airflow/canned-responses.md`](projects/airflow/canned-responses.md))
+  must remain free of `airflow-s/airflow-s` URLs, because they are sent
+  verbatim as email replies. If you are tempted to add one, link to the
+  project's public Security Model or security policy instead — see
+  [`projects/airflow/security-model.md`](projects/airflow/security-model.md).
 - **Status updates the skill drafts to reporters** *may* include the
   `airflow-s/airflow-s` tracking-issue URL — the reporter is on the private
   `security@airflow.apache.org` thread and is expected to keep it
@@ -402,9 +290,11 @@ targeted improvements over rewrites, and preserve the existing structure (includ
 
 ### Tone: polite but firm — no room to wiggle
 
-The canned responses in [`canned-responses.md`](canned-responses.md) are the public face of the
-security team. They are often sent to reporters whose submissions have been assessed as invalid
-or out of scope. The tone must be:
+The canned responses in
+[`projects/airflow/canned-responses.md`](projects/airflow/canned-responses.md)
+are the public face of the security team. They are often sent to reporters
+whose submissions have been assessed as invalid or out of scope. The tone
+must be:
 
 1. **Polite and professional.** Thank the reporter, acknowledge the intent, stay neutral.
 2. **Firm and unambiguous.** State the outcome as a decision, not as a negotiation. The response
@@ -493,10 +383,10 @@ the Vulnogram tool, and the CVE-5 schema. A message to them is a
 message the security team sends to a new reporter, drafted by the
 `import-security-issue` skill, uses the *"Confirmation of receiving
 the report"* canned response from
-[`canned-responses.md`](canned-responses.md) **verbatim**. That
-template is longer because it introduces the process to a reporter
-who has not yet seen it and carries the credit-preference question;
-leave it alone and do not trim it per this brevity rule.
+[`projects/airflow/canned-responses.md`](projects/airflow/canned-responses.md)
+**verbatim**. That template is longer because it introduces the process
+to a reporter who has not yet seen it and carries the credit-preference
+question; leave it alone and do not trim it per this brevity rule.
 
 Everything else — every follow-up, every status update, every relay
 to a PMC member, every message to the ASF security team — falls
@@ -581,30 +471,21 @@ update — the rule is the same:
   question below to the external reporter through the original
   channel."*
 
-### Point reporters to the Security Model, don't re-explain it
+### Point reporters to the project's Security Model, don't re-explain it
 
-The [Airflow Security Model](https://airflow.apache.org/docs/apache-airflow/stable/security/security_model.html)
-is the authoritative source for what is and is not considered a security vulnerability. Canned
-responses must link directly to the relevant chapter instead of paraphrasing it. Paraphrases
-drift over time and create a second source of truth that has to be maintained.
+The project's Security Model is the authoritative source for what is and
+is not considered a security vulnerability. Canned responses must link
+directly to the relevant chapter instead of paraphrasing it. Paraphrases
+drift over time and create a second source of truth that has to be
+maintained.
 
-Known-useful anchors:
-
-- `#capabilities-of-dag-authors`
-- `#dag-authors-executing-arbitrary-code`
-- `#dag-author-code-passing-unsanitized-input-to-operators-and-hooks`
-- `#limiting-dag-author-capabilities`
-- `#connection-configuration-users`
-- `#connection-configuration-capabilities`
-- `#denial-of-service-by-authenticated-users`
-- `#self-xss-by-authenticated-users`
-- `#simple-auth-manager`
-- `#third-party-dependency-vulnerabilities-in-docker-images`
-- `#automated-scanning-results-without-human-verification`
-
-When adding a new canned response, identify the matching chapter in the Security Model first.
-If no chapter covers the case, that is a signal the Security Model should be updated in
-[`apache/airflow`](https://github.com/apache/airflow) rather than duplicated here.
+The authoritative URL and known-useful anchors for the currently active
+project live in
+[`projects/airflow/security-model.md`](projects/airflow/security-model.md).
+When adding a new canned response, identify the matching chapter in the
+Security Model first. If no chapter covers the case, that is a signal
+the Security Model should be updated upstream (in the project's source
+repository) rather than duplicated in the canned responses.
 
 ### Linking CVEs
 
@@ -705,68 +586,37 @@ the same edit. Skill-generated output (sync proposals, issue comments,
 email drafts to reporters on the `security@` thread) must emit the
 linked form from the start — bare references are a miss.
 
-### Mentioning Airflow maintainers and security-team members
+### Mentioning project maintainers and security-team members
 
 When writing text that lands on a GitHub issue or PR and refers to a
-specific Airflow maintainer, committer, release manager, or
-security-team member, **use the person's GitHub handle with the
-leading ``@`` so GitHub notifies them**. Simply writing their name in
-plain text does not fire a notification, and the whole point of
-mentioning the person is usually that they own the next step or are
-the right reviewer. Agent-generated status comments, PR bodies, sync
-recaps, fix-PR follow-up comments, and draft-advisory text should all
-follow the rule.
+specific project maintainer, committer, release manager, or security-
+team member, **use the person's GitHub handle with the leading `@` so
+GitHub notifies them**. Plain-text names do not fire notifications,
+and the whole point of mentioning the person is usually that they own
+the next step or are the right reviewer. Agent-generated status
+comments, PR bodies, sync recaps, fix-PR follow-up comments, and
+draft-advisory text should all follow the rule.
 
-Concretely:
-
-- **GitHub handle, not plain name**: write ``@jscheffl``, not
-  *"Jens Scheffler"*, in a GitHub surface. It is fine to keep the
-  plain name in the same sentence for readability as long as the
-  ``@``-mention is present somewhere: *"The next providers wave is
-  cut by Jens Scheffler (@jscheffl)"*.
-- **Which people the rule applies to**: Airflow PMC members,
-  committers, release managers listed in
-  [the "Current release managers" section above](#current-release-managers),
-  and members of the security team. Current release managers and the
-  providers / Airflow Ctl / Helm Chart rotation rosters are listed in
-  that section with their GitHub handles — use those as the
-  authoritative source.
-- **Which surfaces the rule applies to**: public ``apache/airflow`` PR
-  comments/bodies; private ``airflow-s/airflow-s`` issue comments and
-  status comments; sync recaps printed back to the user that call out
-  a specific person. It does **not** apply to email text on
-  ``security@airflow.apache.org`` (those go to the reporter and the
-  list, not through GitHub's notification system).
-- **Public-surface caveat**: the confidentiality rules in
-  [the "Confidentiality of ``airflow-s/airflow-s``" section](#confidentiality-of-airflow-sairflow-s)
-  still bind. In a **public** ``apache/airflow`` PR or comment, a
-  mention must stand on its own — it must not be accompanied by any
-  of the forbidden terms (``CVE-``, ``airflow-s``, *"security fix"*,
-  etc.) that would reveal the private nature of the coordination.
-- **External reporters**: when referring to an external reporter who
-  has a known GitHub handle and whose handle the team has agreed to
-  credit publicly, the same rule applies. When the reporter has not
-  confirmed their GitHub handle or has opted out of credit, use their
-  confirmed credit form in plain text and do not ``@``-mention them.
+The project-specific roster rules (who the rule applies to, which
+surfaces it applies to, public-surface caveats tied to this project's
+confidentiality constraints, how external reporters are handled) live
+in
+[`projects/airflow/naming-conventions.md`](projects/airflow/naming-conventions.md#mentioning-airflow-maintainers-and-security-team-members).
+The authoritative roster and the release-manager rotation list live in
+[`projects/airflow/release-trains.md`](projects/airflow/release-trains.md).
 
 The sync-security-issue and fix-security-issue skills should render
 every maintainer / security-team / release-manager reference in the
-status comments they post as an ``@`` handle. Before publishing a
-status comment, the skills must grep for names of known people and
-flag any bare-name occurrence to the user.
+status comments they post as an `@` handle. Before publishing a status
+comment, the skills must grep for names of known people and flag any
+bare-name occurrence to the user.
 
 ### Other editorial guidelines
 
-- Do not include concrete contributor counts (e.g., "4000 contributors", "3600 contributors").
-  Use *"thousands of contributors"* — the number changes constantly and hard-coding it dates the
-  document immediately.
-- Use **`Dag`** (not `DAG`) when referring to Airflow DAGs in prose — e.g. *"Dag author"*,
-  *"Dag run"*, *"serialized Dags"*. This matches the Airflow Security Model chapter titles
-  (*"Capabilities of Dag authors"*, *"Dag authors executing arbitrary code"*, etc.) and the
-  convention used throughout `apache/airflow`'s own documentation and `AGENTS.md`. Do not
-  use the all-caps `DAG` form in documentation in this repository; leave it only inside
-  quoted content, URLs, anchor slugs, or code identifiers where it already appears.
-- Prefer *PoC*, *DoS*, *CVE* as the canonical capitalisations for those acronyms.
+- Project-specific naming rules (e.g. *"use `Dag` not `DAG`"*,
+  *"thousands of contributors"*, acronym casing) live in the active
+  project's naming-conventions file — for Airflow, see
+  [`projects/airflow/naming-conventions.md`](projects/airflow/naming-conventions.md).
 - Use em dashes (`—`) sparingly; prefer shorter sentences to dash-heavy ones.
 - Preserve the `doctoc` TOC markers at the top of each document. If you rename a heading, update
   the corresponding TOC entry in the same change.
@@ -790,8 +640,9 @@ Currently available:
   media / spam), extracts the issue-template fields from the root email, and —
   after user confirmation — creates one tracker per valid report plus a Gmail
   draft of the receipt-of-confirmation reply (from
-  [`canned-responses.md`](canned-responses.md), including the credit-preference
-  question). Deduplicates against existing tracker bodies by searching for the
+  [`projects/airflow/canned-responses.md`](projects/airflow/canned-responses.md),
+  including the credit-preference question). Deduplicates against existing
+  tracker bodies by searching for the
   Gmail `threadId`. This is Step 2 of the handling process in
   [`README.md`](README.md) and the first skill a triager runs in a morning
   sweep.
@@ -872,12 +723,13 @@ When adding a new skill:
 
 - Re-read the diff and check that every change is intentional.
 - Check that any renamed headings have matching TOC updates.
-- Verify that links to the Airflow Security Model use an anchor that exists on the current
-  stable version.
+- Verify that links to the project's Security Model use an anchor that
+  exists on the current stable version (active project's anchors:
+  [`projects/airflow/security-model.md`](projects/airflow/security-model.md)).
 - Self-review the tone of any modified canned response against the "polite but firm" guidance above.
 
 ## References
 
-- [`apache/airflow/AGENTS.md`](https://github.com/apache/airflow/blob/main/AGENTS.md) — the parent convention these instructions mirror.
-- [Airflow Security Model](https://airflow.apache.org/docs/apache-airflow/stable/security/security_model.html) — authoritative source for what is and is not a vulnerability.
-- [Airflow security policy](https://github.com/apache/airflow/security/policy) — public-facing rules reporters are expected to follow.
+- [`config/active-project.md`](config/active-project.md) — declares which project under `projects/` this working tree targets.
+- [`projects/airflow/project.md`](projects/airflow/project.md) — the active project's manifest (identity, repositories, mailing lists, tools enabled, CVE tooling).
+- [`projects/airflow/`](projects/airflow/) — other project-specific files (canned responses, release trains, security model, scope labels, milestones, title-normalization, fix workflow, naming conventions).

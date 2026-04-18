@@ -516,7 +516,7 @@ update, label change, or next-step recommendation in Step 2:
 | CVE record has open **review comments / reviewer proposals** (detected via the Gmail-search path in Step 1e — reviewer-comment notifications from Vulnogram land on `security@airflow.apache.org` with the CVE ID in the subject line; the `cveprocess.apache.org/cve5/<CVE-ID>.json` endpoint is behind ASF OAuth and is not readable from this skill's context, so Gmail is the load-bearing signal source). | Surface each open review comment in Step 2a with **clickable links** to the Gmail thread and to the CVE record on `cveprocess.apache.org` (the reader can authenticate in-browser to see live state), verbatim-quoted; then for each one that maps cleanly to a tracking-issue body field (CWE, Affected versions, Reporter credited as, Public advisory URL, Short public summary), **propose the matching body-field update** as a numbered item in Step 2b. The body is the source of truth for the CVE JSON — regeneration in Step 5 will pull the update back into the paste-ready attachment, and the release manager's only remaining action is the Vulnogram paste + comment-resolution click. Comments that do not map to a body field (severity/CVSS, out-of-scope challenges, free-form rewrites) are surfaced verbatim and flagged for human decision. See Step 1e for the full Gmail-search recipe and the reviewer-comment-to-field mapping table. |
 | The referenced `apache/airflow` PR has been opened but is still in `open` state | Propose `pr created` label; update the *"PR with the fix"* body field with the PR URL. |
 | The referenced `apache/airflow` PR moved to `merged` | Propose swapping `pr created` → `pr merged`; update milestone to the shipping release if now known. |
-| A release carrying the fix has shipped (PR's milestone release is on PyPI / Helm registry, or an explicit *"fix shipped in X.Y.Z"* comment) | Propose swapping `pr merged` → `fix released` (Step 12). This is the release manager's cue to own Steps 13–15 (advisory send → URL capture → Vulnogram PUBLIC → close). **Also propose swapping the assignee from the remediation developer to the release manager** (looked up via the three-source cascade in Step 2c — `AGENTS.md` "Known release managers" → Release Plan wiki → `[RESULT][VOTE]` thread on `dev@`), so the issue list reflects ownership hand-off. See the *Assignee hand-off at the `fix released` transition* paragraph under **Assignees** in Step 2b for the full rule. |
+| A release carrying the fix has shipped (PR's milestone release is on PyPI / Helm registry, or an explicit *"fix shipped in X.Y.Z"* comment) | Propose swapping `pr merged` → `fix released` (Step 12). This is the release manager's cue to own Steps 13–15 (advisory send → URL capture → Vulnogram PUBLIC → close). **Also propose swapping the assignee from the remediation developer to the release manager** (looked up via the three-source cascade in Step 2c — [`projects/airflow/release-trains.md`](../../../projects/airflow/release-trains.md) "Release managers for releases currently relevant to the security tracker" → Release Plan wiki → `[RESULT][VOTE]` thread on `dev@`), so the issue list reflects ownership hand-off. See the *Assignee hand-off at the `fix released` transition* paragraph under **Assignees** in Step 2b for the full rule. |
 | GHSA state transition (opened, accepted, published, rejected) in a GHSA-forwarded email | If the GHSA is closed as "not accepted" but the security team accepted the report on `security@`, flag the divergence in the status comment so it is not lost. |
 | Team member saying *"let's also backport to v3-2-test"* / *"please mark X for backport"* | Note the requested backport label on the public PR as an item for Step 9 of the `fix-security-issue` workflow. |
 | Reporter flagging a second distinct vulnerability on the same thread | Surface as an explicit question to the user — it may warrant a separate tracking issue. |
@@ -744,21 +744,14 @@ will change and *why*. Group them by category:
 
 - **Labels to add / remove** — e.g. *"remove `needs triage`; add `airflow`"*. Reason: one scope label is required by the process once triage is complete.
 - **Milestone** — propose the matching release milestone on the
-  issue. The milestone format depends on the scope label:
-
-  - `airflow` → `Airflow-X.Y.Z` or the bare version (e.g. `3.2.2`).
-    Take the version from the linked PR's own milestone when the PR
-    is merged; otherwise default to the next patch release from the
-    *"Release branches currently in flight"* section of
-    [`AGENTS.md`](../../../AGENTS.md).
-  - `providers` → **`Providers YYYY-MM-DD`**, keyed by the **cut
-    date** on the
-    [Release Plan wiki](https://cwiki.apache.org/confluence/display/AIRFLOW/Release+Plan)
-    (not the PyPI publish date). Fetch the wiki page to find the
-    next-upcoming cut date; for an already-released fix, use the
-    cut date that corresponds to the release that carried the fix.
-  - `chart` → `Chart-X.Y.Z`, taken from the Helm-chart release that
-    will carry the fix.
+  issue. The milestone format depends on the scope label and is
+  project-specific; for the active project see
+  [`projects/airflow/milestones.md`](../../../projects/airflow/milestones.md)
+  (the scope → milestone-format mapping and the rule that a merged PR's
+  own milestone wins over the release-train default). The current
+  release-train default used when no PR milestone is available lives
+  in
+  [`projects/airflow/release-trains.md`](../../../projects/airflow/release-trains.md).
 
   **If the milestone does not yet exist**, the proposal must say
   so and include the exact `gh api` command to create it. For a
@@ -784,8 +777,8 @@ will change and *why*. Group them by category:
 - **Assignees** — when a fix PR exists in `apache/airflow` (found in
   Step 1b or named in the *"PR with the fix"* body field) **and the
   PR author is a member of the Airflow security team** (their GitHub
-  handle appears in the roster in the *"Security team roster"*
-  subsection of [`AGENTS.md`](../../../AGENTS.md) — when in doubt,
+  handle appears in the security-team roster in
+  [`projects/airflow/release-trains.md`](../../../projects/airflow/release-trains.md) — when in doubt,
   run `gh api repos/airflow-s/airflow-s/collaborators --jq '.[].login'`
   as the authoritative check; **every collaborator counts regardless
   of their permission level** — read, triage, write, maintain, and
@@ -1146,7 +1139,7 @@ will change and *why*. Group them by category:
   reporter, a follow-up needed for triage, communicating a negative
   assessment), propose a **Gmail draft** reply (not a sent message). State
   the intent of the draft in one line and prefer to reuse a canned response
-  from [`canned-responses.md`](../../../canned-responses.md) verbatim where
+  from [`canned-responses.md`](../../../projects/airflow/canned-responses.md) verbatim where
   one applies. Show the exact subject, recipients, In-Reply-To, and body in
   the proposal.
 
@@ -1205,13 +1198,16 @@ the actual person, in this order:
    `"[RESULT][VOTE]" "Airflow Providers" from:dev@airflow.apache.org`.
    Narrow with a date range if needed.
 
-If the release manager is not yet in `AGENTS.md` after you look them up,
-surface that in the proposal and propose appending them (with the source
-link to the `[RESULT][VOTE]` thread and the release date) to the
-"Known release managers" subsection in the same sync run. **Do not
-substitute a "plausible" name** (e.g. a frequent release manager from
-previous releases) — the release manager rotates per cut, and a wrong
-name in a status update leads to the advisory sitting on nobody's desk.
+If the release manager is not yet in
+[`projects/airflow/release-trains.md`](../../../projects/airflow/release-trains.md)
+after you look them up, surface that in the proposal and propose
+appending them (with the source link to the `[RESULT][VOTE]` thread
+and the release date) to the "Release managers for releases currently
+relevant to the security tracker" subsection in the same sync run. **Do
+not substitute a "plausible" name** (e.g. a frequent release manager
+from previous releases) — the release manager rotates per cut, and a
+wrong name in a status update leads to the advisory sitting on nobody's
+desk.
 
 **If a CVE needs to be allocated**, always point the user at the
 [`allocate-cve`](../allocate-cve/SKILL.md) skill explicitly on its own
@@ -1546,28 +1542,20 @@ finalising the recap.
   messages on the same thread, no re-introduction of the vulnerability, no
   process explanation. Messages to the ASF security team or to PMC members
   are even terser — they already know the process.
-- **Milestone naming** must follow the process document exactly:
-  - `Airflow-X.Y.Z` or bare `3.2.2` for core releases.
-  - `Providers YYYY-MM-DD` for provider-wave cuts. The date is the
-    **cut date** from the
-    [Release Plan wiki](https://cwiki.apache.org/confluence/display/AIRFLOW/Release+Plan),
-    not the PyPI publish date. If the needed milestone does not yet
-    exist in `airflow-s/airflow-s`, the sync proposal creates it via
-    `gh api repos/airflow-s/airflow-s/milestones -f title='Providers
-    YYYY-MM-DD' -f state=open -f description='Providers release cut
-    on YYYY-MM-DD, RM: <Name>'` and then assigns the issue. The
-    description should carry the rotation-roster release-manager name
-    so the advisory owner is visible from the milestones list.
-  - `Chart-X.Y.Z` for Helm chart releases.
-- **Scope label is mandatory once triage is complete** — exactly one of
-  `airflow`, `providers`, or `chart`. *Note on Task SDK*: through
-  Airflow 3.2.x the Task SDK ships bundled into `apache-airflow`, so a
-  Task SDK-only vulnerability is classified under the `airflow` scope.
-  Starting with Airflow 3.3 the Task SDK ships as a separately-released
-  component (see the "Release branches currently in flight" section of
-  [`AGENTS.md`](../../../AGENTS.md)) and will need its own `task-sdk`
-  scope label; add it here and in the scope lists above the first time
-  a 3.3+ Task SDK report is triaged.
+- **Milestone naming** must follow the project's convention. For the
+  active project the formats (and the create-missing-milestone recipe)
+  live in
+  [`projects/airflow/milestones.md`](../../../projects/airflow/milestones.md).
+  When a milestone does not yet exist in the tracker, the sync proposal
+  creates it via `gh api` and then assigns the issue.
+- **Scope label is mandatory once triage is complete** — exactly one
+  of the scope labels defined in
+  [`projects/airflow/scope-labels.md`](../../../projects/airflow/scope-labels.md).
+  The `task-sdk` note (through Airflow 3.2.x the Task SDK ships bundled
+  into `apache-airflow` and Task-SDK-only reports are classified under
+  `airflow`; from 3.3+ a new `task-sdk` label is needed) lives with the
+  release-train state in
+  [`projects/airflow/release-trains.md`](../../../projects/airflow/release-trains.md).
 - **Multi-scope reports must be split into one tracking issue per
   scope.** When an incoming report turns out to affect more than one
   scope (for example a bug whose root cause lives in
@@ -1588,7 +1576,8 @@ finalising the recap.
      auditable history on that issue without forcing readers to
      scroll through comments in another tracker.
   3. Apply to each split issue:
-     - exactly one scope label (`airflow` / `providers` / `chart`);
+     - exactly one scope label (see
+       [`projects/airflow/scope-labels.md`](../../../projects/airflow/scope-labels.md));
      - the same `cve allocated` label if a CVE is shared across
        scopes — CVE reuse is correct when the same upstream bug
        affects multiple products, with one `affected[]` entry per
@@ -1596,8 +1585,8 @@ finalising the recap.
      - the PR / advisory labels (`pr created` / `pr merged` /
        `fix released`) derived independently per scope from the same
        fix PR, because each scope rides a different release train;
-     - the matching milestone for that scope (`Airflow-X.Y.Z` /
-       `Providers YYYY-MM-DD` / `Chart-X.Y.Z`);
+     - the matching milestone for that scope (see
+       [`projects/airflow/milestones.md`](../../../projects/airflow/milestones.md));
      - the same assignee set as the anchor issue.
   4. Post a cross-link comment on **each** issue pointing at the
      other(s), so the maintainers and the reporter can see the full
@@ -1626,7 +1615,7 @@ disagree, surface the disagreement in the proposal and let the user decide.
 ## Canned responses
 
 When drafting an email reply, prefer a verbatim canned response from
-[`canned-responses.md`](../../../canned-responses.md) over ad-hoc text. The
+[`canned-responses.md`](../../../projects/airflow/canned-responses.md) over ad-hoc text. The
 currently available canned responses include: confirmation of receipt (now
 including the credit-preference question), invalid Simple Auth Manager report,
 invalid automated report, consolidated multi-issue report rejection, "not an
@@ -1635,4 +1624,6 @@ authenticated users, Dag-author user-input claims, image scan results, self-XSS
 by authenticated users, positive and negative assessment, automated scanning
 results, DoS/RCE/arbitrary read via connection configuration, and media-report
 requests. If none of them fit, draft a new reply that follows the editorial
-rules in `AGENTS.md` and offer to add it to `canned-responses.md` as a follow-up.
+rules in `AGENTS.md` and offer to add it to
+[`projects/airflow/canned-responses.md`](../../../projects/airflow/canned-responses.md)
+as a follow-up.
