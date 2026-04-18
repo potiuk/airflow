@@ -2,3 +2,15 @@
 /airflow-s.iml
 logs
 .build
+
+# Per-user configuration — each team member keeps their own local
+# copy of config/user.md.example; see config/README.md for the
+# tutorial. The file must never land on airflow-s; besides this
+# gitignore entry there is also a `forbid-user-config` prek hook in
+# .pre-commit-config.yaml that refuses any commit that stages
+# config/user.md, so an accidental `git add -f` is caught at commit
+# time instead of reaching the remote.
+/config/user.md
+/config/user.md.local
+/config/user.md.bak
+/config/user.md.backup

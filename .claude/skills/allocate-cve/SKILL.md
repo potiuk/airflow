@@ -2,7 +2,7 @@
 name: allocate-cve
 description: |
   Walk a security team member through allocating a CVE for an
-  airflow-s/airflow-s tracking issue. Prints the ASF Vulnogram
+  <tracker> tracking issue. Prints the ASF Vulnogram
   allocation URL and a CVE-ready title (the issue title stripped of
   redundant `Apache Airflow:`, `[ Security Report ]`, trailing
   version parens and similar noise), waits for the allocated CVE ID
@@ -23,11 +23,21 @@ when_to_use: |
   already carry a CVE ID in their *CVE tool link* body field.
 ---
 
+<!-- Placeholder convention (see AGENTS.md#placeholder-convention-used-in-skill-files):
+     <PROJECT>  → value of `active_project:` in config/active-project.md
+                 (for this tree: airflow)
+     <tracker>  → value of `tracker_repo:` in projects/<PROJECT>/project.md
+                 (for this tree: airflow-s/airflow-s)
+     <upstream> → value of `upstream_repo:` in projects/<PROJECT>/project.md
+                 (for this tree: apache/airflow)
+     Before running any bash command below, substitute these with the
+     active-project values read from config/ + projects/<PROJECT>/project.md. -->
+
 # allocate-cve
 
 Walks a security team member through the CVE-allocation step of the
 [handling process](../../../README.md) for a given
-[`airflow-s/airflow-s`](https://github.com/airflow-s/airflow-s)
+[`<tracker>`](https://github.com/<tracker>)
 tracking issue. The work itself — filling in the Vulnogram allocation
 form at `https://cveprocess.apache.org/allocatecve` — is a **human
 step**; this skill prepares the clickable link + the exact title to
@@ -48,7 +58,7 @@ full allocation mechanics (form-fill recipe, PMC-gated access, form
 fields, fatal mis-allocation, after-allocation wire-back) live in
 [`tools/vulnogram/allocation.md`](../../../tools/vulnogram/allocation.md);
 the per-project URL templates live in
-[`projects/airflow/project.md`](../../../projects/airflow/project.md#cve-tooling).
+[`projects/<PROJECT>/project.md`](../../../projects/<PROJECT>/project.md#cve-tooling).
 This is not something the skill can work around — a non-PMC user who
 clicks *Allocate* sees the button grey out.
 
@@ -56,7 +66,7 @@ The current Airflow PMC roster lives on the ASF project page:
 <https://projects.apache.org/committee.html?airflow>. Authoritative
 GitHub handles for the subset of PMC members who also sit on the
 security team are listed in
-[`projects/airflow/release-trains.md`](../../../projects/airflow/release-trains.md)
+[`projects/<PROJECT>/release-trains.md`](../../../projects/<PROJECT>/release-trains.md)
 (release-manager rosters + security-team roster) — use those as the
 authoritative source when a non-PMC triager needs to ping a PMC
 member to do the actual click-through.
@@ -70,7 +80,7 @@ uses). Once the PMC member allocates and reports the allocated
 the CVE ID as an override to resume from Step 4 — so the wiring-back
 of the allocated ID does not need to be done by the PMC member.
 
-**Golden rule — every `airflow-s/airflow-s` reference is a clickable
+**Golden rule — every `<tracker>` reference is a clickable
 link**, per Golden rule 2 in
 [`sync-security-issue`](../sync-security-issue/SKILL.md). The
 allocation recipe, the post-allocation proposal, and the status-
@@ -82,7 +92,7 @@ change comment must all follow the link-form convention from
 ## Inputs
 
 - **Issue number** (required) — `#242`, `242`, or a full
-  `https://github.com/airflow-s/airflow-s/issues/242` URL.
+  `https://github.com/<tracker>/issues/242` URL.
 - **Optional: CVE ID override** — if the user has already allocated a
   CVE outside this flow and just wants the skill to wire it back
   into the tracker, accept a `CVE-YYYY-NNNNN` positional argument
@@ -96,7 +106,7 @@ anything else.
 ## Prerequisites
 
 - **`gh` CLI authenticated** with collaborator access to
-  `airflow-s/airflow-s` — the skill reads the tracker, adds
+  `<tracker>` — the skill reads the tracker, adds
   labels, and posts the status-change comment via `gh`.
 - **`uv` installed** — the embedded `generate-cve-json` regeneration
   step uses `uv run`.
@@ -120,18 +130,25 @@ option on the horizon for non-personal-Gmail access).
 Before touching the tracker, verify:
 
 1. **`gh` is authenticated** —
-   `gh api repos/airflow-s/airflow-s --jq .name` must return
+   `gh api repos/<tracker> --jq .name` must return
    `airflow-s`. A 401/403/404 means the user needs `gh auth login`
    or collaborator access; stop.
 2. **`uv` is on the PATH** — `uv --version`. Without it the Step 4
    CVE-JSON regeneration would fail silently mid-flow; better to
    tell the user up front to install `uv` (one command:
    `curl -LsSf https://astral.sh/uv/install.sh | sh`).
-3. **Ask the PMC question up front** (Step 3 asks it anyway, but
-   prompting here gives the user a chance to abort if they did
-   not realise they needed a PMC member to click through — it is
-   friendlier than generating the relay recipe and then realising
-   no PMC member is available to act on it).
+3. **Resolve the user's PMC status.** First try to read it from
+   [`config/user.md`](../../../config/user.md) → `role_flags.pmc_member`
+   (see [`config/README.md`](../../../config/README.md) for the config
+   layer explainer). If the file exists and the flag is set, use that
+   value and surface it in the Step 0 recap (*"loaded config for
+   `<handle>` (PMC: yes)"*). If the file is missing, the flag is
+   unset, or the user did not copy the template, fall back to asking
+   the PMC question up front (Step 3 asks it anyway, but prompting
+   here gives the user a chance to abort if they did not realise they
+   needed a PMC member to click through — it is friendlier than
+   generating the relay recipe and then realising no PMC member is
+   available to act on it).
 
 If any check fails, stop with a clear message. Do not start
 filling in the tracker until all three are green — a partial
@@ -143,7 +160,7 @@ no allocation at all.
 ## Step 1 — Fetch the tracker state and run blocker checks
 
 ```bash
-gh issue view <N> --repo airflow-s/airflow-s \
+gh issue view <N> --repo <tracker> \
   --json number,title,state,body,labels,milestone,assignees,author
 ```
 
@@ -184,7 +201,7 @@ prefix, no redundant version suffix, no reporter-added tag like
 
 The exact strip cascade is project-specific. For the currently active
 project, the rules and their rationale live in
-[`projects/airflow/title-normalization.md`](../../../projects/airflow/title-normalization.md).
+[`projects/<PROJECT>/title-normalization.md`](../../../projects/<PROJECT>/title-normalization.md).
 The Python implementation below mirrors the cascade defined there; if
 you are adapting this skill to a different project, replace the
 patterns with that project's rules (and update its
@@ -198,7 +215,7 @@ python3 - <<'PY'
 import re, subprocess
 
 t = subprocess.check_output(
-    ["gh", "issue", "view", "<N>", "--repo", "airflow-s/airflow-s",
+    ["gh", "issue", "view", "<N>", "--repo", "<tracker>",
      "--json", "title", "--jq", ".title"],
     text=True,
 ).strip()
@@ -248,7 +265,7 @@ Compose a proposal block that carries everything the user needs in
 one copy-paste pass:
 
 ```markdown
-**Allocate a CVE for [airflow-s/airflow-s#<N>](https://github.com/airflow-s/airflow-s/issues/<N>).**
+**Allocate a CVE for [<tracker>#<N>](https://github.com/<tracker>/issues/<N>).**
 
 1. Open the ASF Vulnogram allocation form:
    <https://cveprocess.apache.org/allocatecve>
@@ -272,7 +289,7 @@ one copy-paste pass:
 
 Scope → Vulnogram product table: the active project's scope labels
 and their CVE product / package-name mappings are defined in
-[`projects/airflow/scope-labels.md`](../../../projects/airflow/scope-labels.md).
+[`projects/<PROJECT>/scope-labels.md`](../../../projects/<PROJECT>/scope-labels.md).
 Read the label off the tracker and look up the matching product /
 `packageName` there.
 
@@ -334,7 +351,7 @@ user to confirm. Numbered items:
    its `### CVE tool link\n\n` header and the next `### ` or
    end-of-body, write back via `gh issue edit --body-file`.
 2. **Add the `cve allocated` label.** `gh issue edit <N> --repo
-   airflow-s/airflow-s --add-label "cve allocated"`.
+   <tracker> --add-label "cve allocated"`.
 3. **Post a status-change comment** with the collapsed-`<details>`
    shape mandated by
    [`sync-security-issue`](../sync-security-issue/SKILL.md) — bold
@@ -372,7 +389,7 @@ user to confirm. Numbered items:
 ### Status-change comment template
 
 ```markdown
-**Sync YYYY-MM-DD — CVE [`CVE-YYYY-NNNNN`](https://cveprocess.apache.org/cve5/CVE-YYYY-NNNNN) allocated for [airflow-s/airflow-s#<N>](https://github.com/airflow-s/airflow-s/issues/<N>).**
+**Sync YYYY-MM-DD — CVE [`CVE-YYYY-NNNNN`](https://cveprocess.apache.org/cve5/CVE-YYYY-NNNNN) allocated for [<tracker>#<N>](https://github.com/<tracker>/issues/<N>).**
 
 - Body *CVE tool link* field now points at the ASF CVE tool.
 - Label `cve allocated` added.
@@ -440,10 +457,10 @@ Confirmation forms mirror the other skills:
 After confirmation, apply **sequentially** (not in parallel) so
 partial failures stay legible:
 
-1. `gh issue edit <N> --repo airflow-s/airflow-s --body-file <tmp>`
+1. `gh issue edit <N> --repo <tracker> --body-file <tmp>`
    — updated body with the *CVE tool link* field populated.
-2. `gh issue edit <N> --repo airflow-s/airflow-s --add-label "cve allocated"`.
-3. `gh issue comment <N> --repo airflow-s/airflow-s --body-file <tmp>`
+2. `gh issue edit <N> --repo <tracker> --add-label "cve allocated"`.
+3. `gh issue comment <N> --repo <tracker> --body-file <tmp>`
    — status-change comment.
 4. `uv run --project tools/vulnogram/generate-cve-json generate-cve-json <N> --attach`
    — embeds the CVE JSON in the body.
@@ -483,7 +500,7 @@ run it.
 
 **How to invoke.** The sync skill is prompt-driven, so this is a
 meta-step: tell the user *"running `sync-security-issue` on
-[airflow-s/airflow-s#<N>](...) to reconcile the rest of the
+[<tracker>#<N>](...) to reconcile the rest of the
 tracker"* and then run the sync skill's Step 1 (Gather state) on
 the same issue. Sync produces its own numbered proposal with its
 own confirmation loop — follow it through; do not short-circuit.
@@ -509,7 +526,7 @@ fresh CVE on its next pass anyway). In every other case, run it.
 After the apply loop, print a short recap:
 
 - The tracker as a clickable
-  [`airflow-s/airflow-s#<N>`](...) link with a one-line summary of
+  [`<tracker>#<N>`](...) link with a one-line summary of
   its new state (*CVE tool link* populated, `cve allocated` label
   set).
 - The allocated CVE as a clickable

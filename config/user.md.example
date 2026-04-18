@@ -1,0 +1,131 @@
+<!-- SPDX-License-Identifier: Apache-2.0
+     https://www.apache.org/licenses/LICENSE-2.0 -->
+
+# Per-user configuration — template
+
+Copy this file to `config/user.md` and fill in the values. The copy
+is **gitignored**, so your local preferences never land in a commit:
+
+```bash
+cp config/user.md.example config/user.md
+$EDITOR config/user.md
+```
+
+The skills read both this file and
+[`active-project.md`](active-project.md) on every invocation. Fields
+you leave at the placeholder value are treated as *"ask at runtime"*;
+fields you fill in let the skills skip the corresponding prompt. See
+[`README.md`](README.md) in this directory for the full tutorial and
+the model explainer.
+
+## Identity
+
+```yaml
+identity:
+  # Your GitHub handle — used to recognise your own drafts / tracker
+  # comments so skills do not propose replying to yourself, and to
+  # render @-mentions when a skill wants to credit you on a comment.
+  github_handle: <your-github-handle>
+
+  # The email address you send security@ replies from. Used by sync
+  # and import skills to detect when a thread reply is from you vs.
+  # from a teammate or the reporter.
+  email: <you@example.com>
+```
+
+## Role flags
+
+```yaml
+role_flags:
+  # PMC membership of the active project. Affects:
+  #   - allocate-cve: PMC members get the self-service allocation
+  #     recipe (click the URL, paste the title, hit Allocate);
+  #     non-PMC users get a relay recipe they forward to a PMC member.
+  #   - Any future skill that needs to decide between PMC-gated and
+  #     relay flows.
+  # If unsure, check the active project's PMC page (for Airflow,
+  # https://projects.apache.org/committee.html?airflow).
+  # Valid values: true | false.
+  pmc_member: false
+```
+
+## Tool preferences
+
+The active project declares which capabilities it needs in its
+manifest's *Tools enabled* table — for Airflow, see
+[`../projects/airflow/project.md`](../projects/airflow/project.md#tools-enabled).
+For each capability, set the implementation **you** have configured
+locally. Capabilities with only one supported implementation today
+(GitHub issue tracking, Vulnogram CVE tool) should stay at the
+default — the knob exists so the same `user.md` keeps working when
+alternative implementations land.
+
+```yaml
+tools:
+  # Issue tracker: which tool this user queries for tracker state.
+  # Supported today: github.
+  issue_tracker: github
+
+  # Inbound email: how this user reads the project's security list.
+  # Supported today:
+  #   gmail          — Gmail MCP against a personal Gmail account
+  #                    subscribed to security@<project>.apache.org
+  #   ponymail-mcp   — (planned) ASF-OAuth PonyMail MCP that reads
+  #                    private-list archives directly; not live yet.
+  # See tools/gmail/tool.md for background on the migration plan.
+  inbound_email: gmail
+
+  # CVE tool: the CNA tool the release manager pushes CVE records to.
+  # Supported today: vulnogram (ASF-hosted).
+  cve_tool: vulnogram
+```
+
+## Environment paths
+
+```yaml
+environment:
+  # Absolute path to your local apache/airflow clone. Used by
+  # fix-security-issue Step 3 to write code changes locally without
+  # asking you every time. There is no default and no auto-detection
+  # — filesystem layouts vary per user and a wrong guess masks a
+  # misconfigured clone — so if you leave this blank the skill will
+  # prompt you at runtime and offer to save your answer back here.
+  # Examples: /Users/alice/src/apache-airflow,
+  #           /home/bob/work/airflow
+  apache_airflow_clone:
+
+  # Optional: the name of the git remote pointing at your fork of
+  # apache/airflow. gh pr create uses this to push the fix branch.
+  # Leave blank to let the skill detect the first non-origin remote.
+  apache_airflow_fork_remote:
+```
+
+## Skill defaults
+
+```yaml
+skill_defaults:
+  # How many days back import-security-issue scans the security list
+  # on a vanilla "import new reports" invocation. Can always be
+  # overridden per-call (e.g. "import all" = 90d). Default: 30d.
+  import_window: 30d
+
+  # Whether to opt into bulk mode for sync-security-issue ("sync all")
+  # without an extra prompt. Default: false (ask each time).
+  sync_bulk_mode: false
+```
+
+## Notes
+
+Free-form. Anything else an agent should remember about how you like
+to work on this repo. Examples:
+
+- *"Always surface CVE tool links as markdown, never bare URLs."*
+- *"I am on European time; expect morning triage around 09:00 CET."*
+- *"I prefer single-scope PRs; split provider-bundle work into one PR
+  per provider."*
+- *"When a sync turns up a stale draft, include the draft's `From:`
+  sender in the flag — I maintain several drafts in parallel."*
+
+```text
+(your notes here)
+```

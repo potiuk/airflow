@@ -2,7 +2,7 @@
 name: import-security-issue
 description: |
   Scan security@airflow.apache.org for reports that have not yet been
-  copied into airflow-s/airflow-s as tracking issues, and — after user
+  copied into <tracker> as tracking issues, and — after user
   confirmation — create the tracking issues and draft a receipt-of-
   confirmation reply to each reporter. This is the first step of the
   handling process: the entry point that converts an inbound email
@@ -17,11 +17,21 @@ when_to_use: |
   every recent thread is already tracked.
 ---
 
+<!-- Placeholder convention (see AGENTS.md#placeholder-convention-used-in-skill-files):
+     <PROJECT>  → value of `active_project:` in config/active-project.md
+                 (for this tree: airflow)
+     <tracker>  → value of `tracker_repo:` in projects/<PROJECT>/project.md
+                 (for this tree: airflow-s/airflow-s)
+     <upstream> → value of `upstream_repo:` in projects/<PROJECT>/project.md
+                 (for this tree: apache/airflow)
+     Before running any bash command below, substitute these with the
+     active-project values read from config/ + projects/<PROJECT>/project.md. -->
+
 # import-security-issue
 
 This skill is the **on-ramp** of the security-issue handling process.
 It converts an inbound `security@airflow.apache.org` email thread into
-an `airflow-s/airflow-s` tracking issue that follows the repo's issue
+an `<tracker>` tracking issue that follows the repo's issue
 template, then drafts the receipt-of-confirmation reply to the reporter.
 
 It never sends email. It never creates an issue without user
@@ -38,12 +48,12 @@ skips confirmation.
 
 **Golden rule — confidentiality.** The inbound thread on
 `security@airflow.apache.org` is private. The skill may paste the
-email body verbatim into the created `airflow-s/airflow-s` tracking
+email body verbatim into the created `<tracker>` tracking
 issue (that repo is also private). It must **never** paste the
-report content into a public surface — not into `apache/airflow`, not
+report content into a public surface — not into `<upstream>`, not
 into a public GHSA, not into any comment on a public repo. The same
 confidentiality rule documented in the "Confidentiality of
-`airflow-s/airflow-s`" section of [`AGENTS.md`](../../../AGENTS.md)
+`<tracker>`" section of [`AGENTS.md`](../../../AGENTS.md)
 applies in full.
 
 ---
@@ -57,7 +67,7 @@ Before running, the skill needs:
   creates drafts through this MCP; without it, there is no way
   to discover new reports.
 - **`gh` CLI authenticated** (`gh auth status` returns OK) with
-  collaborator access to `airflow-s/airflow-s`. The skill calls
+  collaborator access to `<tracker>`. The skill calls
   `gh issue create` and `gh search issues` directly.
 
 See
@@ -76,9 +86,9 @@ Before touching any candidate thread, verify:
    confirm it returns (not an auth error). If it fails, **stop
    immediately** and tell the user to configure Gmail MCP.
 2. **`gh` is authenticated and has access.** Run
-   `gh api repos/airflow-s/airflow-s --jq .name`; if it errors
+   `gh api repos/<tracker> --jq .name`; if it errors
    (401, 403, 404), stop and tell the user to log in with
-   `gh auth login` or get added to `airflow-s/airflow-s`.
+   `gh auth login` or get added to `<tracker>`.
 
 If either check fails, do **not** proceed — the skill would fail
 mid-flow otherwise, leaving half-built state (a draft on the wrong
@@ -113,7 +123,7 @@ Use the canonical candidate-listing query template from
 substitute the active project's `<security-list-domain>` (Airflow:
 `security.airflow.apache.org`) and the project's GitHub-notification
 exclusions — both declared in
-[`projects/airflow/project.md`](../../../projects/airflow/project.md#gmail-and-ponymail).
+[`projects/<PROJECT>/project.md`](../../../projects/<PROJECT>/project.md#gmail-and-ponymail).
 
 **Do not exclude `-from:security@apache.org`.** That address is used
 for three very different message types — CVE-tool bookkeeping,
@@ -140,14 +150,14 @@ most threads will be filtered out at Step 2.
 ## Step 2 — Deduplicate against existing airflow-s issues
 
 For each candidate `threadId`, check whether that ID already appears in
-an `airflow-s/airflow-s` issue body. The sync skill records each thread
+an `<tracker>` issue body. The sync skill records each thread
 ID in the *"Security mailing list thread"* field of the tracking issue
 (either as the `lists.apache.org/thread/<id>` URL or as a textual note
 containing the Gmail `threadId`). One `gh search issues` call is
 enough:
 
 ```bash
-gh search issues "<threadId>" --repo airflow-s/airflow-s --match body --limit 5 \
+gh search issues "<threadId>" --repo <tracker> --match body --limit 5 \
   --json number,title,state,url
 ```
 
@@ -183,7 +193,7 @@ budget on a thread we are about to propose importing) and run a
 fuzzy-match search against existing issues on three orthogonal keys:
 
 1. **GHSA IDs**: grep the body for `GHSA-[a-z0-9-]{4,}` tokens. For
-   each hit, `gh search issues "<GHSA-ID>" --repo airflow-s/airflow-s
+   each hit, `gh search issues "<GHSA-ID>" --repo <tracker>
    --state open --match body,title` plus the same with `--state
    closed`. A GHSA ID is the strongest de-dup signal — a match means
    the report is the same GitHub Security Advisory, just arriving via
@@ -196,7 +206,7 @@ fuzzy-match search against existing issues on three orthogonal keys:
    Take the **two or three most specific** pointers (the longest
    Python-import-style names and the deepest file paths) and search
    existing issues: `gh search issues "<pointer>" --repo
-   airflow-s/airflow-s --state open --match body`. A match here means
+   <tracker> --state open --match body`. A match here means
    some other tracker already discusses the same code surface — often
    a partial overlap, possibly a duplicate.
 3. **Subject root-cause keywords**: strip `[SECURITY]`, `[Security
@@ -204,7 +214,7 @@ fuzzy-match search against existing issues on three orthogonal keys:
    prefixes from the root message's subject, then take the remaining
    3–5 noun-phrase tokens (for example
    `"RCE BaseSerialization.deserialize next_kwargs"`) and search:
-   `gh search issues "<keywords>" --repo airflow-s/airflow-s
+   `gh search issues "<keywords>" --repo <tracker>
    --state open --match title,body`. Title / body matches here are
    informational — a tracker with a similar title is worth a human
    glance but is not necessarily a duplicate.
@@ -259,7 +269,7 @@ Decide the candidate's class from the root message:
 | **Report**: a reporter describes a vulnerability | The body has a description, a PoC / reproduction steps, an impact claim. Sender is an external address (not `@apache.org`, not on the security-team roster in [`AGENTS.md`](../../../AGENTS.md)). | Proceed to Step 4. |
 | **ASF-security relay**: `security@apache.org` forwarded a report from a reporter via the Foundation channel | Sender is `security@apache.org`. The body almost always starts with the ASF forwarding preamble — *"Dear PMC, The security vulnerability report has been received by the Apache Security Team and is being passed to you for action …"* — and contains the original report underneath (often after a `====GHSA-…` separator when the report came in via GitHub Security Advisory). The preamble is the load-bearing signal: if you see it, treat as a report regardless of what follows. | Proceed to Step 4. **Credit extraction**: the forwarded body usually ends with a `Credit` line naming the discoverer (e.g. *"This vulnerability was discovered and reported by bugbunny.ai"*) — use that verbatim for the Reporter-credited-as placeholder, not the `From:` header (which is always `security@apache.org`). If the report has no credit line, fall back to the GHSA number or to the phrase *"ASF-relayed"* so the credit-preference question can be routed through `@raboof` / Arnout. |
 | **CVE-tool bookkeeping**: an automated or human status-change notification on the ASF CVE tool | Sender is `security@apache.org` (or one of the security-team members acting on behalf of the CVE tool). Subject matches one of: `"CVE-YYYY-NNNNN reserved for airflow"`, `"Comment added on CVE-YYYY-NNNNN"`, `"CVE-YYYY-NNNNN is now READY"`, `"CVE-YYYY-NNNNN is now PUBLIC"`, `"CVE-YYYY-NNNNN is now PUBLISHED"`, `"CVE-YYYY-NNNNN REJECTED"`, or a verbatim `"<state-change>"` line in the body pointing at `cveprocess.apache.org/cve5/CVE-YYYY-NNNNN`. | Do **not** import and do **not** draft a reply — the CVE-tool notifications are consumed by the `sync-security-issue` skill's Step 1e review-comment check. Classify as `cve-tool-bookkeeping` and drop. |
-| **Automated scanner dump**: SAST/DAST tool output, CodeQL/Dependabot alert paste, a string of "issues" with no human PoC | Body is machine-generated, contains multiple unrelated findings, no explanation of Security Model violation | Surface as a candidate with class `automated-scanner` and **do not** propose auto-import. In Step 5 the skill proposes a Gmail draft from the *"Automated scanning results"* canned response in [`canned-responses.md`](../../../projects/airflow/canned-responses.md) instead. |
+| **Automated scanner dump**: SAST/DAST tool output, CodeQL/Dependabot alert paste, a string of "issues" with no human PoC | Body is machine-generated, contains multiple unrelated findings, no explanation of Security Model violation | Surface as a candidate with class `automated-scanner` and **do not** propose auto-import. In Step 5 the skill proposes a Gmail draft from the *"Automated scanning results"* canned response in [`canned-responses.md`](../../../projects/<PROJECT>/canned-responses.md) instead. |
 | **Consolidated multi-issue report**: one email bundles ≥3 unrelated vulnerabilities | The root message has headings like *"Issue 1"*, *"Issue 2"*, each of which would be its own tracker | Surface class `consolidated-multi-issue`; do not auto-import. Propose the "Sending multiple issues in consolidated report" canned reply. |
 | **Media / research-disclosure request**: reporter wants to publish a blog or talk about a finding we already know about | Body asks about disclosure timing, mentions a talk / blog / CVE on another vendor | Surface class `media-request`; do not auto-import. Propose the "When someone submits a media report" canned reply. |
 | **Obvious spam / scam / phishing / crypto-scheme** | Cryptocurrency addresses, "bug bounty program" framing on a project that does not have one, no actual Airflow-specific content | Surface class `spam`; propose no action (user deletes in Gmail). |
@@ -285,7 +295,7 @@ The generic body-field schema (role → field-name contract, empty-field
 convention, body-field surgery pattern) lives in
 [`tools/github/issue-template.md`](../../../tools/github/issue-template.md);
 the concrete field names for the active project are declared in
-[`projects/airflow/project.md`](../../../projects/airflow/project.md#issue-template-fields).
+[`projects/<PROJECT>/project.md`](../../../projects/<PROJECT>/project.md#issue-template-fields).
 The table below describes **what value to source** from the inbound
 report for each field — that guidance is import-specific and stays
 here.
@@ -295,7 +305,7 @@ here.
 | **The issue description** | The root email body, **verbatim** (preserve paragraphs, PoC code blocks, and any quoted sections). The body is private — the triager will copy it into a public CVE description only after Step 13. |
 | **Short public summary for publish** | Leave `_No response_`. Filled by the release manager at Step 13 in sanitised form. |
 | **Affected versions** | Extract `Airflow <version>` / `>= X, < Y` / `<Y` phrases from the body. If the reporter gave only a single version they tested on (e.g. `3.1.5`), record that verbatim; the triager can widen the range later. Leave `_No response_` if no version is mentioned. |
-| **Security mailing list thread** | **Keep the private thread handle, and — if possible — also link the PonyMail archive entry.** The full URL-construction recipe (search URL template, month-token format, user-pastes-back flow, Gmail-threadId fallback) lives in [`tools/gmail/ponymail-archive.md`](../../../tools/gmail/ponymail-archive.md#use-case--import-security-issue); the active project's private-search URL template is declared in [`projects/airflow/project.md`](../../../projects/airflow/project.md#gmail-and-ponymail). Propose the constructed search URL to the user at Step 5, wait for them to paste back the resolved `lists.apache.org/thread/<hash>?<security-list>` URL, and record both the PonyMail URL and the Gmail `threadId` in this field. The URL is **internal-only** — the `generate-cve-json` script will not export it to `references[]` — see the "CVE references must never point at non-public mailing-list threads" section of [`AGENTS.md`](../../../AGENTS.md). |
+| **Security mailing list thread** | **Keep the private thread handle, and — if possible — also link the PonyMail archive entry.** The full URL-construction recipe (search URL template, month-token format, user-pastes-back flow, Gmail-threadId fallback) lives in [`tools/gmail/ponymail-archive.md`](../../../tools/gmail/ponymail-archive.md#use-case--import-security-issue); the active project's private-search URL template is declared in [`projects/<PROJECT>/project.md`](../../../projects/<PROJECT>/project.md#gmail-and-ponymail). Propose the constructed search URL to the user at Step 5, wait for them to paste back the resolved `lists.apache.org/thread/<hash>?<security-list>` URL, and record both the PonyMail URL and the Gmail `threadId` in this field. The URL is **internal-only** — the `generate-cve-json` script will not export it to `references[]` — see the "CVE references must never point at non-public mailing-list threads" section of [`AGENTS.md`](../../../AGENTS.md). |
 | **Public advisory URL** | `_No response_`. Populated at Step 14 by `sync-security-issue` once the advisory is archived. |
 | **Reporter credited as** | The reporter's full display name from the email `From:` header (e.g. `Alice Example` from `"Alice Example" <alice@example.com>`). This is a **placeholder** — the receipt-of-confirmation reply in Step 7 asks the reporter to confirm their preferred credit form. |
 | **PR with the fix** | `_No response_`. |
@@ -323,7 +333,7 @@ Present all candidates as a single numbered proposal grouped by class:
   `cross-thread-followup`): show the class, the reporter, a one-line
   summary, and the proposed Gmail draft (from `canned-responses.md`)
   or the proposed follow-up action (e.g. *"comment on existing
-  tracker [airflow-s/airflow-s#NNN](...)"*).
+  tracker [<tracker>#NNN](...)"*).
 - **Dropped silently** (class `cve-tool-bookkeeping`): do not even
   surface these to the user — they are consumed by
   `sync-security-issue` Step 1e. The skill should just report the
@@ -400,7 +410,7 @@ For each confirmed `Report` / `ASF-security relay`:
 
 2. Create the issue with the `needs triage` and `security issue` labels:
    ```bash
-   gh issue create --repo airflow-s/airflow-s \
+   gh issue create --repo <tracker> \
      --title '<title>' \
      --body-file /tmp/issue-body-<threadId>.md \
      --label 'needs triage' \
@@ -417,7 +427,7 @@ For each confirmed `Report` / `ASF-security relay`:
    always `Re: <root subject>`, even when the recipient changes.
    `ccRecipients` always includes the active project's `security_list`
    (for Airflow: `security@airflow.apache.org`; see
-   [`projects/airflow/project.md`](../../../projects/airflow/project.md#gmail-and-ponymail)).
+   [`projects/<PROJECT>/project.md`](../../../projects/<PROJECT>/project.md#gmail-and-ponymail)).
 
    **Two variants depending on the candidate class:**
 
@@ -425,7 +435,7 @@ For each confirmed `Report` / `ASF-security relay`:
      `toRecipients` is the reporter's email (the `From:` of the
      inbound root message). Body is the *"Confirmation of receiving
      the report"* canned response verbatim from
-     [`canned-responses.md`](../../../projects/airflow/canned-responses.md). That
+     [`canned-responses.md`](../../../projects/<PROJECT>/canned-responses.md). That
      canned response already includes the credit-preference
      question, so no additional wording is needed.
 
@@ -462,7 +472,7 @@ For each confirmed `Report` / `ASF-security relay`:
    Gmail before sending.
 
 4. Post a short status-change comment on the newly-created
-   `airflow-s/airflow-s` issue. Use the same short-headline +
+   `<tracker>` issue. Use the same short-headline +
    collapsed-`<details>` shape described in the sibling
    [`sync-security-issue`](../sync-security-issue/SKILL.md) skill's
    *"Status update on the GitHub issue"* section — the scroller
@@ -485,7 +495,7 @@ For each confirmed `Report` / `ASF-security relay`:
    ```
 
    Keep the visible part under ~6 rendered lines. Clickable
-   `airflow-s/airflow-s` references (Golden rule 2 from
+   `<tracker>` references (Golden rule 2 from
    [`AGENTS.md`](../../../AGENTS.md)) apply both above and inside
    the `<details>` block.
 
@@ -494,7 +504,7 @@ media / cross-thread-followup):
 
 1. Draft the canned Gmail reply per the classification table in Step 3.
 2. If it is a cross-thread follow-up, optionally post a comment on the
-   existing `airflow-s/airflow-s` issue cross-linking the new Gmail
+   existing `<tracker>` issue cross-linking the new Gmail
    thread ID so the next sync picks it up.
 
 Apply sequentially (not in parallel): one `gh issue create` per
@@ -508,7 +518,7 @@ report — do not guess.
 Print a short recap with:
 
 - The issues created, as clickable
-  [`airflow-s/airflow-s#NNN`](https://github.com/airflow-s/airflow-s/issues/NNN)
+  [`<tracker>#NNN`](https://github.com/<tracker>/issues/NNN)
   links.
 - The Gmail drafts waiting for user review, with `draftId`s.
 - Any candidates that were skipped, and why.
@@ -533,8 +543,8 @@ before presenting.
   only; the security team scores independently later.
 - **Never leak report content to a public surface.** The entire
   tracking issue is private; its body, title, and comments belong in
-  `airflow-s/airflow-s` only. See the "Confidentiality of
-  `airflow-s/airflow-s`" section of [`AGENTS.md`](../../../AGENTS.md).
+  `<tracker>` only. See the "Confidentiality of
+  `<tracker>`" section of [`AGENTS.md`](../../../AGENTS.md).
 - **Never auto-close** an imported issue, even when the classification
   is `automated-scanner` / `spam`. The user's "do not import" response
   in Step 5 already prevents a tracker from being created; if the user
@@ -551,7 +561,7 @@ before presenting.
   automates.
 - [`AGENTS.md`](../../../AGENTS.md) — confidentiality, release managers,
   CVSS rules, and security-team roster.
-- [`canned-responses.md`](../../../projects/airflow/canned-responses.md) — the canned
+- [`canned-responses.md`](../../../projects/<PROJECT>/canned-responses.md) — the canned
   email bodies the skill uses for receipt-of-confirmation, invalid
   reports, automated scans, etc.
 - [`sync-security-issue`](../sync-security-issue/SKILL.md) — the

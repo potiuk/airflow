@@ -36,7 +36,7 @@ renamed, or removed:
 1. **The GitHub Form YAML** — `.github/ISSUE_TEMPLATE/issue_report.yml`
    in the tracker repo. This is what GitHub renders as the "New
    issue" form and is the machine-readable schema.
-2. **The project manifest** — `projects/<active>/project.md` declares
+2. **The project manifest** — `projects/<PROJECT>/project.md` declares
    the concrete field name each skill role maps to. Renaming the
    field in the YAML requires updating this mapping.
 3. **The skills that write fresh issue bodies** — `import-security-issue`

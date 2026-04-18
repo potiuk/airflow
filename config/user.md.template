@@ -1,0 +1,80 @@
+<!-- SPDX-License-Identifier: Apache-2.0
+     https://www.apache.org/licenses/LICENSE-2.0 -->
+
+# Per-user configuration — bootstrapped by prek
+
+This file was created automatically on your first commit because
+`config/user.md` did not exist. Every value below is a **TODO** —
+please fill in your details before running any skill that reads this
+file. The full tutorial is in [`README.md`](README.md); the annotated
+template (with descriptions for every knob) is in
+[`user.md.example`](user.md.example).
+
+This file is **gitignored**. Your answers stay on your machine.
+
+Grep for `TODO` to find everything you still need to fill in:
+
+```bash
+grep -n TODO config/user.md
+```
+
+## Identity
+
+```yaml
+identity:
+  github_handle: "TODO: your GitHub handle, e.g. potiuk"
+  email: "TODO: the email you send security@ replies from"
+```
+
+## Role flags
+
+```yaml
+role_flags:
+  # TODO: true | false — are you on the active project's PMC?
+  # Affects allocate-cve: PMC members self-allocate; non-PMC users
+  # get a relay recipe for a PMC member.
+  pmc_member: null
+```
+
+## Tool preferences
+
+```yaml
+tools:
+  # Leave these at the defaults unless you have explicitly configured
+  # an alternative (e.g. ponymail-mcp when that lands). See
+  # projects/<PROJECT>/project.md → Tools enabled for the list of
+  # accepted values.
+  issue_tracker: github
+  inbound_email: gmail
+  cve_tool: vulnogram
+```
+
+## Environment paths
+
+```yaml
+environment:
+  # TODO: absolute path to your local upstream clone — no
+  # auto-detection, no default. If left empty, fix-security-issue
+  # will ask at runtime and offer to save your answer back here.
+  apache_airflow_clone: ""
+
+  # Optional — leave empty to let the skill detect.
+  apache_airflow_fork_remote: ""
+```
+
+## Skill defaults
+
+```yaml
+skill_defaults:
+  import_window: 30d
+  sync_bulk_mode: false
+```
+
+## Notes
+
+Free-form. Anything else an agent should remember about how you like
+to work on this repo.
+
+```text
+TODO: (your notes here, or delete this block)
+```

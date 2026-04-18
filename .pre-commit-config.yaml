@@ -53,6 +53,52 @@ repos:
         name: Detect if mixed line ending is used (\r vs. \r\n)
       - id: trailing-whitespace
         name: Remove trailing whitespace at end of line
+  # Belt-and-braces check that the per-user configuration file never
+  # lands on airflow-s — .gitignore already excludes it, but this hook
+  # catches a stray `git add -f config/user.md` before it reaches the
+  # remote. See config/README.md for the config layer explainer.
+  - repo: local
+    hooks:
+      - id: forbid-user-config
+        name: Refuse commits that stage config/user.md
+        language: system
+        entry: |
+          bash -c '
+            if git diff --cached --name-only | grep -Fxq config/user.md; then
+              echo "✗ config/user.md is a per-user file and must never be committed."
+              echo "  Unstage it with: git restore --staged config/user.md"
+              echo "  See config/README.md for the per-user configuration layer."
+              exit 1
+            fi
+          '
+        pass_filenames: false
+        always_run: true
+      # Bootstrap config/user.md from the TODO-filled template if the
+      # file does not exist yet. Runs on every commit so a fresh clone
+      # picks up the template the first time the user commits, giving
+      # them a clear list of TODO lines to fill in. The generated file
+      # is gitignored (and the forbid-user-config hook above catches
+      # any force-add), so this can only ever land locally. The source
+      # template lives at config/user.md.template.
+      - id: bootstrap-user-config
+        name: Create config/user.md with TODOs if it is missing
+        language: system
+        entry: |
+          bash -c '
+            if [ -f config/user.md ]; then exit 0; fi
+            if [ ! -f config/user.md.template ]; then
+              echo "✗ config/user.md.template is missing — cannot bootstrap config/user.md." >&2
+              exit 1
+            fi
+            cp config/user.md.template config/user.md
+            echo ""
+            echo "  → Created config/user.md from config/user.md.template."
+            echo "    Fill in your details: grep -n TODO config/user.md"
+            echo "    Full tutorial: config/README.md"
+            echo ""
+          '
+        pass_filenames: false
+        always_run: true
   # Project-local checks for the `generate-cve-json` Python project,
   # which lives under `tools/vulnogram/` as the Vulnogram tool adapter's
   # CVE-5.x JSON generator. Each hook sets the working directory via
