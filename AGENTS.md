@@ -469,12 +469,14 @@ under this rule.
 
 ### Threading: drafts stay on the inbound Gmail thread
 
-Every drafted email that relates to a tracking issue **must** be
-created on the original inbound Gmail thread — the thread whose
-`threadId` was recorded when the tracker was imported. Gmail does
-**not** thread by subject string; the full rule (same thread every
-time, `Re: <subject>` preservation, `To:` flexibility, threadId-is-a-
-blocker) lives in
+Every drafted email that relates to a tracking issue **should**
+attach to the original inbound Gmail thread. The preferred path is
+to pass the inbound `threadId` to `create_draft`; the pragmatic
+fallback — when the `threadId` cannot be resolved — is to omit it
+and create the draft with the matching `Re: <root subject>` line,
+which most clients still thread by subject. The full rule (when
+each path applies, when to stop instead, how to surface the
+degraded threading in the skill's proposal) lives in
 [`tools/gmail/threading.md`](tools/gmail/threading.md).
 
 ### ASF-security-relay reports: a special case for drafting
@@ -483,7 +485,8 @@ Some reports reach the project's security list via the ASF security
 team (from `security@apache.org`, or a personal `@apache.org` address
 of an ASF-security-team member) rather than from the external reporter
 directly. The drafting rules for that case — different `To:`, same
-`threadId`, terse body — live in
+threading behaviour (prefer `threadId`, fall back to the inbound
+subject), terse body — live in
 [`tools/gmail/asf-relay.md`](tools/gmail/asf-relay.md). The detection
 signals the `import-security-issue` skill uses to classify a candidate
 as a relay live in that skill's Step 3.
@@ -765,5 +768,5 @@ When adding a new skill:
 - [`projects/<PROJECT>/project.md`](projects/airflow/project.md) — the active project's manifest (identity, repositories, mailing lists, tools enabled, CVE tooling, GitHub project board + issue-template field declarations).
 - [`projects/<PROJECT>/`](projects/airflow/) — other project-specific files (canned responses, release trains, security model, scope labels, milestones, title-normalization, fix workflow, naming conventions).
 - [`tools/github/`](tools/github/) — GitHub tool adapter: `tool.md` (overview), `operations.md` (`gh` CLI / API catalogue), `issue-template.md` (body-field schema), `labels.md` (lifecycle-label taxonomy), `project-board.md` (Projects V2 GraphQL).
-- [`tools/gmail/`](tools/gmail/) — Gmail tool adapter: `tool.md` (overview), `operations.md` (MCP catalogue + no-update limitation), `threading.md` (always-pass-`threadId` rule), `asf-relay.md` (ASF-security-relay drafting), `search-queries.md` (query templates), `ponymail-archive.md` (ASF PonyMail URL construction).
+- [`tools/gmail/`](tools/gmail/) — Gmail tool adapter: `tool.md` (overview), `operations.md` (MCP catalogue + no-update limitation), `threading.md` (prefer-`threadId`-else-subject-fallback rule), `asf-relay.md` (ASF-security-relay drafting), `search-queries.md` (query templates), `ponymail-archive.md` (ASF PonyMail URL construction).
 - [`tools/vulnogram/`](tools/vulnogram/) — Vulnogram (ASF CVE tool) adapter: `tool.md` (overview), `allocation.md` (PMC-gated allocation flow), `record.md` (record URLs + `#source` paste + `DRAFT`/`REVIEW`/`PUBLIC` state machine + reviewer-comment signal), `generate-cve-json/` (CVE-5.x JSON generator — Python project).

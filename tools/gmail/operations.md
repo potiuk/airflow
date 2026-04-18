@@ -95,9 +95,12 @@ only fetch bodies for the narrow set that actually warrants it
 
 ### Create draft
 
+Preferred form — with `threadId` attached (Gmail threads reliably,
+all clients agree):
+
 ```
 mcp__claude_ai_Gmail__create_draft(
-  threadId='<threadId>',                          # MANDATORY
+  threadId='<threadId>',                          # PREFERRED
   subject='Re: <root subject of the thread>',
   toRecipients=['<primary>'],
   ccRecipients=['<security-list>', ...],
@@ -105,14 +108,40 @@ mcp__claude_ai_Gmail__create_draft(
 )
 ```
 
-- **`threadId` is mandatory.** Drafts without a thread attachment
-  are a hard error; see [`threading.md`](threading.md) for the full
-  rule and why.
-- **Subject is `Re: <root subject>`**, never fabricated. Other mail
-  clients fall back to subject-based threading when GitHub's
-  thread-ID hint is not honoured.
+Fallback form — when `threadId` cannot be resolved, **omit it and
+keep the matching subject**:
+
+```
+mcp__claude_ai_Gmail__create_draft(
+  # threadId omitted — not available for this draft.
+  subject='Re: <root subject of the inbound message>',
+  toRecipients=['<primary>'],
+  ccRecipients=['<security-list>', ...],
+  plaintextBody='<body>',
+)
+```
+
+- **Prefer `threadId`.** When the tracker carries a resolvable
+  `threadId` (from its *security-thread* body field or from the
+  skill's own context), pass it. Gmail and every downstream client
+  will then thread the draft onto the inbound conversation
+  deterministically.
+- **Fall back to subject-matching when `threadId` is unavailable.**
+  Create the draft without `threadId` but with a subject that
+  exactly matches the inbound message's subject (prefixed with
+  `Re:`). Gmail server-side will start a new conversation, but
+  most mail clients — and Gmail's own subject-fallback behaviour on
+  the recipient's side — will still thread it via the matching
+  subject. See the [fallback rule](threading.md#fallback--subject-matched-draft-when-threadid-is-unavailable)
+  in `threading.md` for when this applies and when it does not.
+- **Subject is always `Re: <root subject>`**, never fabricated — in
+  both the preferred and fallback forms. A drifted subject defeats
+  subject-based threading on every client.
 - **Never send.** The skills only *create* drafts; a human
   review-and-send step is required before every outbound message.
+- **Surface which path the draft took** in the proposal so the
+  user can tell at a glance whether the draft attached by
+  `threadId` or by subject fallback.
 
 For the ASF-security-relay special case (different `toRecipients` /
 `Cc:` shape), see [`asf-relay.md`](asf-relay.md).
