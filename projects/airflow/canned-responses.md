@@ -18,6 +18,13 @@
 - [DoS/RCE/Arbitrary read via Provider's Connection configuration](#dosrcearbitrary-read-via-providers-connection-configuration)
 - [When someone submits a media report](#when-someone-submits-a-media-report)
 - [Or an alternative response](#or-an-alternative-response)
+- [Status update: CVE allocated (Step 6)](#status-update-cve-allocated-step-6)
+- [Status update: Fix PR opened (Step 10)](#status-update-fix-pr-opened-step-10)
+- [Status update: Fix PR merged (Step 11)](#status-update-fix-pr-merged-step-11)
+- [Status update: Release shipped (Step 12)](#status-update-release-shipped-step-12)
+- [Status update: Advisory sent (Step 13)](#status-update-advisory-sent-step-13)
+- [Status update: CVE published on cve.org (post-Step 15)](#status-update-cve-published-on-cveorg-post-step-15)
+- [Status update: Credit correction (Step 16)](#status-update-credit-correction-step-16)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -252,3 +259,82 @@ a quicker and more efficient review process. Your cooperation in providing compr
 plain-text details will be greatly appreciated.
 
 Thank you!
+
+<!-- ========================================================================
+     Status-update templates — one per reporter-facing lifecycle transition.
+
+     All of these are drafted by the sync-security-issue / allocate-cve
+     skills at the matching transition and sent on the original inbound
+     Gmail thread (threadId-attached when known, subject-matched as a
+     fallback — see tools/gmail/threading.md).
+
+     Every template follows the "Brevity" shape from AGENTS.md:
+       1. One sentence — what changed.
+       2. One sentence — what comes next, and roughly when.
+       3. Artifact URL(s) on their own line(s).
+
+     Placeholder convention (SCREAMING_SNAKE_CASE to match the existing
+     templates above):
+       CVE_ID         — e.g. CVE-2026-40913
+       PR_URL         — full apache/airflow PR URL
+       VERSION        — release version carrying the fix
+       ADVISORY_URL   — archive URL on lists.apache.org (users@ list)
+       RELEASE_URL    — GitHub release tag URL
+
+     ==================================================================== -->
+
+# Status update: CVE allocated (Step 6)
+
+A CVE has been allocated for the issue you reported: CVE_ID.
+
+The advisory will be sent once the fix ships, currently expected with the next patch release.
+
+CVE record: https://cveprocess.apache.org/cve5/CVE_ID
+
+# Status update: Fix PR opened (Step 10)
+
+The fix for CVE_ID is now open as a public PR on apache/airflow. Its description is scrubbed of any reference to the CVE or the security nature of the change — public reviewers see only the code change.
+
+The advisory will be sent once the release carrying the fix ships to users.
+
+Fix PR: PR_URL
+
+# Status update: Fix PR merged (Step 11)
+
+The fix PR for CVE_ID has been merged into apache/airflow. It is scheduled to ship in Airflow VERSION.
+
+The public advisory will be sent to users@airflow.apache.org and announce@apache.org when that release is cut.
+
+Merged PR: PR_URL
+
+# Status update: Release shipped (Step 12)
+
+Airflow VERSION has shipped and contains the fix for CVE_ID.
+
+The release manager will send the public advisory shortly. We will follow up once the advisory has been archived.
+
+Release: RELEASE_URL
+
+# Status update: Advisory sent (Step 13)
+
+The public advisory for CVE_ID has been sent to users@airflow.apache.org and announce@apache.org. Airflow VERSION is available to users.
+
+Once the CVE record is pushed to cve.org, we will send a final note closing the loop on this disclosure.
+
+Advisory archive: ADVISORY_URL
+
+# Status update: CVE published on cve.org (post-Step 15)
+
+CVE_ID is now live on cve.org. This completes the disclosure process for the issue you reported.
+
+Thank you again for the responsible disclosure.
+
+Public record: https://www.cve.org/CVERecord?id=CVE_ID
+
+# Status update: Credit correction (Step 16)
+
+We have corrected the credits for CVE_ID. Your preferred credit form now appears in the public advisory and has been pushed to cve.org.
+
+If anything else looks wrong in the record, let us know and we will update it.
+
+Updated record: https://www.cve.org/CVERecord?id=CVE_ID

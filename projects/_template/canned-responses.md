@@ -13,9 +13,13 @@
     - [Media / research-disclosure request](#media--research-disclosure-request)
     - [Publicly-disclosed issue (reported after public disclosure)](#publicly-disclosed-issue-reported-after-public-disclosure)
   - [TODO — status-update templates](#todo--status-update-templates)
-    - [CVE allocated](#cve-allocated)
-    - [Fix PR opened](#fix-pr-opened)
-    - [Fix released + advisory sent](#fix-released--advisory-sent)
+    - [CVE allocated (Step 6)](#cve-allocated-step-6)
+    - [Fix PR opened (Step 10)](#fix-pr-opened-step-10)
+    - [Fix PR merged (Step 11)](#fix-pr-merged-step-11)
+    - [Release shipped (Step 12)](#release-shipped-step-12)
+    - [Advisory sent (Step 13)](#advisory-sent-step-13)
+    - [CVE published on cve.org (post-Step 15)](#cve-published-on-cveorg-post-step-15)
+    - [Credit correction (Step 16)](#credit-correction-step-16)
   - [Drafting rules](#drafting-rules)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -90,20 +94,76 @@ TODO.
 
 ## TODO — status-update templates
 
-These go out at lifecycle transitions (per
-[`../../README.md#keeping-the-reporter-informed`](../../README.md#keeping-the-reporter-informed)).
+Every lifecycle transition that the team commits to notifying the
+reporter about (per
+[`../../README.md#keeping-the-reporter-informed`](../../README.md#keeping-the-reporter-informed))
+needs a short template. Skills draft from these verbatim and send
+on the original inbound thread.
 
-### CVE allocated
+The **Brevity** shape from [`../../AGENTS.md`](../../AGENTS.md)
+applies to every one of these: three paragraphs at most —
+*what changed / what comes next / artifact URL*.
 
-TODO.
+Minimum set (one per lifecycle transition):
 
-### Fix PR opened
+| Template | Process step | Sent by |
+|---|---|---|
+| CVE allocated | Step 6 | `allocate-cve` skill |
+| Fix PR opened | Step 10 | `fix-security-issue` / `sync-security-issue` skill |
+| Fix PR merged | Step 11 | `sync-security-issue` skill |
+| Release shipped (fix released) | Step 12 | `sync-security-issue` skill |
+| Advisory sent | Step 13 | Release manager + `sync-security-issue` follow-up |
+| CVE published on cve.org | post-Step 15 | `sync-security-issue` skill (recently-closed scan) |
+| Credit correction | Step 16 | Release manager |
 
-TODO.
+See
+[`../airflow/canned-responses.md`](../airflow/canned-responses.md)
+for fully-populated worked examples to adapt.
 
-### Fix released + advisory sent
+### CVE allocated (Step 6)
 
-TODO.
+TODO: one paragraph stating the CVE has been allocated, one stating
+the advisory will be sent when the fix ships, one line with the
+CVE-tool record URL.
+
+### Fix PR opened (Step 10)
+
+TODO: one paragraph stating the fix PR is now public (with the note
+that its description is scrubbed of security-nature signals), one
+stating the advisory follows on release, one line with the fix-PR
+URL.
+
+### Fix PR merged (Step 11)
+
+TODO: one paragraph stating the fix has merged + the target release
+it will ship in, one stating the advisory will go to the project's
+users and announce lists when that release ships, one line with the
+merged PR URL.
+
+### Release shipped (Step 12)
+
+TODO: one paragraph stating the release has shipped, one stating
+the release manager will send the advisory next + we will follow
+up when archived, one line with the release-tag URL.
+
+### Advisory sent (Step 13)
+
+TODO: one paragraph stating the advisory has been sent + release
+is live, one stating a final note will follow once the CVE
+propagates to cve.org, one line with the advisory-archive URL.
+
+### CVE published on cve.org (post-Step 15)
+
+TODO: one paragraph stating the CVE is now live on cve.org and the
+disclosure process is complete, one "thank you for the responsible
+disclosure" line, one line with the `https://www.cve.org/CVERecord?id=<CVE-ID>`
+URL.
+
+### Credit correction (Step 16)
+
+TODO: one paragraph stating the credits have been corrected, one
+stating the update has been pushed to cve.org, one line with the
+updated record URL.
 
 ## Drafting rules
 
