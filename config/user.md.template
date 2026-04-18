@@ -56,10 +56,10 @@ environment:
   # TODO: absolute path to your local upstream clone — no
   # auto-detection, no default. If left empty, fix-security-issue
   # will ask at runtime and offer to save your answer back here.
-  apache_airflow_clone: ""
+  upstream_clone: ""
 
   # Optional — leave empty to let the skill detect.
-  apache_airflow_fork_remote: ""
+  upstream_fork_remote: ""
 ```
 
 ## Skill defaults

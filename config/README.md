@@ -88,7 +88,7 @@ the template) + flip `active_project:` above. See
    access will gain alternatives over time (Gmail MCP today,
    [`ponymail-mcp`](https://github.com/rbowen/ponymail-mcp) with
    ASF OAuth when it lands).
-4. **Environment paths** — where your local `apache/airflow` clone
+4. **Environment paths** — where your local `<upstream>` clone
    lives, which `fix-security-issue` needs in order to write code
    changes locally.
 5. **Free-form notes** — anything else an agent should remember
@@ -115,7 +115,7 @@ Concretely:
   skips the *"are you a PMC member?"* prompt and picks the
   self-service or relay recipe automatically.
 - `fix-security-issue` Step 3 reads
-  `environment.apache_airflow_clone`. If the path resolves to a
+  `environment.upstream_clone`. If the path resolves to a
   valid clone, the skill uses it silently; otherwise it asks for
   the path interactively. The skill does **not** guess filesystem
   layouts — there is no hard-coded search path like `~/code/…`,
@@ -161,7 +161,7 @@ Already covered by the first-week routine in
 [`../new-members-onboarding.md`](../new-members-onboarding.md#your-first-week).
 You should have:
 
-- a clone of `airflow-s/airflow-s` (this repo),
+- a clone of the active project's `<tracker>` repository (this repo),
 - `gh auth login` done,
 - Gmail MCP connected to your account (or another inbound-email tool —
   see the project's *Tools enabled* for accepted alternatives).
@@ -174,8 +174,8 @@ This should already be correct in a fresh clone — but check once:
 cat config/active-project.md
 ```
 
-Look for `active_project: airflow`. If you are running this framework
-against a different project (unlikely in the `airflow-s` clone), edit
+Look for `active_project: <name>` (for this clone, `airflow`). If
+you are running this framework against a different project, edit
 that value; otherwise leave it alone.
 
 ### 2. Create your user config
@@ -186,17 +186,18 @@ cp config/user.md.example config/user.md
 
 Open `config/user.md` and fill in:
 
-- `github_handle` — your GitHub handle (e.g. `potiuk`, `jscheffl`).
-- `email` — the email address you send `security@` replies from.
+- `github_handle` — your GitHub handle.
+- `email` — the email address you send security-list replies from.
 - `pmc_member` — `true` if you are on the active project's PMC,
-  otherwise `false`. (If unsure, check the ASF project page — for
-  Airflow, <https://projects.apache.org/committee.html?airflow>.)
+  otherwise `false`. (If unsure, check the project's PMC roster —
+  for ASF projects, `https://projects.apache.org/committee.html?<PROJECT>`;
+  for Airflow, <https://projects.apache.org/committee.html?airflow>.)
 - `tools` → leave defaults unless you have explicitly configured an
   alternative (e.g. `ponymail-mcp` when that lands).
-- `environment.apache_airflow_clone` — **absolute** path to your
-  local `apache/airflow` clone. There is no auto-detection: if you
-  leave this empty, `fix-security-issue` will ask you at runtime
-  and offer to save your answer back here.
+- `environment.upstream_clone` — **absolute** path to your local
+  `<upstream>` clone. There is no auto-detection: if you leave this
+  empty, `fix-security-issue` will ask you at runtime and offer to
+  save your answer back here.
 - Notes — anything else worth remembering.
 
 ### 3. Verify
@@ -223,9 +224,10 @@ skill's Step 0 pre-flight prints a one-line *"loaded config for
 Edit `config/user.md` whenever:
 
 - you join / leave the PMC,
-- you move your local `apache/airflow` clone,
-- a new capability gets listed in
-  [`../projects/airflow/project.md`](../projects/airflow/project.md#tools-enabled)
+- you move your local `<upstream>` clone,
+- a new capability gets listed in the active project's *Tools
+  enabled* table (for Airflow, see
+  [`../projects/airflow/project.md`](../projects/airflow/project.md#tools-enabled))
   and you want to pick a non-default implementation for yourself.
 
 There is no versioning concern — the file is local; you edit it and
@@ -233,8 +235,8 @@ re-run whatever skill was asking.
 
 ## Safeguards against committing `user.md`
 
-The per-user file must never land on `airflow-s`. Two independent
-defences ensure that:
+The per-user file must never land on the tracker repository. Two
+independent defences ensure that:
 
 1. **`.gitignore`** covers `config/user.md` and common variant names
    (`config/user.md.local`, `config/user.md.bak`,
@@ -260,7 +262,7 @@ Agent-level memory (e.g. Claude Code's `memory/` system) is the right
 place for preferences that are **global across your agent's entire
 life**, not specific to this repo. `config/user.md` is the right place
 for preferences that only make sense in the context of this
-framework's skills (tool picks, PMC status, the apache/airflow clone
+framework's skills (tool picks, PMC status, the `<upstream>` clone
 path).
 
 A rule of thumb: if the preference answers *"how do you run

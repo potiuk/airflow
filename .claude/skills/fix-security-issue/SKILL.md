@@ -93,7 +93,7 @@ tracker only to discover you cannot push the branch.
 - **A clean local clone of `<upstream>`** reachable from the
   agent's working directory. The path comes from the user's
   [`config/user.md`](../../../config/user.md) →
-  `environment.apache_airflow_clone`; if the file or key is missing,
+  `environment.upstream_clone`; if the file or key is missing,
   the skill asks the user interactively and offers to save the
   answer back into `config/user.md` so the next run is silent. The
   skill does **not** guess filesystem layouts — there is no
@@ -258,7 +258,7 @@ touching any files:
 
 1. Resolve the clone path from the user's
    [`config/user.md`](../../../config/user.md) →
-   `environment.apache_airflow_clone` (see
+   `environment.upstream_clone` (see
    [`config/README.md`](../../../config/README.md) for the config
    layer explainer). If the file is missing, the key is unset, or
    the stored path does not resolve to a git repo with a remote
@@ -273,7 +273,7 @@ touching any files:
    [`<upstream>/AGENTS.md`](https://github.com/<upstream>/blob/main/AGENTS.md),
    push only to the user's fork, never to `<upstream>` directly.
    If the user's `config/user.md` has
-   `environment.apache_airflow_fork_remote` set, prefer that remote
+   `environment.upstream_fork_remote` set, prefer that remote
    name; otherwise use the first non-`origin` remote that looks like
    a fork. If no fork remote is configured, **stop and ask the user
    to configure one** (`gh repo fork <upstream> --remote
