@@ -145,6 +145,14 @@ docs = [
 dev = [
     "apache-airflow-ctl[dev]",
     "apache-airflow-devel-common",
+    # Installed so that mypy (which follows imports across the workspace via
+    # [tool.mypy].mypy_path in the root pyproject.toml) can resolve types in
+    # airflow-core, task-sdk, and provider source trees referenced from
+    # airflow-ctl's generated datamodels. Without these the local prek hook
+    # ``mypy-airflow-ctl`` fails on macOS while the CI image passes. Match
+    # the pattern used by task-sdk's dev group.
+    "apache-airflow-providers-common-sql",
+    "apache-airflow-providers-standard",
 ]
 codegen = [
     "datamodel-code-generator[http]==0.33.0",
@@ -217,3 +225,5 @@ required-version = ">=0.6.3"
 
 [tool.uv.sources]
 apache-airflow-devel-common = { workspace = true }
+apache-airflow-providers-common-sql = { workspace = true }
+apache-airflow-providers-standard = { workspace = true }

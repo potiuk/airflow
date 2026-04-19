@@ -12,7 +12,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-04-15T13:08:58.648422Z"
+exclude-newer = "2026-04-15T16:17:41.541638Z"
 exclude-newer-span = "P4D"
 
 [options.exclude-newer-package]
@@ -1975,6 +1975,8 @@ codegen = [
 dev = [
     { name = "apache-airflow-ctl", extra = ["dev"] },
     { name = "apache-airflow-devel-common" },
+    { name = "apache-airflow-providers-common-sql" },
+    { name = "apache-airflow-providers-standard" },
 ]
 docs = [
     { name = "apache-airflow-devel-common", extra = ["docs"] },
@@ -2007,6 +2009,8 @@ codegen = [
 dev = [
     { name = "apache-airflow-ctl", extras = ["dev"], editable = "airflow-ctl" },
     { name = "apache-airflow-devel-common", editable = "devel-common" },
+    { name = "apache-airflow-providers-common-sql", editable = "providers/common/sql" },
+    { name = "apache-airflow-providers-standard", editable = "providers/standard" },
 ]
 docs = [{ name = "apache-airflow-devel-common", extras = ["docs"], editable = "devel-common" }]
 
