@@ -1062,11 +1062,10 @@ will change and *why*. Group them by category:
   do not re-ask.
 
 - **Status update on the GitHub issue (`<tracker>`)** — **every
-  status change must also be recorded as a comment on the issue itself**, not
-  only sent by email. The two channels serve different audiences: the email
-  keeps the reporter informed; the issue comment keeps the rest of the
-  security team and the release manager informed without forcing them to
-  reconstruct the state from labels and timestamps.
+  status change must also be recorded as a comment on the issue itself**,
+  not only sent by email. The two-channels rationale (email keeps the
+  reporter, issue comment keeps the team and the release manager) lives in
+  [`README.md` — Recording status transitions on the tracker](../../../README.md#recording-status-transitions-on-the-tracker).
 
   **Comment shape — keep the scroll short.** The comment body has two
   distinct audiences with two distinct needs: a triager scrolling the

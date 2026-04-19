@@ -275,16 +275,14 @@ ID, advisory link), and indicate whether the reporter has been notified.
 
 ### Confidentiality
 
-The existence of `<tracker>`, the issue numbers it contains, the
-labels we use, and everything discussed inside are **not public**. Nothing
-from this repository may appear in public `<upstream>` PR descriptions or
-commits, public mailing-list posts, canned responses, or anywhere else a
-non-security-team reader could see it.
-
-The full rule set — including what is allowed in private `security@` /
-`private@` threads, in status updates to the reporter, and in ``gh issue
-comment`` calls inside this repository — lives in
-[`AGENTS.md` — Confidentiality of `<tracker>`](AGENTS.md#confidentiality-of-the-tracker-repository).
+Confidentiality of the private tracker (`<tracker>` for the
+active project) is both a **lifecycle rule** and a **writing rule**:
+every transition you record on a tracker, every status comment, every
+email draft has to respect it. The full rule set — forbidden surfaces,
+allowed surfaces, scrubbing guidance, the exception buckets for private
+`security@` / `private@` threads and in-repo `gh issue comment` calls —
+lives in
+[`AGENTS.md` — Confidentiality of the tracker repository](AGENTS.md#confidentiality-of-the-tracker-repository).
 Read it before editing anything that might be seen outside the team.
 
 ## For issue triagers — Steps 1–6
