@@ -4,6 +4,7 @@
 
 - [GitHub — project board (Projects V2)](#github--project-board-projects-v2)
   - [What the board is for](#what-the-board-is-for)
+  - [Auto-add workflow filter](#auto-add-workflow-filter)
   - [Per-project configuration](#per-project-configuration)
   - [Introspection — find the itemId and current column](#introspection--find-the-itemid-and-current-column)
   - [Introspection — re-fetch the option IDs](#introspection--re-fetch-the-option-ids)
@@ -36,6 +37,45 @@ flag-based interface for Projects V2.
   column before proposing the next transition.
 - Writes: sync-style skills moving the tracker from one column to
   the next whenever a label / body state change warrants it.
+
+## Auto-add workflow filter
+
+The board's built-in **"Auto-add to project"** workflow decides which
+newly-opened issues land on the board automatically. The filter
+**must gate on the `security issue` label** so that only security
+trackers are added, not every issue opened in `tracker_repo`:
+
+```text
+is:issue label:"security issue"
+```
+
+This pairs with two upstream guarantees that ensure every legitimate
+security tracker carries the label:
+
+1. The repo's [issue template](issue-template.md) lists `security
+   issue` in its `labels:` frontmatter, so any tracker created via
+   *New issue → Airflow Security Issue* gets the label automatically.
+2. The `import-security-issue` skill passes `--label 'security issue'`
+   on every `gh issue create` it runs.
+
+Manually-opened issues (no template, no skill) will not appear on the
+board until a triager applies the label by hand — that is the
+intended behaviour, since such issues are usually noise.
+
+**This filter is UI-only.** GitHub's GraphQL API exposes the workflow's
+`id` / `name` / `enabled` fields but **not** the filter expression, so
+neither `gh` nor a GraphQL mutation can set it. To change it:
+
+1. Open `<project_board_url>/workflows` (for Airflow:
+   <https://github.com/orgs/airflow-s/projects/2/workflows>).
+2. Click **Auto-add to project**.
+3. Edit the **Filter** field to the expression above.
+4. Save.
+
+If the workflow is ever disabled or its filter is widened, freshly-
+created trackers will land in the *orphan-issue* path (see below) and
+need an explicit `addProjectV2ItemById` call before any column
+mutation can succeed.
 
 ## Per-project configuration
 
