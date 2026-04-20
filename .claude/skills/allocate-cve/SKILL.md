@@ -364,9 +364,11 @@ user to confirm. Numbered items:
    uv run --project tools/vulnogram/generate-cve-json generate-cve-json <N> --attach
    ```
    This is how the CVE record first gets seeded with the allocated
-   ID. Pass `--remediation-developer "<author>"` if the *PR with
-   the fix* body field already has a `pull/<NNN>` URL; otherwise
-   omit the flag and let a later sync run backfill it.
+   ID. The remediation-developer credit (if any) comes from the
+   tracker's *Remediation developer* body field — populated by the
+   `sync-security-issue` skill from the linked PR's author the
+   first time *PR with the fix* is set, and editable by hand
+   thereafter. No CLI flag needed.
 5. **Draft a reporter status update** — only when the real
    reporter's Gmail thread is known and the ball is in our court
    (see `sync-security-issue` Step 1c). Keep the draft short, per

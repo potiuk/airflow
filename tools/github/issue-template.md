@@ -59,7 +59,8 @@ The generic lifecycle refers to fields by these roles:
 | `security-thread` | dedupe, sync (reporter-notification lookup) | import | Private pointer to the inbound mail thread. **Never** exported to the public CVE record. |
 | `public-advisory-url` | CVE JSON generator, sync (gates close) | sync (Step 14) | Public archive URL; tagged `vendor-advisory` in `references[]`. |
 | `reporter-credit` | CVE JSON generator | import (placeholder), sync (after reporter confirms) | Credit line as the reporter wants to appear in the public advisory. |
-| `pr-with-fix` | sync, CVE JSON generator (remediation-developer resolution) | fix, sync | URL of the merged `<upstream>` PR. |
+| `pr-with-fix` | sync, CVE JSON generator | fix, sync | URL of the merged `<upstream>` PR. |
+| `remediation-developer` | CVE JSON generator | sync (auto-populated from `pr-with-fix` author when set; manual edits preserved) | Person(s) who authored the fix; one credit per line. |
 | `cwe` | CVE JSON generator | sync proposes, user confirms | CWE number for the CVE 5.x `problemTypes[]`. |
 | `severity` | CVE JSON generator | sync proposes, user confirms | CVSS severity; never copy the reporter's self-assigned value. |
 | `cve-tool-link` | sync, allocate-cve (blocker check) | allocate-cve | Canonical link to the CVE record in the project's CVE tool. |
@@ -112,7 +113,7 @@ schema):
 | `public-advisory-url` | `references[]` with `tags: ["vendor-advisory"]` |
 | `pr-with-fix` | `references[]` with `tags: ["patch"]` |
 | `reporter-credit` | `credits[]` with `type: "finder"` |
-| *PR author of `pr-with-fix`* | `credits[]` with `type: "remediation developer"` |
+| `remediation-developer` | `credits[]` with `type: "remediation developer"` |
 | `security-thread` | **not exported** — private-only |
 | `cve-tool-link` | **not exported** — points at the tool itself, not at a public URL |
 

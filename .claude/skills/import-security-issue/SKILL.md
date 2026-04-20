@@ -309,6 +309,7 @@ here.
 | **Public advisory URL** | `_No response_`. Populated at Step 14 by `sync-security-issue` once the advisory is archived. |
 | **Reporter credited as** | The reporter's full display name from the email `From:` header (e.g. `Alice Example` from `"Alice Example" <alice@example.com>`). This is a **placeholder** — the receipt-of-confirmation reply in Step 7 asks the reporter to confirm their preferred credit form. |
 | **PR with the fix** | `_No response_`. |
+| **Remediation developer** | `_No response_`. Auto-populated by the `sync-security-issue` skill from the linked PR's author the first time *PR with the fix* is set; manual edits are preserved on subsequent syncs. |
 | **CWE** | `_No response_`. The security team scores CWE independently; a reporter-supplied CWE is informational only (per the *"Reporter-supplied CVSS scores are informational only"* rule in [`AGENTS.md`](../../../AGENTS.md)). Do **not** copy a CWE from the reporter's body into this field. |
 | **Severity** | `Unknown`. Same reason as CWE — the team scores independently. Surface a reporter-supplied CVSS / severity label in the proposal's observed-state for context, but do not use it as the field value. |
 | **CVE tool link** | `_No response_`. Filled at Step 6 once the CVE is allocated. |
@@ -391,6 +392,10 @@ For each confirmed `Report` / `ASF-security relay`:
    <reporter display name>
 
    ### PR with the fix
+
+   _No response_
+
+   ### Remediation developer
 
    _No response_
 
