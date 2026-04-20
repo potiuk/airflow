@@ -495,6 +495,22 @@ body, not just the headers**, and extract any of the following
 signals. Each one translates directly into a proposed body-field
 update, label change, or next-step recommendation in Step 2:
 
+> **Cross-project content is for your triage, not for the tracker.**
+> Signal mining frequently surfaces references to other ASF projects
+> — the reporter mentioned they filed a similar issue against another
+> project, a cross-project digest on `security@apache.org` lands in
+> the same Gmail search, or your own deduction connects the dots.
+> **None of that may be named or described in any tracker-destined
+> surface** (rollup entries, status comments, issue bodies, CVE JSON,
+> canned responses, public PR descriptions) — even when the other
+> project's CVE is already public, even when the reporter brought it
+> up openly. Summarise load-bearing context in de-identified form
+> (*"the reporter has filed similar reports with other ASF projects"*)
+> or omit. See the "Other ASF projects — never name or describe their
+> vulnerabilities" subsection of
+> [`AGENTS.md`](../../../AGENTS.md#other-asf-projects--never-name-or-describe-their-vulnerabilities)
+> for the full rule and the grep-list self-check.
+
 | Signal in a message / comment | Translates to |
 |---|---|
 | Reporter reply with a confirmed credit line (*"please credit me as …"*, *"use handle X"*, *"anonymous is fine"*) | Replace the `Reporter credited as` placeholder with the confirmed form; mark the credit question as resolved so the next status-update draft does not re-ask it. |
@@ -1588,6 +1604,19 @@ finalising the recap.
   relevant chapter on
   `https://airflow.apache.org/docs/apache-airflow/stable/security/security_model.html`
   instead, following the editorial guidance in [`AGENTS.md`](../../../AGENTS.md).
+- **Never name or describe other ASF projects' vulnerabilities** in any
+  tracker-destined surface — rollup entry bodies, status comments, issue
+  bodies, CVE JSON fields, draft emails, anything the sync pass writes.
+  Step 1d frequently surfaces cross-project signals via the reporter's
+  mail thread or `security@apache.org` digests; they are useful context
+  for *your* triage but **must not** land in the tracker, even when the
+  reporter brought up the other project openly, even when the other
+  project's CVE is already public. Summarise load-bearing cross-project
+  context in de-identified form (*"the reporter has filed similar
+  reports with other ASF projects"*) or omit it entirely. See the
+  "Other ASF projects — never name or describe their vulnerabilities"
+  subsection of [`AGENTS.md`](../../../AGENTS.md) for the full rule,
+  the *why*, and the grep-list self-check to run before posting.
 - **Tone of any drafted email must be polite but firm** — see the "Tone: polite
   but firm — no room to wiggle" section of [`AGENTS.md`](../../../AGENTS.md).
 - **Brevity.** Every drafted email follows the three-paragraph shape in the

@@ -9,6 +9,7 @@
   - [Local setup](#local-setup)
   - [Commit and PR conventions](#commit-and-pr-conventions)
   - [Confidentiality of the tracker repository](#confidentiality-of-the-tracker-repository)
+    - [Other ASF projects — never name or describe their vulnerabilities](#other-asf-projects--never-name-or-describe-their-vulnerabilities)
   - [Assessing reports](#assessing-reports)
     - [Reporter-supplied CVSS scores are informational only — never propagate them](#reporter-supplied-cvss-scores-are-informational-only--never-propagate-them)
     - [CVE references must never point at non-public mailing-list threads](#cve-references-must-never-point-at-non-public-mailing-list-threads)
@@ -256,6 +257,95 @@ needs to see a tracking link for transparency, link to the **public**
 artifact (the merged `<upstream>` PR, the published CVE on
 `cve.org`, the public users-list advisory archive) — never to the
 private tracker.
+
+### Other ASF projects — never name or describe their vulnerabilities
+
+While triaging a report, you may learn about vulnerabilities in
+**other ASF projects** through the same channels that surface our
+own reports: the reporter's mail thread mentions that they filed a
+similar issue against Superset or Allura; a cross-project digest on
+`<asf-security-list>` summarises active reports across several
+projects; a Gmail search for a CVE ID or a vulnerability pattern
+returns hits on threads belonging to unrelated projects; your own
+deduction from a reporter's résumé or prior disclosures correlates
+them with work against another project. **None of that content may
+appear in the tracker.** Specifically, these surfaces must not name,
+reference, describe, or hint at another ASF project's vulnerability:
+
+- **Tracker issue bodies**, rollup comment entries, status comments,
+  labels, milestone descriptions, per-field values (*Short public
+  summary for publish*, *Reporter credited as* notes, *Security
+  mailing list thread*, etc.).
+- **The CVE JSON attachment** and every other artefact the
+  `generate-cve-json` tool emits — the `descriptions[]`, `credits[]`,
+  `references[]`, and `cpeApplicability[]` fields are all
+  world-readable once the record reaches PUBLIC.
+- **Public `<upstream>` PR descriptions and commit messages** (see
+  the main Confidentiality rule above — this subsection extends it
+  to cover other projects too).
+- **Canned responses** and any text that ends up in a reply to the
+  reporter or on a public list.
+
+This applies **even when**:
+
+- the same reporter discovered the same pattern in multiple ASF
+  projects and said so openly on `<security-list>`;
+- the cross-project correlation would be informative for our own
+  triage (e.g. *"their fix used approach X, we should consider the
+  same"*);
+- the other project's report is already public — a published CVE
+  does not re-authorise discussion of the private report that
+  preceded it, nor of any other report we happen to know about
+  from that project's team;
+- the reporter themselves linked to the other project's advisory in
+  their mail.
+
+**Why:** every ASF project operates its own CNA process under its
+own security team. Content about project X's in-flight or
+historical vulnerability is project X's private information, not
+Airflow's, and copying it into our tracker effectively re-publishes
+it via screenshots, excerpts pasted into advisories, timeline
+clippings, or future scrapes. Cross-project correlations also
+reveal investigation patterns, reporter behaviour, and triage-team
+attention that the other project's team may not have chosen to
+share with us. The fact that we learned something via a shared
+channel (`security@apache.org`, a cross-project Gmail thread)
+grants us exactly as much licence to broadcast it as the sender
+intended — which is almost always *"none beyond the conversation
+we're in right now"*.
+
+**What to do instead.** Keep cross-project observations in the
+channel they arrived on:
+
+- Reporter mentioned another project on the `<security-list>` thread
+  → discuss it on that same thread if it helps triage; do not copy
+  into the tracker.
+- Observation is load-bearing for Airflow's own fix or advisory
+  (e.g. the other project's fix shape informs ours) → summarise it
+  **without naming the project**. *"The reporter has filed similar
+  reports with other ASF projects"* is allowed and sometimes
+  useful; *"the reporter has filed the same traversal pattern
+  against Superset and Allura"* is not. *"A sibling ASF project
+  landed a comparable fix"* is allowed; *"Tomcat landed the
+  equivalent fix in 11.0.3"* is not.
+- Cross-project triage belongs on `<asf-security-list>` or in a
+  direct mail to that project's security team, not in our tracker.
+
+**Self-check before posting, committing, or drafting.** Grep the
+text for the names of known ASF projects — a non-exhaustive but
+high-signal list: `Superset`, `Allura`, `Tomcat`, `Kafka`, `Spark`,
+`Cassandra`, `Hadoop`, `Hive`, `HTTPD`, `Struts`, `Solr`,
+`Zookeeper`, `Beam`, `Flink`, `NiFi`, `Pulsar`, `CloudStack`,
+`OFBiz`, `Commons`, `Lucene`, `Camel`, `Druid`, `ActiveMQ`,
+`Guacamole`, `Shiro`, `CXF`, `Iceberg` — and for the generic
+phrases *"also reported against"*, *"cross-project"*, *"other
+Apache projects"*, *"sister project"*, *"the same finder also"*,
+*"similar to CVE-<year>-<number>"* (when that CVE belongs to
+another project). If a hit lands in any tracker-destined surface,
+remove it or rewrite it in the de-identified form above. When in
+doubt, leave it out — the cost of omitting useful context is
+low, the cost of leaking another project's private information is
+not.
 
 ## Assessing reports
 
