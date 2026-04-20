@@ -352,12 +352,21 @@ user to confirm. Numbered items:
    end-of-body, write back via `gh issue edit --body-file`.
 2. **Add the `cve allocated` label.** `gh issue edit <N> --repo
    <tracker> --add-label "cve allocated"`.
-3. **Post a status-change comment** with the collapsed-`<details>`
-   shape mandated by
-   [`sync-security-issue`](../sync-security-issue/SKILL.md) — bold
-   headline, `**Next:**` line, reporter-notification line (when
-   applicable), full rationale inside `<details>Details of
-   update</details>`.
+3. **Append a `CVE allocated` entry to the tracker's
+   status-rollup comment** — not a new top-level comment. The
+   shared rollup spec (entry shape, summary format, upsert
+   recipe, zero-whitespace rules) lives in
+   [`tools/github/status-rollup.md`](../../../tools/github/status-rollup.md);
+   re-read it before composing the entry. This skill emits the
+   `CVE allocated (<CVE-YYYY-NNNNN>)` action label per the summary
+   table there. If the tracker has no rollup comment yet (legacy
+   tracker that pre-dates the convention), the recipe's Step 2b
+   creates one; on the way, the skill must also fold any
+   pre-existing legacy bot comments into the new rollup per the
+   fold-legacy sub-step described in
+   [`sync-security-issue`](../sync-security-issue/SKILL.md) —
+   allocate-cve is a common first write after a long pause, so
+   the legacy comments are often there.
 4. **Regenerate the CVE JSON attachment** in the tracker body by
    running
    ```bash
@@ -394,46 +403,38 @@ user to confirm. Numbered items:
    [`tools/gmail/operations.md`](../../../tools/gmail/operations.md#create-draft)
    for the call-signature variants.
 
-### Status-change comment template
+### Rollup entry template
+
+The entry is a single `<details>` block appended to the tracker's
+rollup comment (or — when the rollup does not exist yet — the
+first entry of a new rollup seeded with the marker from
+[`tools/github/status-rollup.md`](../../../tools/github/status-rollup.md#the-rollup-comment-shape)).
+Follow the zero-whitespace rules from that spec: no leading
+spaces inside the block, one blank line after
+`<summary>…</summary>`, one blank line before `</details>`.
 
 ```markdown
-**Sync YYYY-MM-DD — CVE [`CVE-YYYY-NNNNN`](https://cveprocess.apache.org/cve5/CVE-YYYY-NNNNN) allocated for [<tracker>#<N>](https://github.com/<tracker>/issues/<N>).**
+<details><summary><YYYY-MM-DD> · @<author-handle> · CVE allocated (<CVE-YYYY-NNNNN>)</summary>
+
+**Sync <YYYY-MM-DD> — CVE [`<CVE-YYYY-NNNNN>`](https://cveprocess.apache.org/cve5/<CVE-YYYY-NNNNN>) allocated for [<tracker>#<N>](https://github.com/<tracker>/issues/<N>).**
 
 - Body *CVE tool link* field now points at the ASF CVE tool.
 - Label `cve allocated` added.
-- CVE JSON attachment embedded in the issue body — paste into
-  [Vulnogram `#source`](https://cveprocess.apache.org/cve5/CVE-YYYY-NNNNN#source)
-  to seed the record.
+- CVE JSON attachment embedded in the issue body — paste into [Vulnogram `#source`](https://cveprocess.apache.org/cve5/<CVE-YYYY-NNNNN>#source) to seed the record.
 
-**Next:** <one-sentence next step — e.g. "design the fix
-(`fix-security-issue` skill)", or "release manager completes
-[process step 12](../../../README.md) once the fix ships">.
+**Next:** <one-sentence next step — e.g. "design the fix (`fix-security-issue` skill)", or "release manager completes [process step 12](../../../README.md) once the fix ships">.
 
-<details>
-<summary>Details of update</summary>
+<Reporter-notification line — one of the four options below.>
 
-Allocated via the ASF Vulnogram form at
-<https://cveprocess.apache.org/allocatecve>; the CVE ID is now the
-canonical reference in every downstream artifact (CVE JSON,
-advisory email, credit lines, cross-links). Scope `<scope label>`
-→ product `<product>` → `packageName` `<packageName>`.
+Allocated via the ASF Vulnogram form at <https://cveprocess.apache.org/allocatecve>; the CVE ID is now the canonical reference in every downstream artifact (CVE JSON, advisory email, credit lines, cross-links). Scope `<scope label>` → product `<product>` → `packageName` `<packageName>`.
 
-Vulnogram paste-ready JSON was regenerated from the current body
-state (CWE `<CWE>`, severity `<severity>`, affected
-`<affected versions>`, `<N>` credits, `<N>` references) and
-embedded in the issue body. Re-run
-`uv run --project tools/vulnogram/generate-cve-json
-generate-cve-json <N> --attach` after any body change to keep the
-JSON in sync.
-
-Reporter notification status: `<full per-reporter state — draft IDs,
-pending credit questions, relay-channel notes>`.
+Vulnogram paste-ready JSON was regenerated from the current body state (CWE `<CWE>`, severity `<severity>`, affected `<affected versions>`, `<N>` credits, `<N>` references) and embedded in the issue body. Re-run `uv run --project tools/vulnogram/generate-cve-json generate-cve-json <N> --attach` after any body change to keep the JSON in sync.
 
 </details>
 ```
 
-Apply the Golden rule 2 self-check to both the visible part and
-the `<details>` interior before emitting.
+Apply the Golden rule 2 self-check (clickable `<tracker>`
+references) to the entire entry before emitting.
 
 ### Reporter-notification line options
 
@@ -468,8 +469,13 @@ partial failures stay legible:
 1. `gh issue edit <N> --repo <tracker> --body-file <tmp>`
    — updated body with the *CVE tool link* field populated.
 2. `gh issue edit <N> --repo <tracker> --add-label "cve allocated"`.
-3. `gh issue comment <N> --repo <tracker> --body-file <tmp>`
-   — status-change comment.
+3. Rollup-comment upsert per
+   [`tools/github/status-rollup.md`](../../../tools/github/status-rollup.md#upsert-recipe--append-to-an-existing-rollup-or-create-one)
+   — append the new `CVE allocated` entry to the tracker's
+   existing rollup (`gh api -X PATCH
+   repos/<tracker>/issues/comments/<id> --input …`), or create
+   the rollup (`gh issue comment <N> --repo <tracker>
+   --body-file <tmp>`) if none exists yet.
 4. `uv run --project tools/vulnogram/generate-cve-json generate-cve-json <N> --attach`
    — embeds the CVE JSON in the body.
 5. `mcp__claude_ai_Gmail__gmail_create_draft` on the original

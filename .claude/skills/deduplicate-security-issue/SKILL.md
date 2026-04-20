@@ -283,18 +283,27 @@ merges.
 
 ---
 
-## Step 4 — Build the status-comment proposals
+## Step 4 — Build the rollup-entry proposals
 
-Two comments, one per tracker. Follow the same short-headline +
-collapsed-`<details>` shape described in the *"Status update on
-the GitHub issue"* section of
-[`sync-security-issue`](../sync-security-issue/SKILL.md): the
-scrolling reader sees two or three lines, the auditor clicks
-**Details of update** for the full rationale.
+Two rollup-comment entries, one per tracker — **not** two new
+top-level comments. The entries are appended to each tracker's
+existing status-rollup comment (created by `import-security-issue`)
+via the upsert recipe in
+[`tools/github/status-rollup.md`](../../../tools/github/status-rollup.md#upsert-recipe--append-to-an-existing-rollup-or-create-one).
+When either tracker does not yet carry a rollup (legacy tracker
+pre-dating the convention), the upsert recipe's Step 2b creates
+one and folds any pre-existing legacy bot comments in on the way.
 
-### On the kept tracker
+Each entry is a single `<details>` block. Follow the zero-whitespace
+rules from the shared spec — no leading spaces inside the block,
+one blank line after `<summary>…</summary>`, one blank line
+before `</details>`.
+
+### Entry appended to the kept tracker's rollup
 
 ```markdown
+<details><summary><YYYY-MM-DD> · @<author-handle> · Merge (kept) (from #<drop>)</summary>
+
 **Merged [<tracker>#<drop>](https://github.com/<tracker>/issues/<drop>) into this tracker.** <one-sentence headline: same root-cause bug, different attack vector / affected process.>
 
 - Body: <keep.reporter>'s original report preserved; <drop.reporter>'s report appended as *"Second independent report"*.
@@ -304,13 +313,9 @@ scrolling reader sees two or three lines, the auditor clicks
 
 **Next:** <one-line next step — e.g. credit-preference confirmation for both, or Step 6 CVE refinement>.
 
-<details>
-<summary>Details of update</summary>
+<Reporter-notification line — one of the four canonical options from the sync skill.>
 
-Full analysis of why the two reports are the same root-cause bug
-(same function, same file, same allowlist fix) but describe
-different attack vectors / affected processes / threat-model
-boundaries. Per-field hand-off details:
+Full analysis of why the two reports are the same root-cause bug (same function, same file, same allowlist fix) but describe different attack vectors / affected processes / threat-model boundaries. Per-field hand-off details:
 
 - *Reporter credited as*: <full before → after>.
 - *Security mailing list thread*: <full before → after, including PonyMail URLs and Gmail thread IDs>.
@@ -319,40 +324,36 @@ boundaries. Per-field hand-off details:
 - *Affected versions*: widened to <value>.
 - CVE JSON attachment regenerated: <comment URL>.
 
-Reporter notification status: <full state per reporter — draft IDs,
-pending questions, relay-channel notes>.
-
 </details>
 ```
 
-### On the dropped tracker
+### Entry appended to the dropped tracker's rollup
 
 ```markdown
+<details><summary><YYYY-MM-DD> · @<author-handle> · Merge (dropped) (into #<keep>)</summary>
+
 **Closing as duplicate of [<tracker>#<keep>](https://github.com/<tracker>/issues/<keep>).** <one-sentence headline.>
 
 Full content merged into [<tracker>#<keep>](...) as *"Second independent report"*; <drop.reporter> credited alongside <keep.reporter> there.
 
-**Next:** all triage and advisory work continues on [#<keep>](...).
-
-<details>
-<summary>Details of update</summary>
+All triage and advisory work continues on [#<keep>](...).
 
 <one-paragraph analysis matching the kept-side details>.
 
 Specific artifacts merged: <CVSS scoring, attack chain, PoC, remediation options, etc.>.
 
-See [the merge comment on <tracker>#<keep>](…) for the full hand-off record.
+See [the merge entry on <tracker>#<keep>](…) for the full hand-off record.
 
-Reporter notification status: <full state — draft IDs, pending questions>.
+<Reporter-notification line — one of the four canonical options from the sync skill.>
 
 </details>
 ```
 
-Both comments must render every cross-issue reference as a
-clickable markdown link per the *Linking `<tracker>`
-issues and PRs* convention in [`AGENTS.md`](../../../AGENTS.md).
-The six-line visible-cap rule from the sync skill applies here
-too: the scroller-facing part should fit on one screen.
+Both entries must render every cross-issue reference as a
+clickable markdown link per the *Linking `<tracker>` issues and
+PRs* convention in [`AGENTS.md`](../../../AGENTS.md). No
+six-line visible cap — the entire entry is already collapsed
+inside `<details>`; write what the auditor needs. Do not pad.
 
 ---
 
@@ -380,10 +381,17 @@ Confirmation forms:
 After confirmation, apply **sequentially** (never in parallel):
 
 1. `gh issue edit <keep> --body-file <tmpfile>` — updated body
-2. `gh issue comment <keep> --body-file <tmpfile>` — merge status
-   comment
-3. `gh issue comment <drop> --body-file <tmpfile>` — duplicate
-   status comment
+2. Rollup-comment upsert on the kept tracker per
+   [`tools/github/status-rollup.md`](../../../tools/github/status-rollup.md#upsert-recipe--append-to-an-existing-rollup-or-create-one)
+   — append the `Merge (kept)` entry (`gh api -X PATCH
+   repos/<tracker>/issues/comments/<id> --input …`) or create
+   the rollup if none exists yet. The same step folds any legacy
+   bot comments on the kept tracker into the rollup first, per
+   the fold-legacy sub-step in
+   [`sync-security-issue`](../sync-security-issue/SKILL.md).
+3. Rollup-comment upsert on the dropped tracker — append the
+   `Merge (dropped)` entry (same recipe; fold legacy comments
+   first when needed).
 4. `gh issue edit <drop> --repo <tracker> --add-label duplicate`
 5. `gh issue close <drop> --repo <tracker> --reason "not planned"`
    (GitHub's `duplicate` close-reason is not exposed by `gh` on
@@ -394,6 +402,10 @@ After confirmation, apply **sequentially** (never in parallel):
    for remediation-developer credits (populated by the
    `sync-security-issue` skill from the linked PR's author); no CLI
    flag needed
+7. For each legacy bot comment folded in steps 2 / 3, delete the
+   original with `gh api -X DELETE
+   repos/<tracker>/issues/comments/<id>` — only after the
+   matching rollup PATCH succeeded.
 
 If any step fails, stop and ask the user how to proceed — do not
 guess. Partial merges are recoverable as long as the body update

@@ -554,21 +554,26 @@ For each confirmed `Report` / `ASF-security relay`:
    **Never send.** Always create a draft; the triager reviews in
    Gmail before sending.
 
-5. Post a short status-change comment on the newly-created
-   `<tracker>` issue. Use the same short-headline +
-   collapsed-`<details>` shape described in the sibling
-   [`sync-security-issue`](../sync-security-issue/SKILL.md) skill's
-   *"Status update on the GitHub issue"* section — the scroller
-   sees two or three lines, the auditor clicks **Details of
-   update** for the full provenance trail:
+5. **Create the status-rollup comment** on the newly-created
+   `<tracker>` issue. The import is the *first* entry on this
+   tracker's rollup, so this is the only skill pass that uses
+   the "create" branch of the upsert recipe; every subsequent
+   sync / allocate / dedupe / fix pass appends to this comment
+   instead of posting new ones.
+
+   The full shape, upsert recipe, and legacy-comment folding rules
+   live in
+   [`tools/github/status-rollup.md`](../../../tools/github/status-rollup.md).
+   Emit the rollup body below and post via
+   `gh issue comment <N> --repo <tracker> --body-file <tmpfile>`:
 
    ```markdown
-   **Imported from Gmail thread `<threadId>` on `<YYYY-MM-DD>`** (class: `<classification>`, reporter: `<reporter>`).
+   <!-- airflow-s status rollup v1 — all bot-authored status updates fold into this single comment. -->
+   <details><summary><YYYY-MM-DD> · @<author-handle> · Import (<classification>, <reporter>)</summary>
+
+   **Imported from Gmail thread `<threadId>` on <YYYY-MM-DD>** (class: `<classification>`, reporter: `<reporter>`).
 
    **Next:** Step 3 — start the validity / CVE-worthiness discussion; tag at least one other security-team member.
-
-   <details>
-   <summary>Details of update</summary>
 
    Provenance: <ASF-relay chain if any, GHSA reference if any, PonyMail URL if recorded>.
    Extracted fields: <summary of what landed in the template — Affected versions pre-filled, reporter-credited-as placeholder, Severity=Unknown, etc.>.
@@ -577,10 +582,19 @@ For each confirmed `Report` / `ASF-security relay`:
    </details>
    ```
 
-   Keep the visible part under ~6 rendered lines. Clickable
-   `<tracker>` references (Golden rule 2 from
-   [`AGENTS.md`](../../../AGENTS.md)) apply both above and inside
-   the `<details>` block.
+   Zero-whitespace rules from
+   [`status-rollup.md`](../../../tools/github/status-rollup.md#the-rollup-comment-shape)
+   apply: no leading spaces on any line inside the `<details>`
+   block, exactly one blank line after `<summary>…</summary>`,
+   exactly one blank line before `</details>`. Clickable
+   `<tracker>` references (Golden rule 2 in
+   [`AGENTS.md`](../../../AGENTS.md)) apply inside the entry the
+   same way they did in the pre-rollup shape.
+
+   Capture the returned comment ID — the recap (Step 8) links it,
+   and if a later skill pass in the same invocation (for example,
+   dedupe into an existing tracker surfaced by Step 2a) needs to
+   append another entry, it can skip the Step 1 lookup.
 
 For each confirmed non-import (automated-scanner / consolidated /
 media / cross-thread-followup):

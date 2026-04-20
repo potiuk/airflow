@@ -506,25 +506,38 @@ After the user submits the PR in the browser, capture the PR URL
 
 Now that a public PR exists, update the private tracking issue:
 
-1. **Add a comment** on the private issue announcing the new PR, the
-   branch name, and the intended backport (if any). Render the issue
-   reference, the PR reference, and any CVE as clickable markdown links
-   per the "Linking CVEs" and "Linking `<tracker>` issues and
-   PRs" rules in [`AGENTS.md`](../../../AGENTS.md). A comment lives
-   inside the private repo so it may freely contain the
-   `<upstream>` PR URL, the branch name, and the CVE reference.
+1. **Append a `Fix PR` entry to the tracker's status-rollup
+   comment** — not a new top-level comment. The rollup-upsert
+   recipe (detection, append, zero-whitespace rules) lives in
+   [`tools/github/status-rollup.md`](../../../tools/github/status-rollup.md).
+   Emit a single `<details>` block with summary
+   `<YYYY-MM-DD> · @<author-handle> · Fix PR (<upstream>#<PR>)`;
+   the entry body announces the new PR, the branch name, and the
+   intended backport (if any). Render the issue reference, the PR
+   reference, and any CVE as clickable markdown links per the
+   "Linking CVEs" and "Linking `<tracker>` issues and PRs" rules in
+   [`AGENTS.md`](../../../AGENTS.md). The rollup lives inside the
+   private repo so it may freely contain the `<upstream>` PR URL,
+   the branch name, and the CVE reference.
 
-   Before posting, **scrub the comment body for bare-name mentions**
-   of project maintainers, release managers, and security-team
-   members, and replace them with the corresponding `@`-handle so
-   GitHub actually notifies the person. The rule itself lives in
+   If the tracker has no rollup yet (legacy tracker pre-dating the
+   convention), run the upsert recipe's Step 2b to create it and
+   fold any pre-existing bot comments into the new rollup first —
+   see the fold-legacy sub-step in
+   [`sync-security-issue`](../sync-security-issue/SKILL.md).
+
+   Before writing the entry, **scrub the body for bare-name
+   mentions** of project maintainers, release managers, and
+   security-team members, and replace them with the corresponding
+   `@`-handle so GitHub actually notifies the person. The rule
+   itself lives in
    [`AGENTS.md` — *Mentioning project maintainers and security-team members*](../../../AGENTS.md#mentioning-project-maintainers-and-security-team-members);
    the authoritative list of handles for the active project is in
    [`projects/<PROJECT>/release-trains.md`](../../../projects/<PROJECT>/release-trains.md).
    The public `<upstream>` PR description and any follow-up public
-   comments must also obey the rule, but under the usual public-surface
-   confidentiality constraints (no `CVE-`, `airflow-s`, *"security fix"*,
-   etc. alongside the mention).
+   comments must also obey the rule, but under the usual
+   public-surface confidentiality constraints (no `CVE-`,
+   `airflow-s`, *"security fix"*, etc. alongside the mention).
 
 2. **Update the issue body "PR with the fix" field** if it is empty
    or points to a stale PR. Use `gh issue view --json body`, patch
