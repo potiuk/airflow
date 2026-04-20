@@ -37,7 +37,7 @@ allocated CVE requires Vulnogram + release-manager cleanup).
 | Tracker scope label | Vulnogram product | CVE container `packageName` | Collection URL |
 |---|---|---|---|
 | `airflow` | `Apache Airflow` | `apache-airflow` | <https://pypi.python.org> |
-| `providers` | `Apache Airflow <Provider> Provider` — detect the specific provider from the tracker body (e.g. `Elasticsearch`, `CNCF Kubernetes`, `SMTP`, `Celery`) | `apache-airflow-providers-<name>` | <https://pypi.python.org> |
+| `providers` | `Apache Airflow Providers <Provider>` — detect the specific provider from the tracker body (e.g. `Elasticsearch`, `CNCF Kubernetes`, `SMTP`, `Celery`) | `apache-airflow-providers-<name>` | <https://pypi.python.org> |
 | `chart` | `Apache Airflow Helm Chart` | `apache-airflow-helm-chart` | <https://airflow.apache.org/> |
 | `task-sdk` (Airflow 3.3+) | `Apache Airflow Task SDK` | `apache-airflow-task-sdk` | <https://pypi.python.org> |
 

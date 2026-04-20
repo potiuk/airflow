@@ -194,7 +194,7 @@ Blocker checks — if any fail, stop and surface the failure:
 ## Step 2 — Compute the CVE-ready title
 
 The CVE record's `title` field is scoped to the product by the CNA
-container (e.g. `Apache Airflow`, `Apache Airflow Elasticsearch Provider`),
+container (e.g. `Apache Airflow`, `Apache Airflow Providers Elasticsearch`),
 so the Vulnogram title should be the **bare description** — no project
 prefix, no redundant version suffix, no reporter-added tag like
 `[ Security Report ]` or `Security Issue`.

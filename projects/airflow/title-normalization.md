@@ -15,7 +15,7 @@
 # Apache Airflow — CVE title normalisation
 
 The CVE record's `title` field is scoped to the product by the CNA
-container (`Apache Airflow`, `Apache Airflow Elasticsearch Provider`,
+container (`Apache Airflow`, `Apache Airflow Providers Elasticsearch`,
 etc.), so the Vulnogram title should be the **bare description** —
 no `Apache Airflow:` prefix, no redundant version suffix, no
 reporter-added tag like `[ Security Report ]` or `Security Issue`.
