@@ -77,6 +77,21 @@ body:
       placeholder: "When we have the PR to fix the issue we should link it here"
     validations:
       required: false
+  - type: textarea
+    attributes:
+      label: Remediation developer
+      description: >
+        Person(s) who authored the fix in the linked PR — credited in the
+        CVE record as `type: "remediation developer"` alongside the
+        reporter's `finder` credit. Put each name on its own line so
+        multiple developers are credited; the `Full Name, Affiliation`
+        pattern (e.g. `Jed Cunningham, Astronomer`) is treated as one
+        credit per line. The `sync-security-issue` skill auto-populates
+        this field from the linked PR's author when *PR with the fix*
+        is set; manual edits are preserved on subsequent syncs.
+      placeholder: "Auto-filled from the fix PR's author by the sync skill; one name per line for multiple developers"
+    validations:
+      required: false
   - type: input
     attributes:
       label: CWE

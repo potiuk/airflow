@@ -507,6 +507,7 @@ update, label change, or next-step recommendation in Step 2:
 | CVE record has open **review comments / reviewer proposals** (detected via the Gmail-search path in Step 1e — reviewer-comment notifications from Vulnogram land on `security@airflow.apache.org` with the CVE ID in the subject line; the `cveprocess.apache.org/cve5/<CVE-ID>.json` endpoint is behind ASF OAuth and is not readable from this skill's context, so Gmail is the load-bearing signal source). | Surface each open review comment in Step 2a with **clickable links** to the Gmail thread and to the CVE record on `cveprocess.apache.org` (the reader can authenticate in-browser to see live state), verbatim-quoted; then for each one that maps cleanly to a tracking-issue body field (CWE, Affected versions, Reporter credited as, Public advisory URL, Short public summary), **propose the matching body-field update** as a numbered item in Step 2b. The body is the source of truth for the CVE JSON — regeneration in Step 5 will pull the update back into the paste-ready attachment, and the release manager's only remaining action is the Vulnogram paste + comment-resolution click. Comments that do not map to a body field (severity/CVSS, out-of-scope challenges, free-form rewrites) are surfaced verbatim and flagged for human decision. See Step 1e for the full Gmail-search recipe and the reviewer-comment-to-field mapping table. |
 | The referenced `<upstream>` PR has been opened but is still in `open` state | Propose `pr created` label; update the *"PR with the fix"* body field with the PR URL. |
 | The referenced `<upstream>` PR moved to `merged` | Propose swapping `pr created` → `pr merged`; update milestone to the shipping release if now known. |
+| The *"PR with the fix"* body field has at least one PR URL **and** the *"Remediation developer"* body field is missing the PR author's name (or is `_No response_`) | Propose appending the PR author's display name (`gh pr view <N> --repo <upstream> --json author --jq '.author.name // .author.login'`) to the *"Remediation developer"* body field. **Append, never overwrite** — manual edits (co-authors added by the triager, name spelling corrections, "Anonymous" overrides) must survive subsequent syncs. Run once per fresh PR URL added to the field; skip if the resolved name is already present (case-insensitive substring match). The CVE JSON generator reads the field on its next regeneration and emits one `type: "remediation developer"` credit per line, so this hand-off keeps the credit attached even if Vulnogram drops the CLI flag. See the *"Auto-resolve --remediation-developer"* note in Step 5 for the historical CLI-flag fallback. |
 | A release carrying the fix has shipped (PR's milestone release is on PyPI / Helm registry, or an explicit *"fix shipped in X.Y.Z"* comment) | Propose swapping `pr merged` → `fix released` (Step 12). This is the release manager's cue to own Steps 13–15 (advisory send → URL capture → Vulnogram PUBLIC → close). **Also propose swapping the assignee from the remediation developer to the release manager** (looked up via the three-source cascade in Step 2c — [`projects/<PROJECT>/release-trains.md`](../../../projects/<PROJECT>/release-trains.md) "Release managers for releases currently relevant to the security tracker" → Release Plan wiki → `[RESULT][VOTE]` thread on `dev@`), so the issue list reflects ownership hand-off. See the *Assignee hand-off at the `fix released` transition* paragraph under **Assignees** in Step 2b for the full rule. |
 | GHSA state transition (opened, accepted, published, rejected) in a GHSA-forwarded email | If the GHSA is closed as "not accepted" but the security team accepted the report on `security@`, flag the divergence in the status comment so it is not lost. |
 | Team member saying *"let's also backport to v3-2-test"* / *"please mark X for backport"* | Note the requested backport label on the public PR as an item for Step 9 of the `fix-security-issue` workflow. |
@@ -632,7 +633,7 @@ Map common review comments to body fields like this:
 | *"CWE should be CWE-NNN, not CWE-MMM"* / *"This looks like CWE-NNN"* | Propose updating the issue's **CWE** field to the new value, with a quoted pointer back to the comment (*"per reviewer comment on `cveprocess.apache.org/cve5/<CVE-ID>`"*). |
 | *"Affected range looks wrong — should be `< X.Y.Z`"* / *"The fix first shipped in X.Y.Z, not the version listed"* | Propose updating the issue's **Affected versions** field to the range the reviewer asked for. |
 | *"Missing `vendor-advisory` reference"* / *"No public advisory URL in references"* | Propose populating the issue's **Public advisory URL** body field, using the Step 1d users@-archive-scan path (regeneration will automatically pick it up as a `vendor-advisory` reference — no manual edit of `references[]` needed). |
-| *"Credit line `X` is missing"* / *"Move `X` from `finder` to `reporter`"* / *"`Y` asked to be credited as `Z` — please update"* | Propose updating the **Reporter credited as** body field (one line per credit; the generator preserves order). For `remediation developer` credits added via CLI, propose updating the regeneration command's `--remediation-developer` argument in the Step 5 recipe. |
+| *"Credit line `X` is missing"* / *"Move `X` from `finder` to `reporter`"* / *"`Y` asked to be credited as `Z` — please update"* | Propose updating the **Reporter credited as** body field for `finder` credits or the **Remediation developer** body field for `remediation developer` credits (one line per credit in either; the generator preserves order, regeneration in Step 5 picks the change up automatically). |
 | *"Severity score should be `<X>` / CVSS vector is wrong"* | Surface the comment in the observed state but **do not** auto-propose a body change. Severity/CVSS is a judgement call that requires independent scoring by a security-team member — per the "Reporter-supplied CVSS scores are informational only" rule in [`AGENTS.md`](../../../AGENTS.md), and the same rule extends to third-party reviewer asks. Flag it as *"needs security-team scoring before addressing"* in Step 2c. |
 | *"Fix the description wording — it should say …"* | Propose updating the **Short public summary for publish** body field with the reviewer's suggested text verbatim; flag explicitly in the proposal that it is a paste-as-is and the user should re-read before confirming. |
 | *"Mark this as duplicate of CVE-YYYY-NNNN"* / *"This is actually `out of scope` per the Security Model"* | Do **not** auto-propose closing / rejecting. Surface as a blocker requiring a human decision and link the security-team members who last commented on the issue. |
@@ -1401,56 +1402,57 @@ That alone is enough. The script reads every template field from the
 issue body, emits the full CVE 5.x record, and patches (or appends to)
 the tracking issue body in place.
 
-### Auto-resolve `--remediation-developer` from the fix PR
+### Remediation-developer credit comes from the body field
 
-For the regenerated JSON to carry a `remediation developer` credit
-alongside the `finder` credits, the sync skill should look up the author
-of the PR mentioned in the *PR with the fix* body field and pass it via
-`--remediation-developer`.
+The *Remediation developer* body field is the **single source of
+truth** for the `type: "remediation developer"` credits in the
+regenerated JSON. The generator reads the field directly via
+`extract_field`, parses it newline-by-newline (same shape as
+*Reporter credited as*), and emits one credit per non-empty line.
+**No `--remediation-developer` CLI flag is needed in the normal
+flow.**
 
-**Scope the URL extraction to the *PR with the fix* section only** —
-the issue body routinely mentions unrelated `<upstream>/pull/NNN`
-URLs elsewhere (prior-art references, cross-link to sibling
-scope-split trackers, "similar to…" context). A naive
-`grep … | head -n1` against the whole body will happily pick the
-first of those and credit the wrong person. Caught on
-[<tracker>#241](https://github.com/<tracker>/issues/241)
-where the body mentioned `<upstream>#44322` as context before the
-actual fix `<upstream>#63028` — the CVE JSON ended up with the
-wrong author on the first regen and had to be re-run with
-`--remediation-developer` passed explicitly.
+The PR-author resolution that used to happen at regeneration time now
+happens earlier: the table in Step 1d (the row that fires when
+*"PR with the fix"* is set and *"Remediation developer"* is missing
+the PR author) appends the resolved name to the body field. By the
+time Step 5 runs, the field already contains the right names, the
+generator picks them up, and the embedded JSON carries the credit.
+
+This earlier hand-off matters for two reasons:
+
+1. **The credit survives manual edits.** Co-authors added by the
+   triager, name spelling corrections, or "Anonymous" overrides all
+   live in the body field where they are visible at a glance and
+   diffable in the issue history. The previous CLI-flag flow lost
+   any such edit on the next regen.
+2. **The credit survives lost overrides.** Re-running
+   `generate-cve-json --attach` after a long gap no longer needs the
+   triager to remember which `--remediation-developer` flag was
+   passed last time — the field is in the body and survives any
+   number of regen cycles.
+
+**Pitfall caught on
+[<tracker>#241](https://github.com/<tracker>/issues/241)** — the
+body mentioned `<upstream>#44322` as prior-art context before the
+actual fix `<upstream>#63028`, and a naive `grep | head` against the
+whole body had picked the wrong PR. The Step 1d row scopes the URL
+extraction to the *"PR with the fix"* section only (`awk` between the
+section heading and the next `### ` heading) for exactly this
+reason; the same scoping rule applies if you ever need to resolve
+the author by hand.
 
 ```bash
-# Extract the PR URL from the "PR with the fix" body section only —
-# awk keeps lines from the "### PR with the fix" heading up to the
-# next "### " heading, and the grep then scopes to <upstream> PRs.
-pr_url=$(gh issue view <N> --repo <tracker> --json body --jq .body \
-  | awk '/^### PR with the fix$/{flag=1; next} /^### /{flag=0} flag' \
-  | grep -oE 'https://github\.com/<upstream>/pull/[0-9]+' | head -n1)
-
-author_name=""
-if [[ -n "$pr_url" ]]; then
-  pr_number=${pr_url##*/}
-  author_name=$(gh pr view "$pr_number" --repo <upstream> \
-    --json author --jq '(.author.name // "") | select(length > 0) // .author.login' 2>/dev/null || echo "")
-fi
-
-# Pass --remediation-developer conditionally — never use the
-# ${var:+--flag "$var"} trick, it breaks quoting when the name has
-# spaces (e.g. "Amogh Desai" splits into two arg words).
-if [[ -n "$author_name" ]]; then
-  uv run --project tools/vulnogram/generate-cve-json generate-cve-json <N> --attach \
-    --remediation-developer "$author_name"
-else
-  uv run --project tools/vulnogram/generate-cve-json generate-cve-json <N> --attach
-fi
+uv run --project tools/vulnogram/generate-cve-json generate-cve-json <N> --attach
 ```
 
-If the lookup fails for any reason (no PR URL yet in the body, URL is
-not a `pull/` URL, `gh` errors out), the script runs **without**
-`--remediation-developer` — the attachment is still generated, just
-missing that one credit. A later manual run with the correct flag
-patches the embedded block in place.
+If the *"Remediation developer"* field is empty at regeneration time
+(e.g. because the PR author lookup in Step 1d hasn't run yet on a
+freshly-set *PR with the fix* field), the regen succeeds but the
+embedded JSON carries no remediation-developer credit. Either run a
+follow-up sync to populate the field, or pass `--remediation-developer
+"<Name>"` once on the command line and let the next sync fold the
+name into the body field for permanence.
 
 ### Don't override `--version-start`
 

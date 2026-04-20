@@ -240,6 +240,7 @@ project.
 | `public-advisory-url` | `Public advisory URL` | `input` | no |
 | `reporter-credit` | `Reporter credited as` | `input` | no |
 | `pr-with-fix` | `PR with the fix` | `input` | no |
+| `remediation-developer` | `Remediation developer` | `textarea` | no |
 | `cwe` | `CWE` | `input` | no |
 | `severity` | `Severity` | `dropdown` (`Unknown`, `Low`, `Moderate`, `Important`, `Critical`) | yes |
 | `cve-tool-link` | `CVE tool link` | `input` | no |

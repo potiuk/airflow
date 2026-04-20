@@ -390,7 +390,10 @@ After confirmation, apply **sequentially** (never in parallel):
    all versions; `not planned` combined with the `duplicate` label
    carries the same signal)
 6. `uv run --project tools/vulnogram/generate-cve-json generate-cve-json <keep> --attach`
-   with the standard remediation-developer auto-resolution
+   — the *Remediation developer* body field is the source of truth
+   for remediation-developer credits (populated by the
+   `sync-security-issue` skill from the linked PR's author); no CLI
+   flag needed
 
 If any step fails, stop and ask the user how to proceed — do not
 guess. Partial merges are recoverable as long as the body update
