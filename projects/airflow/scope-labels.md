@@ -4,6 +4,7 @@
 
 - [Apache Airflow — scope labels](#apache-airflow--scope-labels)
   - [Scope → CVE product / package-name table](#scope-%E2%86%92-cve-product--package-name-table)
+  - [*Affected versions* convention by scope](#affected-versions-convention-by-scope)
   - [Default `packageName` and vendor](#default-packagename-and-vendor)
   - [Closing dispositions (not scope labels)](#closing-dispositions-not-scope-labels)
 
@@ -46,6 +47,40 @@ Task SDK code ships as part of `apache-airflow` and a Task-SDK-only
 report is classified under `airflow`. See
 [`release-trains.md`](release-trains.md) for the note on when this
 changes.
+
+## *Affected versions* convention by scope
+
+The shape of the *Affected versions* body field on a tracker depends
+on the scope, because each scope's milestone signal carries different
+information about the next-fix version.
+
+| Scope | Convention | Why |
+|---|---|---|
+| `airflow` | Concrete `< X.Y.Z` upper bound from day one (e.g. `< 3.2.2`). | The core release milestone (`Airflow 3.2.2`) is the version number, so the next-fix version is known the moment the tracker is assessed. |
+| `chart` | Same as `airflow` (`< X.Y.Z`). | The Helm chart milestone is also a version number. |
+| `providers` | Use the `< NEXT VERSION` placeholder until `fix released` (per package, one line per affected provider). | The wave milestone (`Providers YYYY-MM-DD`) is a date, not a version; the per-package version that ships the fix is decided by the release manager during the wave. The literal token `NEXT VERSION` is the project's sentinel for "fix not yet released, upper bound unknown". |
+
+For providers, the lifecycle is:
+
+1. **At triage:** sync proposes populating *Affected versions* with one
+   line per affected package — `<package-name> < NEXT VERSION`.
+   Combine with a known lower bound where applicable (e.g.
+   `apache-airflow-providers-smtp >= 2.0.0, < NEXT VERSION`).
+2. **At `fix released`:** the wave has shipped to PyPI. Sync looks up
+   the released version with
+   `curl -s https://pypi.org/pypi/<package-name>/json | jq -r '.info.version'`
+   and proposes replacing each `NEXT VERSION` with the actual
+   `< X.Y.Z` upper bound.
+3. **At regen:** the CVE JSON generator strips `NEXT VERSION` before
+   parsing. Pre-release: `versions[]` entry has no `lessThan` (open-
+   ended upper bound, "no fix released yet"). Post-release: standard
+   fully-bounded entry.
+
+The full lifecycle and the signal-table rows that drive each
+transition live in
+[`../../.claude/skills/sync-security-issue/SKILL.md`](../../.claude/skills/sync-security-issue/SKILL.md);
+the parser-side handling lives in
+[`../../tools/vulnogram/generate-cve-json/SKILL.md`](../../tools/vulnogram/generate-cve-json/SKILL.md).
 
 ## Default `packageName` and vendor
 
