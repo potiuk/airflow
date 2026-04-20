@@ -1065,20 +1065,33 @@ will change and *why*. Group them by category:
   do not re-ask.
 
 - **Status update on the GitHub issue (`<tracker>`)** — **every
-  status change must also be recorded as a comment on the issue itself**,
-  not only sent by email. The two-channels rationale (email keeps the
-  reporter, issue comment keeps the team and the release manager) lives in
+  status change must also be recorded on the issue itself**, not
+  only sent by email. The two-channels rationale (email keeps the
+  reporter, the issue record keeps the team and the release
+  manager) lives in
   [`README.md` — Recording status transitions on the tracker](../../../README.md#recording-status-transitions-on-the-tracker).
 
-  **Comment shape — keep the scroll short.** The comment body has two
-  distinct audiences with two distinct needs: a triager scrolling the
-  issue timeline wants to know *what changed and what is next* in two
-  sentences, while a release manager or auditor reading the same issue
-  months later wants the full rationale. Satisfy both without making
-  the first audience scroll past a wall of text:
+  **The status record lives in a single rollup comment, not a new
+  comment per sync.** The first bot-authored comment on a tracker
+  is the **rollup comment** (created by the
+  [`import-security-issue`](../import-security-issue/SKILL.md)
+  skill); every subsequent pass — this sync skill, allocate-cve,
+  deduplicate-security-issue, fix-security-issue — appends a new
+  *entry* to that comment instead of posting a fresh one. Readers
+  scroll one comment instead of fifteen. The full shape, summary
+  conventions, upsert recipe, and legacy-comment-folding rules
+  live in the shared spec at
+  [`tools/github/status-rollup.md`](../../../tools/github/status-rollup.md).
+  Re-read that file before composing the entry body — the
+  zero-extra-spacing rule is load-bearing and easy to miss.
+
+  **Entry shape for a sync pass.** Inside the rollup's
+  `<details>` block, emit:
 
   ```markdown
-  **Sync YYYY-MM-DD — <one-sentence bold headline of what happened>.**
+  <details><summary><YYYY-MM-DD> · @<author-handle> · Sync (<short headline>)</summary>
+
+  **Sync <YYYY-MM-DD> — <one-sentence bold headline>.**
 
   - <Action 1: short, imperative, links only when load-bearing>
   - <Action 2>
@@ -1086,82 +1099,104 @@ will change and *why*. Group them by category:
 
   **Next:** <one sentence on the expected next step>.
 
-  <details>
-  <summary>Details of update</summary>
+  <Reporter-notification line — one of the four options below.>
 
-  <everything else: verbatim reviewer comments, CVSS rationale,
-  RM-attribution trail, label-transition reasoning, stale-draft
-  flags, cross-links, prior-comment pointers, etc. All of the
-  context that helps the auditor but that the scroller does not
-  need.>
+  <Full rationale — everything the auditor needs: verbatim reviewer
+  comments, CVSS rationale, RM-attribution trail, label-transition
+  reasoning, stale-draft flags, cross-links, prior-entry pointers.
+  Flush-left, no leading spaces, no sub-`<details>` blocks.>
 
   </details>
   ```
 
-  Keep the visible part — everything above the `<details>` block —
-  under roughly **six lines** of rendered markdown. If a single
-  item cannot be compressed to one bullet, break it into an action
-  headline at the top and push the reasoning into `<details>`.
-  Clickable `<tracker>` references (Golden rule 2) apply
-  to both the visible part and the `<details>` interior.
+  Because the entire entry is already inside a `<details>`
+  collapsed by default (the scroller never sees it until they
+  expand the summary), the old pre-rollup *"keep visible part
+  under six lines"* cap is retired. Write what the auditor needs
+  — but do not pad. Each entry is *incremental*: what changed in
+  this pass, what comes next. Earlier state lives in earlier
+  entries; do not restate.
 
-  **The first line of every status-change comment MUST be a bold-
-  markdown headline.** It starts with `**` and ends with `**` (or
-  `**...**.`), and it names the kind of change inline — `**Sync …`,
-  `**Status update …`, `**Merged [<tracker>#<drop>] …`,
-  `**Closing as duplicate of …`, `**Split for scope clarity …`,
-  `**Imported on YYYY-MM-DD …`. Do **not** open with a plain
-  `Sync status (sync-security-issue skill, YYYY-MM-DD)`-style line:
-  that form (no bold, no inline headline) is what the older
-  pre-collapse comments used, and it is easy for automated
-  detection passes to miss — every comment produced by this skill
-  has to follow the bold-headline + `<details>` shape so both
-  humans scrolling the timeline and future automation can
-  identify it unambiguously.
+  **Reporter-notification line options** (one exactly, when
+  applicable — omit when no reporter notification is meaningful):
 
-  **Legacy flat-format comments.** Trackers created before the
-  collapsed-`<details>` shape was adopted carry sync-status comments
-  written as one long wall of text. Step 1d's comment-mining pass
-  MUST surface **every** legacy-format comment on the tracker being
-  synced — detection is a **content-anchored** sweep, not a
-  prefix-anchored one. Look for *any* comment whose body lacks a
-  `<details>` disclosure and whose first ~500 characters match any
-  of:
+  - *"Reporter has been notified on the original mail thread."* —
+    when a status-update draft has been created in the same sync.
+  - *"No reporter notification needed (reporter is on the security
+    team)."* — only if the real reporter is themselves a member of
+    the security team and is already in the loop.
+  - *"Reporter notification still pending — see draft `<draftId>`."*
+    — if a draft was created but the user has not yet sent it.
 
-  - a bold prefix — `**Sync `, `**Status update`, `**Merged `,
-    `**Closing as duplicate`, `**Split for scope clarity`,
-    `**Imported on `;
-  - a bare-text prefix (legacy, no `**`) — `Sync status (`,
-    `Sync YYYY-MM-DD`, `Status update`;
-  - a content tell that indicates a sync-style post even when the
-    prefix is idiosyncratic — `sync-security-issue skill`,
-    `re-triage`, `Reporter notification still pending`,
-    `Outstanding — Step `.
+  **Summary action-label for a sync pass** — see the table in
+  [`status-rollup.md`](../../../tools/github/status-rollup.md#summary--action-labels).
+  Use `Sync (<one-phrase headline>)` for an ordinary pass,
+  `Sync (Step 4 escalation)` for an escalation, or
+  `Reformat (N legacy comments folded)` when this pass's primary
+  purpose is migrating pre-rollup bot comments (see below).
 
-  For each hit, propose a **body-rewrite** as one of the numbered
-  items in the Step 2 proposal: keep the original content verbatim
-  inside a new `<details>Details of update</details>` block, and
-  replace the opening with a short two- or three-line bold-headline
-  + `**Next:**` + reporter-notification line that matches the
-  current shape. Apply the rewrite with `gh api -X PATCH
-  repos/<tracker>/issues/comments/<id> --input <json>`
-  (where `<json>` is a `{"body": "..."}` payload — `--field
-  body=@file` URL-encodes the newlines). Do not silently rewrite
-  history: surface each rewrite as its own proposal item so the
-  user sees exactly which comment is being reshaped.
+  **Apply recipe** — use the upsert recipe in
+  [`status-rollup.md` — Upsert recipe](../../../tools/github/status-rollup.md#upsert-recipe--append-to-an-existing-rollup-or-create-one).
+  For a tracker that already carries a rollup (the common case)
+  this is `gh api -X PATCH repos/<tracker>/issues/comments/<id>
+  --input <json-body>` — a single PATCH on the existing rollup,
+  not a fresh `gh issue comment`. The PATCH surfaces on the
+  tracker as an *edit* of the rollup comment, not as a new
+  timeline event, which is exactly the noise reduction the
+  rollup is for.
 
-  End the visible part with exactly one of the reporter-notification
-  status lines:
+  For a tracker with **no rollup yet** (legacy tracker pre-dating
+  the convention), the sync pass creates it via Step 2b of the
+  upsert recipe and immediately runs the legacy-fold sub-step
+  below so the new rollup absorbs every pre-existing bot
+  comment.
 
-  - *"Reporter has been notified on the original mail thread."* — when a
-    status-update draft has been created in the same sync, **or**
-  - *"No reporter notification needed (reporter is on the security team)."*
-    — only if the real reporter is themselves a member of the security team
-    and is already in the loop, **or**
-  - *"Reporter notification still pending — see draft `<draftId>`."* — if a
-    draft was created but the user has not yet sent it, **or** simply
-    omit the line when no reporter notification is meaningful (for
-    example on a team-discovered issue with no reporter thread).
+  **Fold legacy bot comments into the rollup.** Every sync pass
+  runs a legacy-fold sub-step. Step 1d's comment-mining scan
+  surfaces every pre-rollup bot comment on the tracker using the
+  detection rules in
+  [`status-rollup.md` — Detecting a legacy bot comment](../../../tools/github/status-rollup.md#detecting-a-legacy-bot-comment)
+  (content-anchored sweep: author on the security-team roster **and**
+  body starts with one of `**Sync `, `**Status update`, `**Merged `,
+  `**Closing as duplicate`, `**Split for scope clarity`, `**Imported
+  on `, `**Process-step escalation`, `**Allocated CVE`, or the
+  bare-text `Sync status (` / `Sync YYYY-MM-DD` / `Status update`
+  legacy prefixes, or a content tell like `sync-security-issue
+  skill`). For each hit, the Step 2 proposal carries a numbered
+  item: *"fold legacy comment `<url>` (`<YYYY-MM-DD>`, first line
+  <first-line>) into the rollup as a `<Action>` entry, then
+  delete the original"*. On user confirmation:
+
+  1. Read the legacy comment's body and `createdAt`.
+  2. Wrap in a rollup entry with summary
+     `<createdAt-date> · @<author-login> · <derived-Action>`.
+  3. Left-trim every line in the body (a single stray leading
+     space wrecks markdown rendering inside `<details>`).
+  4. Append to the rollup via the upsert recipe (oldest-first,
+     preserving chronological order).
+  5. **Only after the PATCH succeeds**, delete the original with
+     `gh api -X DELETE repos/<tracker>/issues/comments/<id>`.
+
+  Never delete a legacy comment before the append lands. Never
+  touch a comment authored by someone outside the security-team
+  roster (that is reporter discussion, not bot noise).
+
+  When the same sync pass also needs to write a regular sync
+  entry, the legacy-fold entries are appended **first**
+  (chronologically), then the sync entry last. Tag the pass's
+  own summary as
+  `Reformat (N legacy comments folded)` when the fold is the
+  primary action; otherwise use `Sync (<headline>)` and mention
+  the fold count in the entry body.
+
+  **Before emitting any rollup body — run the zero-whitespace
+  self-check.** `<details>` blocks in GitHub markdown break
+  silently when any line inside carries leading whitespace, or
+  when the blank-line-after-`<summary>` is missing. Re-read
+  [`status-rollup.md` — The rollup comment shape](../../../tools/github/status-rollup.md#the-rollup-comment-shape)
+  before posting; the bug manifests as the entry rendering as a
+  single preformatted block and hiding every link. Do not
+  indent entries for "readability".
 
 - **Draft email to reporter (other reasons)** — whenever the ball is in our
   court on the email thread for any other reason (a question from the
@@ -1299,20 +1334,34 @@ before moving on to the next item. Use:
 - **Assignees:** `gh issue edit <N> --repo <tracker> --add-assignee @me` (or a named user).
 - **Description:** `gh issue edit <N> --repo <tracker> --body-file <tmpfile>` — write the
   new body to a temporary file first so nothing is lost to shell quoting.
-- **Comments:** `gh issue comment <N> --repo <tracker> --body-file <tmpfile>`.
-  Before posting, **scrub the comment body for bare-name mentions** of
-  anyone on the "Current release managers" or rotation-roster lists in
-  [`AGENTS.md`](../../../AGENTS.md), and of known security-team members.
-  Replace each bare name with the corresponding ``@``-handle (or
-  `"<Full Name> (@handle)"` when readability warrants keeping the
-  plain name too) so GitHub actually notifies the person. See the
-  "Mentioning Airflow maintainers and security-team members" section
-  of [`AGENTS.md`](../../../AGENTS.md). Concrete grep-list to check
+- **Status-rollup comment:** use the upsert recipe in
+  [`tools/github/status-rollup.md`](../../../tools/github/status-rollup.md#upsert-recipe--append-to-an-existing-rollup-or-create-one).
+  On a tracker that already carries a rollup, this is
+  `gh api -X PATCH repos/<tracker>/issues/comments/<id> --input
+  <json>` with the old body + `\n\n---\n\n` + the new entry; on a
+  legacy tracker with no rollup yet, it is a one-off `gh issue
+  comment <N> --repo <tracker> --body-file <tmpfile>` seeded with
+  the marker + the new entry + any folded legacy entries.
+  Before PATCHing / posting, **scrub the entry body for bare-name
+  mentions** of anyone on the "Current release managers" or
+  rotation-roster lists in
+  [`AGENTS.md`](../../../AGENTS.md), and of known security-team
+  members. Replace each bare name with the corresponding
+  ``@``-handle (or `"<Full Name> (@handle)"` when readability
+  warrants keeping the plain name too) so GitHub actually notifies
+  the person. See the "Mentioning Airflow maintainers and
+  security-team members" section of
+  [`AGENTS.md`](../../../AGENTS.md). Concrete grep-list to check
   against: `Jarek Potiuk`, `Jens Scheffler`, `Vincent BECK`,
   `Shahar Epstein`, `Buğra Öztürk`, `Jedidiah Cunningham`,
   `Rahul Vats`, `Aritra Basu`, `Pierre Jeambrun`, `Kaxil Naik`,
   `Amogh Desai`, plus any name that appears in a `Reporter credited
   as` field without a confirmed external-credit decision.
+- **Fold-legacy deletes:** after the rollup PATCH succeeds and
+  carries the folded entries, delete each original legacy bot
+  comment with `gh api -X DELETE
+  repos/<tracker>/issues/comments/<id>`. Never delete before the
+  PATCH lands.
 - **Close / reopen:** `gh issue close <N> --repo <tracker> --reason completed` (or `not planned`).
 - **Project-board column:** apply via the `updateProjectV2ItemFieldValue`
   GraphQL recipe in
