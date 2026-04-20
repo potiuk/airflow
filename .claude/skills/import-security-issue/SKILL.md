@@ -2,8 +2,10 @@
 name: import-security-issue
 description: |
   Scan security@airflow.apache.org for reports that have not yet been
-  copied into <tracker> as tracking issues, and — after user
-  confirmation — create the tracking issues and draft a receipt-of-
+  copied into <tracker> as tracking issues, present the proposed
+  imports to the user, and — defaulting to *import unless the user
+  rejects upfront* — create the tracking issues with the
+  `Needs triage` project-board status and draft a receipt-of-
   confirmation reply to each reporter. This is the first step of the
   handling process: the entry point that converts an inbound email
   thread into a tracker the rest of the skills (sync-security-issue,
@@ -34,17 +36,37 @@ It converts an inbound `security@airflow.apache.org` email thread into
 an `<tracker>` tracking issue that follows the repo's issue
 template, then drafts the receipt-of-confirmation reply to the reporter.
 
-It never sends email. It never creates an issue without user
-confirmation. It never assumes a report is valid — the validity /
-invalid / CVE-worthy decision still happens later in the discussion on
-the created tracker (Step 3 of [`README.md`](../../../README.md)).
+It never sends email. It never creates a tracker for a candidate the
+user has explicitly rejected. It never assumes a report is valid —
+the validity / invalid / CVE-worthy decision still happens later in
+the discussion on the created tracker (Step 3 of
+[`README.md`](../../../README.md)).
 
-**Golden rule — propose before applying.** Every import this skill
-performs is a *proposal* that lists the candidate emails, the
-extracted fields, and the draft confirmation reply. Only after the
-user confirms each item does the skill run `gh issue create` and
-`mcp__claude_ai_Gmail__create_draft`. There is no fast-path that
-skips confirmation.
+**Golden rule — propose, then default to import.** Every import this
+skill performs is a *proposal* that lists the candidate emails, the
+extracted fields, and the draft confirmation reply. The user's
+default disposition for any `Report` / `ASF-security relay`
+candidate is **"import as a new tracker landing in `Needs triage`"**;
+the user only has to type back when they want to *deviate* from that
+default — `skip NN` to reject a candidate upfront, or
+`NN:alt-canned <name>` to swap the receipt-of-confirmation reply
+for a specific canned negative-assessment / out-of-scope template.
+A bare `all` (or no reply at all to the proposal — the user typing
+*"go"*, *"proceed"*, *"yes, all"*) means *"import every
+non-rejected candidate as proposed"*. The skill must still surface
+each candidate one-by-one in the proposal so the user can scan and
+override if needed; what the skill must *not* do is sit on a report
+waiting for an explicit per-candidate green light. The bias is
+toward landing trackers — a wrongly-imported report is cheap to
+close at Step 5 / 6 of the handling process; a wrongly-skipped one
+gets buried in the inbox and the reporter is left without a
+disposition.
+
+Non-import candidate classes (`automated-scanner`,
+`consolidated-multi-issue`, `media-request`, `spam`,
+`cross-thread-followup`, `cve-tool-bookkeeping`) keep the original
+"propose first, apply only on explicit confirm" rule — those never
+default to a tracker.
 
 **Golden rule — confidentiality.** The inbound thread on
 `security@airflow.apache.org` is private. The skill may paste the
@@ -325,16 +347,22 @@ description>"*. Strip `Re:` / `Fwd:` / `[SECURITY]` prefixes.
 
 Present all candidates as a single numbered proposal grouped by class:
 
-- **Reports ready to import** (class `Report` / `ASF-security relay`):
+- **Reports defaulting to import** (class `Report` / `ASF-security relay`):
   for each, show the proposed title, the extracted body (with `_No
-  response_` placeholders visible), and a preview of the draft
-  receipt-of-confirmation reply.
+  response_` placeholders visible), the receipt-of-confirmation reply
+  preview, and a one-line *"unless you say otherwise, this lands as a
+  new tracker in `Needs triage` with the receipt-of-confirmation reply
+  drafted to the reporter"*. Surface any Step 2a fuzzy-duplicate
+  matches (`STRONG`/`MEDIUM`/`WEAK`) and any classification ambiguity
+  inline so the user can scan-then-override; do **not** pose them as
+  open questions that gate the import.
 - **Candidates not to import** (class `automated-scanner`,
   `consolidated-multi-issue`, `media-request`, `spam`,
   `cross-thread-followup`): show the class, the reporter, a one-line
   summary, and the proposed Gmail draft (from `canned-responses.md`)
   or the proposed follow-up action (e.g. *"comment on existing
-  tracker [<tracker>#NNN](...)"*).
+  tracker [<tracker>#NNN](...)"*). These need explicit confirmation —
+  no default-to-tracker.
 - **Dropped silently** (class `cve-tool-bookkeeping`): do not even
   surface these to the user — they are consumed by
   `sync-security-issue` Step 1e. The skill should just report the
@@ -342,21 +370,46 @@ Present all candidates as a single numbered proposal grouped by class:
   the user knows the filter is working but is not forced to scroll
   past them.
 
-Confirmation forms:
+Confirmation forms (`Report` / `ASF-security relay` candidates default
+to import; the user only types back to *deviate* from that default):
 
-- `all` — apply every proposal (create every `Report` issue, draft every
-  non-import reply, post every cross-thread follow-up comment).
-- `NN:all` — apply everything proposed for candidate `NN`.
-- `NN:1,3` — apply items `1` and `3` of candidate `NN`.
-- `skip NN` — ignore candidate `NN` entirely.
-- `none` / `cancel` — bail.
+- `all` / `go` / `proceed` / `yes, all` / no reply at all — import
+  every Report / ASF-relay candidate as proposed (each lands in
+  `Needs triage` with its receipt-of-confirmation reply drafted),
+  and apply every confirmed non-import action.
+- `skip NN` — reject candidate `NN` upfront; no tracker created, no
+  draft. Combine with `, ` to skip multiple (`skip 1, 3`).
+- `NN:alt-canned <canned-response-name>` — for candidate `NN`, swap
+  the default receipt-of-confirmation reply for the named canned
+  response (typically a negative-assessment template like
+  *"Dag-author user-input claims"*). Tracker is still created — the
+  team triages-and-closes from there. **The team's bias should
+  always favour creating the tracker; canned negative responses are
+  for cases where the reporter deserves a substantive close-out
+  reply and the disposition is genuinely obvious before triage.**
+- `NN:reject-with-canned <canned-response-name>` — explicit upfront
+  rejection that *also* drafts a canned reply (e.g. an obvious
+  duplicate of a recently-closed tracker). No tracker created.
+- `NN:edit <freeform>` — fold a freeform note (extra context, a
+  different title, a smaller body excerpt) into the import; tracker
+  is still created with the edits applied.
+- `none` / `cancel` — bail entirely; no trackers, no drafts.
 
 ---
 
 ## Step 6 — User confirmation
 
-Wait for explicit confirmation. If the user replies ambiguously, ask
-again. Never assume.
+The default is **import every Report / ASF-relay candidate** plus
+**apply every confirmed non-import action**. If the user replies with
+overrides (`skip 1`, `2:alt-canned dag-author-user-input`, etc.), apply
+those overrides on top of the default. If the user replies ambiguously
+(*"hmm not sure about #3"*), ask back specifically about #3 — but do
+**not** stall the rest of the import waiting for a per-candidate green
+light. Run the unambiguous defaults; ask back only on the ambiguous
+ones.
+
+A reply of `cancel` / `none` / *"hold off"* halts everything — no
+trackers, no drafts.
 
 ---
 
@@ -422,7 +475,32 @@ For each confirmed `Report` / `ASF-security relay`:
      --label 'security issue'
    ```
 
-3. Draft the receipt-of-confirmation reply. **The draft must be
+3. **Set the project-board `Status` to `Needs triage`.** The newly-
+   created issue may already have been added to the board by the
+   *Auto-add to project* workflow (see the per-project `Auto-add
+   workflow filter` section in
+   [`tools/github/project-board.md`](../../../tools/github/project-board.md#auto-add-workflow-filter)
+   — for the active project, the filter is
+   `is:issue label:"security issue"`). Whether the workflow ran or
+   not, run the orphan-issue path from
+   [`tools/github/project-board.md`](../../../tools/github/project-board.md#orphan-issue-path)
+   to **idempotently** ensure the item exists on the board *and* the
+   `Status` field is set to `Needs triage`:
+
+   - Resolve the new issue's node id, then `addProjectV2ItemById`
+     (returns the existing item id if the workflow already added the
+     issue, or creates a fresh one otherwise — both cases are safe).
+   - Run `updateProjectV2ItemFieldValue` to set `Status` to the
+     `Needs triage` option id from the project's
+     `status_column_option_ids` table in
+     [`projects/<PROJECT>/project.md`](../../../projects/<PROJECT>/project.md#github-project-board).
+
+   This guarantees the new tracker is visible on the board the team
+   uses for triage at-a-glance scanning, without depending on the
+   workflow being correctly configured. The mutation is a no-op when
+   the item is already on the board with the same Status.
+
+4. Draft the receipt-of-confirmation reply. **The draft must be
    created on the inbound Gmail thread** — always pass the candidate's
    `threadId` to `mcp__claude_ai_Gmail__create_draft`. See
    [`tools/gmail/threading.md`](../../../tools/gmail/threading.md) for
@@ -476,7 +554,7 @@ For each confirmed `Report` / `ASF-security relay`:
    **Never send.** Always create a draft; the triager reviews in
    Gmail before sending.
 
-4. Post a short status-change comment on the newly-created
+5. Post a short status-change comment on the newly-created
    `<tracker>` issue. Use the same short-headline +
    collapsed-`<details>` shape described in the sibling
    [`sync-security-issue`](../sync-security-issue/SKILL.md) skill's
@@ -539,7 +617,13 @@ before presenting.
 ## Hard rules
 
 - **Never send email**, ever. Only create drafts.
-- **Never create an issue without user confirmation.**
+- **Never create an issue for a candidate the user has explicitly
+  rejected.** The default disposition for `Report` / `ASF-security
+  relay` candidates is *import* (see the *"propose, then default to
+  import"* Golden rule above), but `skip NN` /
+  `NN:reject-with-canned …` / `cancel` / `none` / *"hold off"* on
+  the proposal must be honoured — those are the ways the user
+  rejects upfront, and the skill must never override them.
 - **Never import an already-tracked thread.** Step 2 is load-bearing
   — a duplicate tracker fragments the audit trail across two issues
   and is expensive to unwind.
