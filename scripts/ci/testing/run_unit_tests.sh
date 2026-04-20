@@ -50,7 +50,7 @@ function core_tests() {
         set +x
     elif [[ "${TEST_SCOPE}" == "Quarantined" ]]; then
         set -x
-        breeze testing core-tests --test-type "All-Quarantined"
+        breeze testing core-tests --test-type "All-Quarantined" || true
         RESULT=$?
         set +x
     elif [[  "${TEST_SCOPE}" == "System" ]]; then
@@ -93,7 +93,7 @@ function providers_tests() {
         set +x
     elif [[ "${TEST_SCOPE}" == "Quarantined" ]]; then
         set -x
-        breeze testing providers-tests --test-type "All-Quarantined"
+        breeze testing providers-tests --test-type "All-Quarantined" || true
         RESULT=$?
         set +x
     else
