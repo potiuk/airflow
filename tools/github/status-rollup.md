@@ -369,6 +369,17 @@ audit the change.
   upsert finds more than one `<!-- airflow-s status rollup v` marker,
   stop and ask the user which to keep — the cheapest recovery is a
   manual merge, not a silent overwrite.
+- **Never name or describe other ASF projects' vulnerabilities** in a
+  rollup entry body, even when the reporter or your own signal
+  mining has surfaced them. Cross-project observations belong in
+  the private mail channel they arrived on — not in the tracker.
+  See the *"Other ASF projects — never name or describe their
+  vulnerabilities"* subsection of
+  [`AGENTS.md`](../../AGENTS.md#other-asf-projects--never-name-or-describe-their-vulnerabilities)
+  for the full rule, the *why*, and the grep-list self-check to run
+  before posting. Summarise load-bearing cross-project context in
+  de-identified form (*"the reporter has filed similar reports with
+  other ASF projects"*) rather than naming the project.
 
 ## Referenced by
 

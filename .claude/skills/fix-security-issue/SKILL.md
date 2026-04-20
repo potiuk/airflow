@@ -54,9 +54,13 @@ title, body and diff first.**
 
 **Confidentiality is paramount.** The resulting PR in `<upstream>`
 is public to the world. It must not reveal the CVE ID, the security
-nature of the change, or any link back to `<tracker>`. See
-the "Confidentiality of `<tracker>`" section of
-[`AGENTS.md`](../../../AGENTS.md) and process step 8 of
+nature of the change, or any link back to `<tracker>` — **and it
+must not name, reference, or describe vulnerabilities in other ASF
+projects**, even when the private discussion has mentioned them.
+See the "Confidentiality of `<tracker>`" section of
+[`AGENTS.md`](../../../AGENTS.md) and the "Other ASF projects —
+never name or describe their vulnerabilities" subsection
+immediately below it, plus process step 8 of
 [`README.md`](../../../README.md).
 
 ---
