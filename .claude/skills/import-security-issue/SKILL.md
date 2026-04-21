@@ -278,6 +278,114 @@ WEAK signal only.
 
 ---
 
+## Step 2b — Search Gmail for prior rejections of similar reports
+
+Step 2a finds existing *trackers* that overlap with the candidate —
+reports that became an issue. A different and equally-load-bearing
+signal is **prior reports we rejected without creating a tracker**:
+a reporter-sent a nearly-identical claim six weeks ago, the team
+replied with a canned response from
+[`canned-responses.md`](../../../projects/<PROJECT>/canned-responses.md),
+and the thread ended there. That precedent is gold when the current
+candidate is heading for a negative-response disposition (`skip`,
+`reject-with-canned`, `alt-canned`, or a pending `automated-scanner`
+/ `consolidated-multi-issue` / `media-request` class). Reusing the
+same canned response keeps the team's messaging consistent across
+reporters; missing the precedent means re-drafting wording that
+already exists and risking a subtly different answer to the same
+question.
+
+**Run Step 2b on** every candidate that Step 3 is likely to classify
+as a non-tracker disposition, AND on any `Report` / `ASF-security
+relay` candidate where the Step 2a fuzzy match is WEAK/MEDIUM-only
+and the body reads like a well-known negative pattern (a
+Security-Model-fit claim, a Dag-author-supplied-input premise, a
+"you should restrict environment-variable access from Dags"
+suggestion, an unauthenticated-DoS-via-rate-limit request, an
+image-scan dump). Skip Step 2b on candidates Step 2a flagged STRONG
+(those route to dedupe, not rejection) and on `cve-tool-bookkeeping`
+(dropped silently).
+
+**Search recipe — two Gmail calls per candidate, maximum.** The
+query templates and the substitution-values guide live in
+[`tools/gmail/search-queries.md`](../../../tools/gmail/search-queries.md#import-security-issue--prior-rejection-search);
+in short:
+
+1. **Prior rejections by the security team.** Pick 2–3 distinctive
+   noun phrases from the current report (reuse the Step 2a
+   subject-keyword tokens) and search the security list for
+   past outbound replies from team members. Canonical
+   `mcp__claude_ai_Gmail__search_threads` query shape — substitute
+   the project's `<security-list-domain>` from
+   [`projects/<PROJECT>/project.md`](../../../projects/<PROJECT>/project.md#gmail-and-ponymail):
+
+   ```text
+   list:<security-list-domain> "<keyword-1>" "<keyword-2>"
+   newer_than:180d -from:notifications@github.com -from:noreply@github.com
+   ```
+
+   Hits whose author is on the security-team roster AND whose body
+   opens with a canned-response cue (*"Thank you for reporting …
+   this isn't a security issue"*, *"Per the Airflow Security
+   Model"*, *"This is expected behaviour for a Dag author"*, etc.)
+   are prior rejections. Fetch each with
+   `mcp__claude_ai_Gmail__get_thread` (MINIMAL is enough when you
+   only need to confirm the canned-response shape; FULL_CONTENT is
+   warranted only when the reporter pushed back and you want to
+   read the clarification the team issued).
+
+2. **Inbound reports that never became a tracker.** Same keywords,
+   same 180-day window, filtered to **inbound** messages:
+
+   ```text
+   list:<security-list-domain> "<keyword-1>" "<keyword-2>"
+   newer_than:180d -from:me -from:<security-team-member>
+   -from:notifications@github.com -from:noreply@github.com
+   ```
+
+   For each hit, cross-reference the `threadId` against existing
+   trackers — `gh search issues "<threadId>" --repo <tracker>` on
+   the body field (the *Security mailing list thread* field or
+   the rollup's threadId backfill note) — and keep the hits that
+   have **no** corresponding tracker. Those are the "rejected
+   without tracker" precedents.
+
+**Surfacing in Step 5.** For each precedent found, attach to the
+candidate's proposal entry:
+
+- a clickable link to the prior thread (Gmail or PonyMail URL);
+- the canned-response **name** the team used (exact section
+  heading in [`canned-responses.md`](../../../projects/<PROJECT>/canned-responses.md),
+  e.g. *"When someone claims Dag author-provided 'user input' is
+  dangerous"*) — if identifiable;
+- a one-line summary of the reporter's follow-up: *"accepted —
+  thread closed"*, *"pushed back on X; team clarified Y"*, *"no
+  reply after our response"*;
+- a recommendation — *"use the same canned response verbatim"*,
+  *"use the same canned response with an inline augmentation
+  pre-empting X (the ambiguity the prior reporter stumbled on)"*,
+  or *"treat as new ground — no suitable precedent found"*.
+
+Absence of precedent is itself information. Record *"no prior
+rejection of a similar report in the last 180 days"* explicitly in
+the proposal so the user knows Step 2b ran and came back empty.
+When absent, the user is drafting on new ground and the Step 5
+canned-response discipline below still applies.
+
+**Budget guardrail for Step 2b**: **≤ 2 Gmail calls per candidate**.
+Do not iterate deeper — a third search yields diminishing returns
+and blows the skill's overall Gmail budget. If the two searches
+return nothing relevant, record *"no precedent"* and move on.
+
+**Hard rule**: Step 2b is a **read-only** signal-gathering pass.
+Do not draft, do not quote the prior reply verbatim back to the
+reporter before the user has confirmed the canned response in Step
+5. The precedent informs *which* canned response to propose and
+*whether* to augment; the drafting itself still happens in Step 7
+from the canned-responses file, not by pasting prior outbound mail.
+
+---
+
 ## Step 3 — Classify each candidate
 
 For each remaining candidate, read the **root message only** (the one
@@ -362,13 +470,92 @@ Present all candidates as a single numbered proposal grouped by class:
   summary, and the proposed Gmail draft (from `canned-responses.md`)
   or the proposed follow-up action (e.g. *"comment on existing
   tracker [<tracker>#NNN](...)"*). These need explicit confirmation —
-  no default-to-tracker.
+  no default-to-tracker. The draft **must** follow the
+  canned-response discipline below.
 - **Dropped silently** (class `cve-tool-bookkeeping`): do not even
   surface these to the user — they are consumed by
   `sync-security-issue` Step 1e. The skill should just report the
   count in the recap (*"N CVE-tool-bookkeeping emails dropped"*) so
   the user knows the filter is working but is not forced to scroll
   past them.
+
+### Canned-response discipline for negative-response drafts
+
+When the proposed disposition is a negative response — any of the
+`NN:alt-canned`, `NN:reject-with-canned`, `automated-scanner`,
+`consolidated-multi-issue`, `media-request`, `cross-thread-followup`
+paths — **strongly prefer the canned response verbatim** over
+drafting fresh prose. The canned library in
+[`canned-responses.md`](../../../projects/<PROJECT>/canned-responses.md)
+is a curated set of replies the team has iterated on across many
+reports; a fresh draft that says "roughly the same thing" in
+different words loses the collective wording discipline, and
+re-introduces ambiguities the canned version has already ironed out.
+
+**Pick the single canned response that best matches** the candidate's
+shape. Name it explicitly in the proposal (use the exact section
+heading from `canned-responses.md`, e.g. *"When someone claims Dag
+author-provided 'user input' is dangerous"*). When Step 2b surfaced
+a prior precedent, the canned response the team used last time is
+the strong default — deviate only on a specific, defensible reason.
+
+**Use the canned body verbatim** except for the SCREAMING_SNAKE_CASE
+placeholders (reporter name, CVE ID, PR URL, etc.). Do not
+paraphrase the canned text. Do not reorder its paragraphs. Do not
+"polish" its wording. Changes to the canned wording belong in
+`canned-responses.md` via a separate commit, not in a one-off draft.
+
+**Add an inline augmentation only when** the canned response has a
+specific ambiguity in the context of *this* report that a typical
+reader would plausibly misread — for example:
+
+- the canned response assumes the reporter's claim is X but the
+  report actually claims X' (a stricter variant); the augmentation
+  clarifies which variant the reply addresses;
+- the reporter pre-empted the standard Security Model argument by
+  citing a specific sentence from the model; the augmentation
+  quotes that sentence and explains why the canned response still
+  applies;
+- the Step 2b precedent showed a prior reporter pushing back on
+  ambiguity Y, and the current report carries Y too; the
+  augmentation pre-empts Y.
+
+**Clearly mark the augmentation** as a distinct inline block the
+reviewer can strip cleanly. Concrete format: insert a
+`> **[Inline addition for this report]** <augmentation text>` block
+in-line at the point where the canned wording is ambiguous, leaving
+the surrounding canned text untouched. The reviewer must be able to
+tell at a glance which sentences are canned and which are
+augmentation, and to delete the augmentation without leaving a
+grammatical orphan.
+
+**Coherence check before presenting the draft.** Re-read the proposed
+reply once as the reporter would read it, with the report's text
+beside it. Verify:
+
+- the draft accurately characterises **this** report — e.g. do not
+  claim "this requires Dag-author privileges" when the reporter
+  described an unauthenticated attack; do not say "the behaviour is
+  documented here" when the linked docs describe a different
+  scenario; do not cite a Security Model chapter that does not
+  actually cover the reporter's claim;
+- the canned body and the augmentation (if any) do not contradict
+  each other — a canned "we will not be issuing a CVE" paragraph
+  sitting next to an augmentation that says "we plan to publish an
+  advisory" is the failure mode the check is meant to catch;
+- paragraph-to-paragraph tone is consistent — the canned responses
+  are polite-but-firm (see AGENTS.md), augmentations must match
+  that register, not drift into hedging or apology;
+- every placeholder has been filled in (no literal
+  `CVE_ID`/`PR_URL`/`REPORTER_NAME` tokens left behind);
+- every artefact URL the draft cites actually exists and actually
+  says what the draft claims it says — a dead link or a
+  misrepresented doc is worse than no link at all.
+
+If the coherence check surfaces **any** contradiction, mismatch,
+or shaky claim, fix it before surfacing the draft in the proposal.
+The user sees the draft in the proposal, and an incoherent draft
+wastes a round-trip.
 
 Confirmation forms (`Report` / `ASF-security relay` candidates default
 to import; the user only types back to *deviate* from that default):
@@ -654,6 +841,26 @@ before presenting.
   confirms import and *then* the discussion concludes the report is
   invalid, the tracker is closed at Step 5 / 6 of `README.md` by the
   triager, not by this skill.
+- **Never paraphrase a canned response** in a negative-response draft.
+  Use the canned body from
+  [`canned-responses.md`](../../../projects/<PROJECT>/canned-responses.md)
+  verbatim, with placeholders filled in; add inline augmentations
+  only where a context-specific ambiguity would plausibly mislead
+  *this* reporter, and mark every augmentation as a distinct
+  `> **[Inline addition for this report]** …` block the reviewer can
+  strip cleanly. Wording changes to the canned text belong in a
+  separate commit to the canned-responses file, not in a one-off
+  draft. See the *"Canned-response discipline for negative-response
+  drafts"* subsection of Step 5.
+- **Never present a draft that contradicts the report.** The
+  coherence check in Step 5 is mandatory before a negative-response
+  draft appears in the proposal: the draft must accurately
+  characterise *this* report, the canned body and any augmentation
+  must not contradict each other, every placeholder must be
+  filled, and every artefact URL cited must actually exist and say
+  what the draft claims it says. An incoherent draft burns a
+  round-trip with the user and erodes the reporter's trust that we
+  actually read their report.
 
 ---
 

@@ -7,6 +7,7 @@
   - [GitHub-notification exclusions](#github-notification-exclusions)
   - [Query templates by skill](#query-templates-by-skill)
     - [`import-security-issue` — candidate-listing query](#import-security-issue--candidate-listing-query)
+    - [`import-security-issue` — prior-rejection search](#import-security-issue--prior-rejection-search)
     - [`sync-security-issue` — reporter-thread lookup by distinctive phrase](#sync-security-issue--reporter-thread-lookup-by-distinctive-phrase)
     - [`sync-security-issue` — CVE-review-comment search](#sync-security-issue--cve-review-comment-search)
     - [Release `[RESULT][VOTE]` attribution](#release-resultvote-attribution)
@@ -92,6 +93,67 @@ instead.
 
 Adjust the time window per the user's selector (`since:` →
 `newer_than:` or `after:`; `import all` → `newer_than:90d`).
+
+### `import-security-issue` — prior-rejection search
+
+Run in Step 2b of the import skill on candidates heading for a
+negative-response disposition. The goal is to find **prior similar
+reports the security team rejected without creating a tracker** so
+the same canned response can be reused and any past reporter
+pushback can be pre-empted.
+
+Two templates, one search each — stay within the skill's ≤ 2 calls
+per candidate budget.
+
+**1. Prior rejections by the security team** (outbound replies from
+a team member that open with a canned-response cue):
+
+```text
+list:<security-list-domain>
+  "<keyword-1>" "<keyword-2>"
+  newer_than:180d
+  -from:notifications@github.com
+  -from:noreply@github.com
+```
+
+Pick `<keyword-1>` / `<keyword-2>` from the current report's
+distinctive noun-phrase set — the same 3–5 tokens the skill's Step
+2a uses for the subject-keyword GitHub search. Filter the results
+down to messages whose sender is on the security-team roster AND
+whose body opens with a canned-response preamble
+(*"Thank you for reporting … this isn't a security issue"*,
+*"Per the Airflow Security Model"*, *"This is expected behaviour
+for a Dag author"*, *"We treat this as out of scope of the Security
+Model"*). Those are the prior-rejection precedents.
+
+**2. Inbound reports that never became a tracker** (same keywords,
+same window, filtered to inbound-only):
+
+```text
+list:<security-list-domain>
+  "<keyword-1>" "<keyword-2>"
+  newer_than:180d
+  -from:me
+  -from:<security-team-member>
+  -from:notifications@github.com
+  -from:noreply@github.com
+```
+
+For each returned `threadId`, cross-reference against existing
+trackers (`gh search issues "<threadId>" --repo <tracker>`). Hits
+with **no** matching tracker are the inbound side of prior
+rejections.
+
+Substitute `<security-list-domain>` from
+[`projects/<PROJECT>/project.md`](../../projects/airflow/project.md#gmail-and-ponymail).
+Substitute `<security-team-member>` with the handles / emails
+listed in the roster subsection of
+[`projects/<PROJECT>/release-trains.md`](../../projects/airflow/release-trains.md)
+when you need to exclude a specific sender; for a blanket
+outbound-team exclusion, repeat the `-from:` clause once per
+roster member, or rely on `list:` + the no-`from:notifications@github.com`
+filter as in template 1 and classify the result set by sender
+after the fact.
 
 ### `sync-security-issue` — reporter-thread lookup by distinctive phrase
 
