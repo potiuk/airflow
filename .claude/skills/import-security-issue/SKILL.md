@@ -106,15 +106,36 @@ Before touching any candidate thread, verify:
 1. **Gmail MCP is reachable.** Run a trivial
    `mcp__claude_ai_Gmail__search_threads` with `pageSize: 1` and
    confirm it returns (not an auth error). If it fails, **stop
-   immediately** and tell the user to configure Gmail MCP.
+   immediately** and tell the user to configure Gmail MCP. Gmail
+   is the load-bearing inbox + the only backend that can create
+   the receipt-of-confirmation drafts this skill produces, so a
+   Gmail failure is always a stop.
 2. **`gh` is authenticated and has access.** Run
    `gh api repos/<tracker> --jq .name`; if it errors
    (401, 403, 404), stop and tell the user to log in with
    `gh auth login` or get added to `<tracker>`.
+3. **PonyMail MCP status** (opt-in; primary read path when
+   enabled) — read `config/user.md` → `tools.ponymail`. If
+   `enabled: true`, call `mcp__ponymail__auth_status()` once and
+   record `ponymail_enabled` + `ponymail_authenticated` in the
+   skill's observed-state bag. **When authenticated, downstream
+   steps (1 candidate listing, 2b prior-rejection search) treat
+   PonyMail MCP as the primary read path** and use Gmail as the
+   fallback — except that Gmail remains the primary source for
+   *just-arrived* inbound mail where inbox latency beats archive
+   indexing delay (see per-step guidance below). Gmail always
+   remains the draft-composition backend; PonyMail MCP has no
+   write path. When PonyMail MCP is not enabled, not
+   authenticated, or its tools are not available in the current
+   session, proceed Gmail-only (no stop, one-line warning only
+   when enabled but unauthenticated). See
+   [`tools/ponymail/tool.md`](../../../tools/ponymail/tool.md)
+   for the one-time setup instructions.
 
-If either check fails, do **not** proceed — the skill would fail
-mid-flow otherwise, leaving half-built state (a draft on the wrong
-thread, or a tracker with no receipt reply). Fail fast instead.
+If the Gmail or `gh` check fails (PonyMail degrades quietly), do
+**not** proceed — the skill would fail mid-flow otherwise, leaving
+half-built state (a draft on the wrong thread, or a tracker with
+no receipt reply). Fail fast instead.
 
 ---
 
@@ -146,6 +167,46 @@ substitute the active project's `<security-list-domain>` (Airflow:
 `security.airflow.apache.org`) and the project's GitHub-notification
 exclusions — both declared in
 [`projects/<PROJECT>/project.md`](../../../projects/<PROJECT>/project.md#gmail-and-ponymail).
+
+**Backend selection.** Candidate listing is one of the cases where
+**Gmail remains primary even when PonyMail MCP is enabled**: the
+inbox is where just-arrived inbound reports land with the lowest
+latency, and the import skill's sole purpose is converting
+those freshly-arrived threads into trackers. The PonyMail archive
+lags the inbox by minutes-to-hours for brand-new messages, which
+is exactly the window this skill most cares about.
+
+When PonyMail MCP is enabled and authenticated (Step 0) **and**
+`security@<project>.apache.org` is in `config/user.md` →
+`tools.ponymail.private_lists`, run the archive as a **paired
+authoritative check** against the Gmail result set:
+
+```
+mcp__ponymail__search_list(
+  list: "security",
+  domain: "<project>.apache.org",
+  timespan: "lte=30d",
+  emails_only: true
+)
+```
+
+Cross-reference the returned summaries against the Gmail result
+set by `Message-ID`. Surface two classes of mismatch as extra
+candidates in Step 5:
+
+- **In PonyMail, not in Gmail** → note *"seen in the archive, not
+  in this user's Gmail — LDAP-only subscription, Gmail-filter
+  miss, or wrong account"*. Often worth importing; always worth
+  surfacing.
+- **In Gmail, not in PonyMail** → note *"in Gmail inbox, not yet
+  in the archive — archive-indexing lag; Gmail snapshot is the
+  authoritative source for now"*. Proceed with Gmail-only data
+  for this thread; a future sync run will reconcile once the
+  archive catches up.
+
+When PonyMail MCP is disabled, unauthenticated, or the private
+list is not in the user's allowlist, skip the paired-check query
+and proceed Gmail-only.
 
 **Do not exclude `-from:security@apache.org`.** That address is used
 for three very different message types — CVE-tool bookkeeping,
@@ -310,6 +371,29 @@ image-scan dump). Skip Step 2b on candidates Step 2a flagged STRONG
 query templates and the substitution-values guide live in
 [`tools/gmail/search-queries.md`](../../../tools/gmail/search-queries.md#import-security-issue--prior-rejection-search);
 in short:
+
+**Backend selection.** When PonyMail MCP is enabled and
+authenticated (Step 0) **and** `security@<project>.apache.org`
+is in `config/user.md` → `tools.ponymail.private_lists`,
+**PonyMail MCP is the primary backend for this step**:
+
+```
+mcp__ponymail__search_list(
+  list: "security",
+  domain: "<project>.apache.org",
+  query: "<keyword-1> <keyword-2>",
+  timespan: "lte=24M"
+)
+```
+
+Two-year lookback is the default because precedent-shape reports
+recur over a long window and the archive is the authoritative
+source. Gmail is the fallback used when (a) PonyMail is not
+enabled / not authenticated, (b) the private list is not in the
+allowlist, or (c) the PonyMail query comes back empty but you
+want a last-chance sanity check against the user's personal
+mailbox. The per-candidate budget is ≤ 2 archive searches
+(whichever backend) for the prior-rejection path.
 
 1. **Prior rejections by the security team.** Pick 2–3 distinctive
    noun phrases from the current report (reuse the Step 2a

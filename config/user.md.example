@@ -66,14 +66,61 @@ tools:
   # Supported today: github.
   issue_tracker: github
 
-  # Inbound email: how this user reads the project's security list.
-  # Supported today:
-  #   gmail          — Gmail MCP against a personal Gmail account
-  #                    subscribed to security@<project>.apache.org
-  #   ponymail-mcp   — (planned) ASF-OAuth PonyMail MCP that reads
-  #                    private-list archives directly; not live yet.
-  # See tools/gmail/tool.md for background on the migration plan.
+  # Inbound email (primary): how this user reads the project's
+  # security list. Supported today:
+  #   gmail   — Gmail MCP against a personal Gmail account subscribed
+  #             to security@<project>.apache.org. This is also the
+  #             only tool that can create draft replies — keep it set
+  #             even when PonyMail MCP is also enabled below, because
+  #             the skills always compose reporter-facing drafts via
+  #             Gmail regardless of which read backend answered the
+  #             originating query.
   inbound_email: gmail
+
+  # PonyMail MCP (opt-in, primary for reads when enabled): a read-only
+  # backend backed by the rbowen/ponymail-mcp server and ASF LDAP
+  # OAuth. **When enabled and authenticated, PonyMail MCP becomes the
+  # primary read path** for archive queries; Gmail stays as the
+  # fallback when PonyMail is disabled, unauthenticated, or the
+  # relevant private list is not in this user's allowlist. Gmail
+  # also remains the **only** backend that can create drafts, so the
+  # skills always compose reporter-facing replies via Gmail
+  # regardless of which read backend answered the originating query.
+  #
+  # Why PonyMail-primary for reads: the archive is authoritative (it
+  # sees every message that reached the list, independent of the
+  # triager's personal subscription), consistent across team members
+  # (two different triagers running the same skill see the same
+  # result set), and reaches further back than a typical Gmail
+  # mailbox window. Gmail is faster for just-arrived mail (PonyMail
+  # archive may lag by minutes), so it remains the right tool for
+  # *inbox* use cases but not for *archive* use cases.
+  #
+  # Setup and operation catalogue live in tools/ponymail/tool.md
+  # and tools/ponymail/operations.md respectively.
+  ponymail:
+    # Whether PonyMail MCP is configured in this user's Claude Code
+    # MCP registry (mcpServers.ponymail). When false (the default),
+    # skills skip every PonyMail path and run Gmail-only; no blocker
+    # is raised and no behavioural change is visible — PonyMail is
+    # purely opt-in.
+    enabled: false
+
+    # Private mailing lists the user's ASF LDAP account grants
+    # archive access to. Skills use this list to decide whether a
+    # private-list PonyMail query is worth attempting from this
+    # user's session. For a list not in this allowlist, skills fall
+    # back to Gmail for that specific list while keeping PonyMail
+    # primary for every other list the user can read. An empty list
+    # means "public lists only via PonyMail; private lists via
+    # Gmail".
+    #
+    # Expected values for an Airflow security-team PMC member:
+    #   - security@airflow.apache.org
+    #   - private@airflow.apache.org
+    # Non-PMC triagers typically have no private-list LDAP access and
+    # leave this empty.
+    private_lists: []
 
   # CVE tool: the CNA tool the release manager pushes CVE records to.
   # Supported today: vulnogram (ASF-hosted).

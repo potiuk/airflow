@@ -45,15 +45,26 @@ Related, adjacent tool:
 
 Gmail is the security team's **inbox** for the private
 `security@<project>.apache.org` mailing list and the **draft queue**
-for every outbound reporter reply the skills compose. An alternative
-**read-only** path is documented separately at
-[`../ponymail/tool.md`](../ponymail/tool.md) — the
-[`rbowen/ponymail-mcp`](https://github.com/rbowen/ponymail-mcp) MCP
-with ASF LDAP OAuth — which lets an authenticated PMC triager read
-private-list archives directly without a personal Gmail subscription
-to the list. Drafts are still Gmail-only; the PonyMail MCP has no
-write capability, so every skill's outbound-reporter-draft surface
-stays here regardless of which read backend the project opts into.
+for every outbound reporter reply the skills compose. Gmail's draft
+capability is load-bearing and cannot be swapped — this directory
+stays in every project's toolchain because PonyMail MCP, the
+alternative read path documented at
+[`../ponymail/tool.md`](../ponymail/tool.md), is read-only and
+cannot compose reporter replies.
+
+**Role when PonyMail MCP is opted into.** When a user sets
+`tools.ponymail.enabled: true` in their
+[`config/user.md`](../../config/README.md) and authenticates the
+MCP, PonyMail becomes the primary read backend for archive
+queries (reporter-thread lookups, reviewer-comment searches,
+`users@` / `dev@` archive scans, prior-rejection precedents).
+Gmail stays as the fallback read path — used when a specific list
+is outside the user's `tools.ponymail.private_lists` allowlist,
+when PonyMail returns an error, or when inbox latency matters
+for just-arrived messages. Gmail remains the **only** backend for
+draft composition regardless. When the user has not opted into
+PonyMail MCP, Gmail is the sole read backend and the skills run
+exactly as before.
 
 ## When to replace this tool with another
 
