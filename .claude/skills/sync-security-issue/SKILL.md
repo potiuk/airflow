@@ -1051,10 +1051,21 @@ will change and *why*. Group them by category:
     (public issues, commits, security advisories): always the full
     URL. Markdown-link syntax (``[text](url)``) does **not** render
     in plain-text email — use the bare URL.
-  - CVE IDs can stay as ``CVE-YYYY-NNNN`` inline text (email clients
-    typically do not autolink them), or be written as the full ASF
-    CVE tool URL (``https://cveprocess.apache.org/cve5/CVE-YYYY-NNNN``)
-    when you want the reporter to be able to click through.
+  - CVE IDs appear as **plain ``CVE-YYYY-NNNN`` inline text only**
+    — email clients typically do not autolink them, which is the
+    intended behaviour. **Never** include the ASF CVE-tool URL
+    (``https://cveprocess.apache.org/cve5/CVE-YYYY-NNNN``) in a
+    reporter email: the tool is ASF-OAuth-gated, the reporter
+    cannot authenticate, and the URL exposes internal tooling to
+    an external party. Once the CVE is **published** on
+    ``cve.org`` (advisory sent, ``announced`` label set on the
+    tracker), the ``cve.org`` URL
+    (``https://www.cve.org/CVERecord?id=CVE-YYYY-NNNN``) is an
+    acceptable clickable alternative, but plain CVE-ID text is
+    still the default. See the "Reporter emails: CVE ID only,
+    never the ASF CVE-tool URL" subsection of
+    [`AGENTS.md`](../../../AGENTS.md) for the full rule +
+    rationale + the pre-draft self-check.
   - Advisory archive URLs (``lists.apache.org/thread/...``) are
     already full URLs; just paste them as-is.
 

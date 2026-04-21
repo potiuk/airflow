@@ -771,10 +771,12 @@ case and link only to the ASF tool.
 [Confidentiality of the tracker repository](#confidentiality-of-the-tracker-repository)
 section above:
 
-- CVE-tool links are fine inside `<tracker>` private comments and
-  in private mail to the reporter on `<security-list>` — the tool
-  is team-internal and does not reveal anything beyond the CVE ID
-  itself.
+- CVE-tool links are fine inside `<tracker>` private comments, in
+  rollup entries, in skill proposals, and in notes the security team
+  reads — every one of those surfaces is viewed by collaborators
+  who can authenticate against the ASF CVE tool.
+- **Reporter emails never carry the CVE-tool URL** — see the
+  subsection immediately below.
 - Public `<upstream>` PR descriptions, public mailing-list posts,
   and any other public surface **must not** link to the CVE tool
   before the advisory is sent — doing so implies the existence of
@@ -782,7 +784,56 @@ section above:
   only to `cve.org` (or NVD), never to the CVE tool.
 
 When editing an existing document that contains a bare `CVE-YYYY-NNNNN`
-string, convert it to the linked form in the same edit.
+string, convert it to the linked form in the same edit — **except**
+in reporter-facing email drafts, which follow the rule below.
+
+#### Reporter emails: CVE ID only, never the ASF CVE-tool URL
+
+Emails drafted to a reporter on `<security-list>` — receipt-of-
+confirmation replies, status updates, advisory notifications, credit
+corrections, CVE-publication notifications — **must not** contain the
+ASF CVE-tool URL (`https://cveprocess.apache.org/cve5/<CVE-ID>`).
+
+**Why:**
+
+- The ASF CVE tool is gated behind ASF OAuth. An external reporter
+  clicking that URL gets a login page they cannot resolve; the link is
+  dead weight at best and confusing at worst.
+- The tool is internal security-team infrastructure. Putting its URL in
+  front of an external party exposes internal tooling that the reporter
+  has no reason to see, and invites questions about the record that the
+  team would prefer to answer on its own cadence.
+- The CVE ID alone is the public identifier. Once the record publishes
+  on `cve.org`, the reporter can look it up there. Before publication,
+  no external database has details, and the CVE ID as text is exactly
+  the right amount of information for the reporter to file or cross-
+  reference.
+
+**How to reference a CVE in a reporter email:**
+
+- **Before publication** (CVE is `RESERVED` on `cve.org`): write the
+  CVE ID as plain inline text, e.g. *"… allocated CVE-2026-40690 for
+  this issue …"*. Do not add a URL of any kind. Most email clients
+  do not autolink `CVE-YYYY-NNNNN`, which is the intended behaviour —
+  the reporter reads the ID, not a clickable link.
+- **After publication** (advisory has been sent, CVE is visible on
+  `cve.org`): the `cve.org` URL is acceptable if a clickable
+  reference is worth including, e.g.
+  `https://www.cve.org/CVERecord?id=CVE-2026-40690`. This is still
+  optional — the CVE ID as plain text remains sufficient and is
+  often cleaner.
+- **Never** include `cveprocess.apache.org/cve5/<CVE-ID>` (or any
+  other ASF CVE-tool URL) in the email body, quoted excerpt,
+  footer, signature, or forwarded context. If a prior draft in the
+  thread contained the URL, do not repeat it in the follow-up.
+
+**Self-check before creating the Gmail draft:** grep the draft body
+for the literal strings `cveprocess.apache.org` and
+`cveprocess.apache.org/cve5/`; if either appears, remove the URL and
+leave the bare CVE ID. The tracker-internal surfaces that the sync
+and other skills write to (rollup entries, status comments, proposal
+summaries) continue to link the ASF CVE-tool record as before —
+this rule is specific to the outbound-reporter-email surface.
 
 ### Linking tracker issues and PRs
 
