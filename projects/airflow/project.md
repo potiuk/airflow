@@ -95,6 +95,7 @@ PR series).
 |---|---|---|---|
 | Issue tracking + source control + project board | `github` | [`../../tools/github/`](../../tools/github/) | `tracker_repo`, `upstream_repo`, `github_project_board_*`, `issue_template_fields` |
 | Inbound email / drafts | `gmail` | [`../../tools/gmail/`](../../tools/gmail/) | `security_list` subscription; PonyMail archive URL templates below |
+| ASF mailing-list archive reads (opt-in, per-user) | `ponymail` | [`../../tools/ponymail/`](../../tools/ponymail/) | user-level opt-in via `config/user.md` → `tools.ponymail.enabled` + `tools.ponymail.private_lists`; additive to `gmail`, never a replacement |
 | CVE allocation + record mgmt | `vulnogram` | [`../../tools/vulnogram/`](../../tools/vulnogram/) | see [CVE tooling](#cve-tooling) below |
 | Public CVE-registry check (cve.org) | `cve-org` | [`../../tools/cve-org/`](../../tools/cve-org/) | none (universal registry — URLs are the same for every CVE ID) |
 | Release voting / announce | ASF mailing lists | — | via `dev_list` / `announce_list` / `users_list` |
@@ -103,6 +104,31 @@ To replace a tool (e.g. swap GitHub issues for JIRA), declare an
 alternate tool in the table above, add a `tools/<name>/` adapter
 directory, and make sure the values the generic skills need are still
 reachable from this manifest.
+
+**Additive vs. replacement.** Most rows in the table above declare a
+single load-bearing tool per capability (swap one for another to
+move backends). The `ponymail` row is different — it is **additive
+to `gmail`**, not a replacement, but with a flipped primary-vs-
+fallback role compared to the other additive patterns in the
+codebase:
+
+- **When `tools.ponymail.enabled: true` in the user's
+  [`config/user.md`](../../config/README.md) and PonyMail MCP is
+  authenticated,** PonyMail MCP is the **primary read path** for
+  mailing-list queries. The archive is authoritative, consistent
+  across team members, and reaches further back than a typical
+  Gmail mailbox window. Gmail is the fallback — used when a
+  specific list is outside the user's
+  `tools.ponymail.private_lists` allowlist (no LDAP archive
+  access for that list from this user's session) or when
+  PonyMail returns an error.
+- **When PonyMail MCP is not configured or not authenticated,**
+  Gmail is the only read backend. The skills degrade silently
+  without any blocker or warning.
+- **Drafts are always composed via Gmail**, regardless of which
+  read backend answered the originating query. PonyMail MCP is
+  read-only; it has no `create_draft` equivalent and must not be
+  used for reporter-facing reply composition.
 
 ## CVE tooling
 

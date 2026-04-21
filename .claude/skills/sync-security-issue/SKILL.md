@@ -295,19 +295,52 @@ Before reading any tracker state, verify:
 1. **Gmail MCP is reachable** — trivial
    `mcp__claude_ai_Gmail__search_threads` with `pageSize: 1`; an
    auth error here means Gmail MCP is not configured, stop and
-   say so.
+   say so. Gmail is the load-bearing backend for inbox reads and
+   the only backend that can create drafts, so a Gmail failure is
+   always a stop.
 2. **`gh` is authenticated** with access to `<tracker>` —
    `gh api repos/<tracker> --jq .name` must return
    `airflow-s`. A 401/403/404 means the user needs
    `gh auth login` or collaborator access.
-3. **Selector resolves to a concrete issue (or set of issues)** —
+3. **PonyMail MCP status** (opt-in; primary read path when
+   enabled) — read `config/user.md` → `tools.ponymail`. If
+   `enabled: true`, call `mcp__ponymail__auth_status()` once. Three
+   outcomes:
+   - **Authenticated session** — record
+     `ponymail_enabled: true, ponymail_authenticated: true` in the
+     skill's observed-state bag. **Downstream steps use PonyMail
+     MCP as the primary read path** for the mailing-list queries
+     documented in 1c / 1d / 1e / 2b / 2c; Gmail becomes the
+     fallback. This is the normal configuration for PMC-authenticated
+     triagers.
+   - **No session / expired session** — record
+     `ponymail_enabled: true, ponymail_authenticated: false`,
+     surface a one-line warning to the user
+     (*"PonyMail MCP is configured but not authenticated — run
+     `mcp__ponymail__login()` if you want this session to use it;
+     otherwise Gmail will serve all reads"*), and proceed with
+     Gmail as the primary read path. Do **not** stop; Gmail alone
+     is sufficient.
+   - **MCP tools not available** (the `mcp__ponymail__*` tools
+     are absent from the current session's tool list) — record
+     `ponymail_enabled: false`, silently proceed Gmail-only. A
+     user who set `enabled: true` in config but has not
+     registered the MCP in Claude Code's `mcpServers` block gets
+     the Gmail-only path without a noisy error.
+   When `config/user.md` sets `enabled: false` or omits the
+   `ponymail` block entirely, skip this sub-step; Gmail is the
+   only read backend. See
+   [`tools/ponymail/tool.md`](../../../tools/ponymail/tool.md)
+   for the one-time setup instructions.
+4. **Selector resolves to a concrete issue (or set of issues)** —
    if the user said `sync NNN` but the number does not exist in
    `<tracker>`, stop before Step 1 and ask which issue
    they meant.
 
-If any check fails, stop and surface what is missing. Do **not**
-proceed to Step 1 on a partial setup — half the observations would
-be wrong and the proposals downstream would be junk.
+If any check fails (other than PonyMail, which degrades quietly),
+stop and surface what is missing. Do **not** proceed to Step 1 on a
+partial setup — half the observations would be wrong and the
+proposals downstream would be junk.
 
 ---
 
@@ -395,6 +428,44 @@ set is the strongest signal for what milestone the security issue should carry.
 > author is usually a security team member, while the **real reporter** is
 > whoever sent the original email. Always identify the real reporter before
 > proposing credit, draft replies, or status updates.
+
+**Backend selection.** When Step 0 recorded
+`ponymail_authenticated: true` **and**
+`security@<project>.apache.org` is in `config/user.md` →
+`tools.ponymail.private_lists`, **PonyMail MCP is the primary
+backend for this step** — the archive is authoritative and
+reaches back further than any single user's Gmail window. Run the
+distinctive-phrase search against:
+
+```
+mcp__ponymail__search_list(
+  list: "security",
+  domain: "<project>.apache.org",
+  query: "<distinctive phrase>",
+  timespan: "lte=180d"
+)
+```
+
+Follow up with `mcp__ponymail__get_thread(list, domain, id: <tid>)`
+for the full thread once the root message is identified. See
+[`tools/ponymail/operations.md` — Pull the original report thread](../../../tools/ponymail/operations.md#pull-the-original-report-thread-on-securityprojectapacheorg)
+for the exact call shape.
+
+**Gmail is the fallback** for the reporter-thread lookup in three
+cases:
+
+- PonyMail MCP is disabled or unauthenticated — use Gmail only.
+- PonyMail is enabled but `security@<project>.apache.org` is not
+  in the user's `private_lists` allowlist (LDAP does not grant
+  this user archive access to the private list) — use Gmail.
+- PonyMail returned no match but Gmail has the thread (rare, but
+  possible for very-recent reports where the archive index has
+  not caught up yet).
+
+When both PonyMail and Gmail come back empty, surface an explicit
+*"reporter thread not located in either backend — ask the user
+whether the GitHub issue author is also the reporter"* per
+step 5 below.
 
 Process for finding the real reporter and the original thread:
 
@@ -486,6 +557,24 @@ Process for finding the real reporter and the original thread:
    themselves). Do not assume.
 
 ### 1d. Mine comments and mail messages for actionable signals
+
+**Backend selection.** When PonyMail MCP is enabled and
+authenticated (Step 0), **PonyMail is the primary source for
+archive queries** in this step — the archive gives a consistent
+view across team members, covers lists the user may not be
+subscribed to, and reaches beyond the Gmail mailbox window. Use
+it for: historical lookups, cross-list fan-outs
+(`announce@apache.org`, `dev@<project>.apache.org`,
+`users@<project>.apache.org`), and any mine that needs to
+reliably find messages older than ~90 days. Gmail is the fallback
+when (a) PonyMail is not enabled / not authenticated, (b) a
+private list the query targets is not in
+`config/user.md` → `tools.ponymail.private_lists`, or (c) the
+signal is *just-arrived inbound mail* where Gmail's inbox latency
+beats the archive's indexing delay. The per-issue budget is
+≤ 2 archive searches (whichever backend) plus ≤ 3 Gmail inbox
+searches on the reporter thread; stay inside the combined
+envelope.
 
 The GitHub issue comments, the Gmail thread messages, and any cross-
 referenced thread (release-announcement emails on `announce@`, PR-review
@@ -584,6 +673,28 @@ instead notifies the CNA mailing list
 comment / TODO on the record, and those emails are readable from Gmail
 through the normal `mcp__claude_ai_Gmail__*` tools the skill already
 uses for reporter threads. That is the load-bearing signal path.
+
+**Backend selection.** When PonyMail MCP is enabled and
+authenticated (Step 0) **and** `security@<project>.apache.org` is
+in `config/user.md` → `tools.ponymail.private_lists`, **PonyMail
+MCP is the primary path** for reviewer-comment archive queries:
+
+```
+mcp__ponymail__search_list(
+  list: "security",
+  domain: "<project>.apache.org",
+  query: "<CVE-ID>",
+  timespan: "lte=90d"
+)
+```
+
+The archive query is authoritative — it returns every reviewer
+notification that reached the list, independent of any single
+triager's Gmail subscription or inbox window. Gmail is the
+fallback when (a) PonyMail is not enabled / not authenticated,
+(b) the private list is not in the allowlist for this user, or
+(c) the comment is very recent and the Gmail inbox may have it
+before the archive indexes it.
 
 **Search recipe.** Use the CVE-review-comment query templates in
 [`tools/gmail/search-queries.md`](../../../tools/gmail/search-queries.md#sync-security-issue--cve-review-comment-search);
@@ -928,17 +1039,45 @@ will change and *why*. Group them by category:
   Every sync run must:
 
   1. If `announced - emails sent` is set and the field is still
-     empty, **scan the public users@ archive for the CVE ID** using
-     the PonyMail API + `list.html` fallback pattern documented in
-     [`tools/gmail/ponymail-archive.md`](../../../tools/gmail/ponymail-archive.md#use-case--sync-security-issue).
-     The active project's URL templates are declared in
-     [`projects/<PROJECT>/project.md`](../../../projects/<PROJECT>/project.md#gmail-and-ponymail)
-     (`ponymail_api_url_template`, `ponymail_public_search_url_template`,
-     `ponymail_thread_url_template`).
-     If the archive returns a hit, propose populating the field with
-     the resolved thread URL (per `ponymail_thread_url_template`),
-     regenerating the CVE JSON attachment, and adding the
-     `announced` label.
+     empty, **scan the public users@ archive for the CVE ID**. Two
+     paths, picked by what the user has configured:
+
+     - **PonyMail MCP (preferred when enabled).** If Step 0
+       recorded `ponymail_authenticated: true`, call:
+
+       ```
+       mcp__ponymail__search_list(
+         list: "users",
+         domain: "<project>.apache.org",
+         query: "<CVE-ID>",
+         timespan: "lte=30d"
+       )
+       ```
+
+       `users@` is a public list so no LDAP allowlist check is
+       required. A single hit is the advisory thread; capture its
+       `tid` and construct the pastable archive URL via the
+       `ponymail_thread_url_template` from the project manifest.
+       See
+       [`tools/ponymail/operations.md` — Find the advisory archive thread](../../../tools/ponymail/operations.md#find-the-advisory-archive-thread-on-usersprojectapacheorg)
+       for the exact call shape.
+
+     - **PonyMail HTTP API (fallback).** When PonyMail MCP is
+       disabled, unauthenticated, or returns an error, fall back
+       to the HTTP API + `list.html` pattern documented in
+       [`tools/gmail/ponymail-archive.md`](../../../tools/gmail/ponymail-archive.md#use-case--sync-security-issue).
+       The active project's URL templates are declared in
+       [`projects/<PROJECT>/project.md`](../../../projects/<PROJECT>/project.md#gmail-and-ponymail)
+       (`ponymail_api_url_template`,
+       `ponymail_public_search_url_template`,
+       `ponymail_thread_url_template`). The fallback path is
+       anonymous-HTTPS only and works for every triager regardless
+       of LDAP status.
+
+     Either way, if the archive returns a hit, propose populating
+     the field with the resolved thread URL (per
+     `ponymail_thread_url_template`), regenerating the CVE JSON
+     attachment, and adding the `announced` label.
   2. If the field is already populated, treat it as authoritative —
      no scan needed. Regenerate the CVE JSON attachment so the URL
      flows into `references[]` as `vendor-advisory`.
@@ -1298,10 +1437,32 @@ the actual person, in this order:
    `[RESULT][VOTE] Airflow Providers - release preparation date
    <YYYY-MM-DD>`) message **is** the release manager for that specific
    cut. Use this when the release has already shipped (the wiki only
-   tracks upcoming schedule, not past releases). Gmail search query
-   for providers:
-   `"[RESULT][VOTE]" "Airflow Providers" from:dev@airflow.apache.org`.
-   Narrow with a date range if needed.
+   tracks upcoming schedule, not past releases). Two query paths:
+
+   - **PonyMail MCP (preferred when enabled).** `dev@` is a public
+     list; no LDAP allowlist check is needed. Call:
+
+     ```
+     mcp__ponymail__search_list(
+       list: "dev",
+       domain: "airflow.apache.org",
+       subject: "[RESULT][VOTE]",
+       query: "<version-or-wave-token>",
+       timespan: "lte=14d"
+     )
+     ```
+
+     See
+     [`tools/ponymail/operations.md` — Find the `[RESULT][VOTE]` thread](../../../tools/ponymail/operations.md#find-the-resultvote-thread-for-a-release)
+     for the full call shape. The sender of the top hit is the RM.
+
+   - **Gmail (fallback).** When PonyMail MCP is disabled or
+     unauthenticated, search Gmail:
+     `"[RESULT][VOTE]" "Airflow Providers" from:dev@airflow.apache.org`.
+     Narrow with a date range if needed. Gmail requires the user
+     to be subscribed to `dev@` from the account they are running
+     from — PonyMail MCP is the more reliable path for triagers
+     who are on the security team but not the general dev list.
 
 If the release manager is not yet in
 [`projects/<PROJECT>/release-trains.md`](../../../projects/<PROJECT>/release-trains.md)

@@ -77,11 +77,17 @@ The two are **not** interchangeable today. Specifically:
   redirect, with the session cookie cached locally to
   `~/.ponymail-mcp/session.json`.
 
-For a project that declares both tools in its manifest, the skills
-prefer PonyMail MCP for **archive searches** (*"has the advisory
-been posted on `users@` yet?"*, *"pull the original root message
-of this thread we have no Gmail record of"*) and keep Gmail for
-**inbox reads of live threads** and **draft creation**.
+**Primary vs. fallback.** When a project declares both tools in
+its manifest **and** the user opts into PonyMail MCP in
+`config/user.md`, **PonyMail MCP is the primary read backend** for
+archive queries (reporter-thread lookups, reviewer-comment
+searches, advisory-URL scans, `[RESULT][VOTE]` attribution,
+prior-rejection precedent searches). Gmail is the fallback —
+used when the user does not have LDAP archive access to a
+specific list, when PonyMail returns an error, or when inbox
+latency matters (just-arrived messages that have not been indexed
+into the archive yet). Gmail remains the **only** backend for
+draft composition regardless of which read backend is active.
 
 ## Setup
 
