@@ -44,16 +44,16 @@ Related, adjacent tool:
 ## Why this is its own tool
 
 Gmail is the security team's **inbox** for the private
-`security@<project>.apache.org` mailing list. It is the only way the
-skills see inbound reports today, because the ASF's public
-`lists.apache.org` archive (PonyMail) requires PMC OAuth for access to
-private-list archives. An alternative path is on the horizon —
-[`rbowen/ponymail-mcp`](https://github.com/rbowen/ponymail-mcp) with
-ASF OAuth — which would let the skills read private-list threads
-directly without each triager having a personal Gmail subscription;
-see [`../../README.md`](../../README.md) for the current status. Until
-that lands, Gmail is the load-bearing tool and `ponymail-mcp` is a
-planned migration target.
+`security@<project>.apache.org` mailing list and the **draft queue**
+for every outbound reporter reply the skills compose. An alternative
+**read-only** path is documented separately at
+[`../ponymail/tool.md`](../ponymail/tool.md) — the
+[`rbowen/ponymail-mcp`](https://github.com/rbowen/ponymail-mcp) MCP
+with ASF LDAP OAuth — which lets an authenticated PMC triager read
+private-list archives directly without a personal Gmail subscription
+to the list. Drafts are still Gmail-only; the PonyMail MCP has no
+write capability, so every skill's outbound-reporter-draft surface
+stays here regardless of which read backend the project opts into.
 
 ## When to replace this tool with another
 
