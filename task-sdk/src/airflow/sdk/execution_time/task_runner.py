@@ -1050,7 +1050,10 @@ def _serialize_template_field(template_field: Any, name: str) -> str | dict | li
         template_field = sort_dict_recursively(template_field)
     serialized = str(template_field)
     if len(serialized) > max_length:
-        rendered = redact(serialized, name)
+        # Redact while still structured to preserve nested-key context (so values under
+        # documented sensitive keys such as `password`, `token`, `secret`, `api_key`
+        # are masked recursively); only stringify the redacted result for truncation.
+        rendered = redact(template_field, name)
         return truncate_rendered_value(str(rendered), max_length)
     return template_field
 
