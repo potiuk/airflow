@@ -1,3 +1,22 @@
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one
+ or more contributor license agreements.  See the NOTICE file
+ distributed with this work for additional information
+ regarding copyright ownership.  The ASF licenses this file
+ to you under the Apache License, Version 2.0 (the
+ "License"); you may not use this file except in compliance
+ with the License.  You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing,
+ software distributed under the License is distributed on an
+ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ KIND, either express or implied.  See the License for the
+ specific language governing permissions and limitations
+ under the License.
+ -->
+
 <!-- SPDX-License-Identifier: Apache-2.0
      https://www.apache.org/licenses/LICENSE-2.0 -->
 
@@ -31,9 +50,10 @@ all PRs into groups keyed by `(classification, action)`. Present
 the groups in this fixed order:
 
 1. `(pending_workflow_approval, approve-workflow)` — safety-
-   relevant, one-at-a-time per
-   [`workflow-approval.md`](workflow-approval.md), never
-   batched.
+   relevant; uses the dedicated list-then-select flow in
+   [`workflow-approval.md`](workflow-approval.md) instead of the
+   generic `[A]/[E]/[P]/[O]/[S]/[Q]` group menu. The standard
+   group screen below is bypassed for this group.
 2. `(deterministic_flag, close)` — destructive, one-at-a-time
    (but share the same group screen so the maintainer sees the
    "queue pressure" signal from multiple PRs by the same
@@ -131,12 +151,17 @@ individual prompt. After `[P]NN`, PR `NN` gets the individual
 flow and the rest of the group remains on screen for a follow-
 up `[A]`/`[E]`/`[S]`/`[Q]` decision.
 
-The three destructive groups —
-`(deterministic_flag, close)`, `(stale_draft, close)`,
-`(pending_workflow_approval, *)` — require a per-PR confirm
-inside `[A]`/`[E]` alike. `[A]` on those means "don't drop me
-back to the group menu between PRs", not "apply without
-confirm".
+The two destructive groups —
+`(deterministic_flag, close)` and `(stale_draft, close)` —
+require a per-PR confirm inside `[A]`/`[E]` alike. `[A]` on
+those means "don't drop me back to the group menu between
+PRs", not "apply without confirm".
+
+`(pending_workflow_approval, *)` does not use the standard
+group menu at all — see
+[`workflow-approval.md`](workflow-approval.md) for its
+list-then-select flow, which has its own selection-and-confirm
+step in place of `[A]`/`[E]`.
 
 ---
 
