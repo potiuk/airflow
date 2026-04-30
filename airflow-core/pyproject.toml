@@ -20,7 +20,7 @@ requires = [
     "gitdb==4.0.12",
     "GitPython==3.1.47",
     "hatchling==1.29.0",
-    "packaging==26.1",
+    "packaging==26.2",
     "pathspec==1.1.0",
     "pluggy==1.6.0",
     "smmap==5.0.3",
