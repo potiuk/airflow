@@ -1,0 +1,3 @@
+[submodule ".apache-steward/apache-steward"]
+	path = .apache-steward/apache-steward
+	url = https://github.com/apache/airflow-steward.git
