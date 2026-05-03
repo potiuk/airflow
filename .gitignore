@@ -137,9 +137,22 @@ ENV/
 !.claude/skills/
 .claude/skills/*
 !.claude/skills/aip-user-stories
-!.claude/skills/pr-stats
-!.claude/skills/pr-triage
-!.claude/skills/maintainer-review
+!.claude/skills/setup-steward
+
+# apache-steward (https://github.com/apache/airflow-steward) snapshot
+# — managed by /setup-steward. Snapshot is a build artefact, not
+# source. To re-create on a fresh clone: tell your agent
+# "adopt apache-steward in this repo" and it will follow
+# .github/skills/setup-steward/SKILL.md.
+/.apache-steward/
+
+# Framework skill symlinks created by /setup-steward — they target
+# the gitignored snapshot above so they would dangle on a fresh
+# clone before /setup-steward runs.
+/.github/skills/security-*
+/.github/skills/pr-management-*
+/.github/skills/setup-isolated-setup-*
+/.github/skills/setup-shared-config-sync
 
 # Kiro
 .kiro/

@@ -1,0 +1,8 @@
+# apache-steward snapshot lock file
+# Managed by .github/skills/setup-steward/. Do not edit manually
+# — re-pin via /setup-steward upgrade.
+
+source: https://github.com/apache/airflow-steward.git
+ref: main
+commit: 84852ca1a0b383ad3fa9a0c4b6deb0578a0fba01
+fetched: 2026-05-03

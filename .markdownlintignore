@@ -1,0 +1,14 @@
+# apache-steward — gitignored snapshot (won't appear in git, but
+# add anyway so local lint runs skip it cleanly).
+.apache-steward/
+
+# The setup-steward bootstrap skill is the framework's
+# source-of-truth markdown — formatted per the framework's own
+# .markdownlint.json convention (atx headings, etc.) which differs
+# from this repo's setext-style default. Skip it here; it is
+# already linted in the apache/airflow-steward repo.
+.github/skills/setup-steward/
+
+# .apache-steward-overrides/ docs follow the framework convention
+# too — same reason.
+.apache-steward-overrides/

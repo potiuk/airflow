@@ -11,6 +11,32 @@
 - **Never run pytest, python, or airflow commands directly on the host** — always use `breeze`.
 - Place temporary scripts in `dev/` (mounted as `/opt/airflow/dev/` inside Breeze).
 
+### apache-steward (maintainer skills framework)
+
+This repo adopts the [`apache/airflow-steward`](https://github.com/apache/airflow-steward)
+framework via its **snapshot + agentic-overrides** mechanism. The
+framework ships maintainer-facing skills (PR triage / stats /
+code-review under the `pr-management-*` family, plus secure-agent
+setup for adopters who use it).
+
+On a fresh clone the framework's skills are not yet installed —
+only the bootstrap skill at
+[`.github/skills/setup-steward/`](.github/skills/setup-steward/SKILL.md)
+is committed. To populate the framework snapshot + symlinks, tell
+your agent **"adopt apache-steward in this repo"** or invoke
+`/setup-steward` directly. The skill manages everything: it
+downloads the framework into the gitignored `/.apache-steward/`
+(build artefact, never committed), creates gitignored symlinks
+under `.github/skills/` for the skill families this project uses,
+and refreshes both on `/setup-steward upgrade`.
+
+Adopter-side modifications to framework workflows live in
+[`.apache-steward-overrides/`](.apache-steward-overrides/) (this
+directory **is** committed). See
+[`.apache-steward-overrides/README.md`](.apache-steward-overrides/README.md)
+for the contract — never modify the gitignored snapshot; either
+override locally or open a PR against `apache/airflow-steward`.
+
 ## Commands
 
 `<PROJECT>` is folder where pyproject.toml of the package you want to test is located. For example, `airflow-core` or `providers/amazon`.
