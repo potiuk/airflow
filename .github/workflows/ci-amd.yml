@@ -49,7 +49,12 @@ jobs:
     name: "AMD"
     uses: ./.github/workflows/_ci-pipeline.yml
     permissions:
-      contents: read
+      # `contents: write` is required because `_ci-pipeline.yml`'s
+      # finalize-tests job needs to push tags / artifacts on canary runs.
+      # With reusable workflows the caller's job-level permissions must
+      # satisfy every called job's permissions block — non-reusable
+      # workflows silently cap, reusable workflows hard-error.
+      contents: write
       packages: write
       id-token: write
     with:
