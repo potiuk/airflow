@@ -16,22 +16,30 @@
 # under the License.
 #
 ---
-name: Tests
+# Reusable CI pipeline. Triggered from `ci-arm.yml` and `ci-amd.yml`, which
+# pass the platform / runner-type to use. Schedule, pull_request, push, and
+# workflow_dispatch event configuration lives in those wrappers — see them
+# for the trigger surface and concurrency groups. Do not invoke this workflow
+# directly; it is a workflow_call target only.
+name: CI pipeline (reusable)
 on:  # yamllint disable-line rule:truthy
-  schedule:
-    - cron: '28 1,3,7,9,13,15,19,21 * * *'
-  push:
-    branches:
-      - v[0-9]+-[0-9]+-test
-      - providers-[a-z]+-?[a-z]*/v[0-9]+-[0-9]+
-  pull_request:
-    branches:
-      - main
-      - v[0-9]+-[0-9]+-test
-      - v[0-9]+-[0-9]+-stable
-      - providers-[a-z]+-?[a-z]*/v[0-9]+-[0-9]+
-    types: [opened, reopened, synchronize, ready_for_review]
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      platform:
+        description: "Target platform: linux/amd64 or linux/arm64"
+        required: true
+        type: string
+      runner-type:
+        description: 'JSON-encoded runner labels list, e.g. ''["ubuntu-22.04-arm"]''.'
+        required: true
+        type: string
+    secrets:
+      DOCS_AWS_ACCESS_KEY_ID:
+        required: false
+      DOCS_AWS_SECRET_ACCESS_KEY:
+        required: false
+      SLACK_BOT_TOKEN:
+        required: false
 permissions:
   # All other permissions are set to none by default
   contents: read
@@ -41,10 +49,6 @@ env:
   GITHUB_USERNAME: ${{ github.actor }}
   SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
   VERBOSE: "true"
-
-concurrency:
-  group: ci-amd-arm-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
 
 jobs:
   build-info:
@@ -90,7 +94,10 @@ jobs:
       latest-versions-only: ${{ steps.selective-checks.outputs.latest-versions-only }}
       mysql-exclude: ${{ steps.selective-checks.outputs.mysql-exclude }}
       mysql-versions: ${{ steps.selective-checks.outputs.mysql-versions }}
-      platform: ${{ steps.selective-checks.outputs.platform }}
+      # platform / runner-type come from the wrapper workflow that called us,
+      # not from selective-checks. Each wrapper hardcodes its architecture so
+      # we no longer alternate between ARM and AMD via the cross-mapping.
+      platform: ${{ inputs.platform }}
       postgres-exclude: ${{ steps.selective-checks.outputs.postgres-exclude }}
       postgres-versions: ${{ steps.selective-checks.outputs.postgres-versions }}
       prod-image-build: ${{ steps.selective-checks.outputs.prod-image-build }}
@@ -120,7 +127,7 @@ jobs:
       run-task-sdk-integration-tests: ${{ steps.selective-checks.outputs.run-task-sdk-integration-tests }}
       run-breeze-integration-tests: ${{ steps.selective-checks.outputs.run-breeze-integration-tests }}
       run-scripts-tests: ${{ steps.selective-checks.outputs.run-scripts-tests }}
-      runner-type: ${{ steps.selective-checks.outputs.runner-type }}
+      runner-type: ${{ inputs.runner-type }}
       run-ui-tests: ${{ steps.selective-checks.outputs.run-ui-tests }}
       run-ui-e2e-tests: ${{ steps.selective-checks.outputs.run-ui-e2e-tests }}
       run-unit-tests: ${{ steps.selective-checks.outputs.run-unit-tests }}
@@ -198,23 +205,24 @@ jobs:
         env:
           PR_LABELS: ${{ steps.source-run-info.outputs.pr-labels }}
 
-  print-platform-arm:
-    name: "Platform: ARM"
+  print-platform:
+    name: "Platform: ${{ inputs.platform == 'linux/arm64' && 'ARM' || 'AMD' }}"
     needs: [build-info]
     runs-on: ["ubuntu-22.04"]
-    if: needs.build-info.outputs.platform == 'linux/arm64'
+    env:
+      # Pass `inputs.platform` via env to keep `${{ … }}` out of the run script.
+      # The value is workflow-controlled (set by ci-arm.yml / ci-amd.yml),
+      # not attacker-controllable, but zizmor's template-injection audit
+      # cannot prove that, so we route it through env to satisfy the rule.
+      PLATFORM: ${{ inputs.platform }}
     steps:
       - name: "Print architecture"
-        run: "echo '## Architecture: ARM' >> $GITHUB_STEP_SUMMARY"
-
-  print-platform-amd:
-    name: "Platform: AMD"
-    needs: [build-info]
-    runs-on: ["ubuntu-22.04"]
-    if: needs.build-info.outputs.platform == 'linux/amd64'
-    steps:
-      - name: "Print architecture"
-        run: "echo '## Architecture: AMD' >> $GITHUB_STEP_SUMMARY"
+        run: |
+          if [[ "${PLATFORM}" == "linux/arm64" ]]; then
+            echo '## Architecture: ARM' >> "${GITHUB_STEP_SUMMARY}"
+          else
+            echo '## Architecture: AMD' >> "${GITHUB_STEP_SUMMARY}"
+          fi
 
   basic-tests:
     name: "Basic tests"

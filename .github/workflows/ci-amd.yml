@@ -1,0 +1,63 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+---
+# AMD CI workflow. Runs the full CI pipeline (defined in `_ci-pipeline.yml`)
+# on AMD runners. This is the workflow every PR and push goes through; it
+# also runs on workflow_dispatch.
+#
+# There is intentionally no `schedule:` here yet — the canary slot stays on
+# ARM (see `ci-arm.yml`). Add a schedule block if/when AMD should also act
+# as a scheduled canary; the two workflows can run in parallel.
+name: Tests (AMD)
+on:  # yamllint disable-line rule:truthy
+  push:
+    branches:
+      - v[0-9]+-[0-9]+-test
+      - providers-[a-z]+-?[a-z]*/v[0-9]+-[0-9]+
+  pull_request:
+    branches:
+      - main
+      - v[0-9]+-[0-9]+-test
+      - v[0-9]+-[0-9]+-stable
+      - providers-[a-z]+-?[a-z]*/v[0-9]+-[0-9]+
+    types: [opened, reopened, synchronize, ready_for_review]
+  workflow_dispatch:
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-amd-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pipeline:
+    name: "AMD"
+    uses: ./.github/workflows/_ci-pipeline.yml
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    with:
+      platform: "linux/amd64"
+      runner-type: '["ubuntu-22.04"]'
+    secrets:
+      # Forward only the secrets the reusable pipeline actually consumes;
+      # `secrets: inherit` would pass everything in the org/repo store.
+      DOCS_AWS_ACCESS_KEY_ID: ${{ secrets.DOCS_AWS_ACCESS_KEY_ID }}
+      DOCS_AWS_SECRET_ACCESS_KEY: ${{ secrets.DOCS_AWS_SECRET_ACCESS_KEY }}
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
