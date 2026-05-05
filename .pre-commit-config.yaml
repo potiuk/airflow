@@ -403,24 +403,25 @@ repos:
   - repo: https://github.com/lycheeverse/lychee
     rev: e85aaf5524b2f808e63bae55e594c843220f10f2  # frozen: lychee-v0.24.2
     hooks:
-      - id: lychee
+      # Use the upstream `lychee-docker` variant rather than the script-based
+      # `lychee` hook because the prebuilt lychee binaries that the script
+      # downloads are linked against newer glibc than ubuntu-22.04 runners
+      # ship with (`GLIBC_2.38` / `GLIBC_2.39` not found at runtime). The
+      # docker variant runs the official `lycheeverse/lychee` image, which
+      # bundles its own libc and is portable across runners.
+      - id: lychee-docker
         name: Check internal Markdown links with lychee (offline mode)
         description: >-
-          Validate intra-repo links in Markdown files (relative paths, anchors)
-          without making any HTTP requests. Auto-generated client docs are
-          excluded because they are regenerated from OpenAPI specs.
+          Validate intra-repo links in Markdown files (relative paths, anchors,
+          and fragments) without making any HTTP requests. Auto-generated client
+          docs are excluded because they are regenerated from OpenAPI specs.
         types: [markdown]
         args:
-          # Pin the lychee binary version explicitly. Airflow follows the
-          # SHA-pinning convention for `rev`, but the lychee pre-commit
-          # script needs a version tag — passing it via this arg keeps both
-          # happy. Update both the `rev` SHA above and this version string
-          # together when bumping.
-          - LYCHEE_VERSION=0.24.2
           - --offline
           - --no-progress
           - --root-dir
           - .
+          - --include-fragments
         exclude: |
           (?x)
           ^clients/python/|
