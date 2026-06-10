@@ -224,30 +224,37 @@ def relative_path_from_logger(logger) -> Path | None:
 
 
 def upload_to_remote(logger: FilteringBoundLogger, ti: RuntimeTI | None = None):
+    from airflow.sdk.configuration import conf
+
     raw_logger = getattr(logger, "_logger")
-    # Dedicated logger for remote-upload visibility — operators relying on
-    # remote log handlers need a way to see when those handlers fail to load
-    # or fail to upload.
-    upload_log = structlog.get_logger("airflow.logging.remote")
+    # ``logger`` writes to the task's own log file (it is still open at upload
+    # time), so warnings emitted through it are visible to operators in the task
+    # logs — the place they actually look — rather than only in worker stdout.
 
     ti_id = str(ti.id) if ti else None
 
     handler = load_remote_log_handler()
     if not handler:
-        upload_log.warning(
-            "remote_log_handler_unavailable",
-            ti_id=ti_id,
-            note="Remote log handler could not be loaded; logs will be available locally only.",
-        )
+        # No remote handler is the default for most installs, so it is not a
+        # failure and must stay silent (otherwise every task warns). Only warn
+        # when the user asked for remote logging but no handler could be loaded,
+        # which is a genuine misconfiguration worth surfacing.
+        if conf.getboolean("logging", "remote_logging", fallback=False):
+            logger.warning(
+                "Remote logging is enabled but no remote log handler could be loaded; "
+                "task logs will be available locally only.",
+                ti_id=ti_id,
+            )
         return
 
     try:
         relative_path = relative_path_from_logger(raw_logger)
     except Exception as exc:
-        upload_log.warning(
-            "remote_log_path_resolution_failed",
+        logger.warning(
+            "Failed to resolve the local log path for remote upload; "
+            "task logs will be available locally only.",
             ti_id=ti_id,
-            exc_info=exc,
+            error=str(exc),
         )
         return
     if not relative_path:
@@ -257,11 +264,11 @@ def upload_to_remote(logger: FilteringBoundLogger, ti: RuntimeTI | None = None):
     try:
         handler.upload(log_relative_path, ti)
     except Exception as exc:
-        upload_log.warning(
-            "remote_log_upload_failed",
+        logger.warning(
+            "Failed to upload task logs to remote storage; task logs will be available locally only.",
             ti_id=ti_id,
             log_relative_path=log_relative_path,
-            exc_info=exc,
+            error=str(exc),
         )
 
 
