@@ -26,6 +26,7 @@ from shutil import which
 from airflow_breeze.global_constants import MIN_GH_VERSION
 from airflow_breeze.utils.console import console_print
 from airflow_breeze.utils.github import run_gh_command
+from airflow_breeze.utils.shared_options import get_dry_run
 
 
 def tigger_workflow(workflow_name: str, repo: str, branch: str = "main", **kwargs):
@@ -55,6 +56,9 @@ def tigger_workflow(workflow_name: str, repo: str, branch: str = "main", **kwarg
     if result.returncode != 0:
         console_print(f"[red]Error running workflow: {result.stderr}[/red]")
         sys.exit(1)
+
+    if get_dry_run():
+        return
 
     # Wait for a few seconds to start the workflow run
     time.sleep(5)
@@ -203,6 +207,12 @@ def trigger_workflow_and_monitor(
         branch=branch,
         **workflow_fields,
     )
+
+    if get_dry_run():
+        # Nothing was dispatched, so there is no run to look up - continuing would pick up an
+        # unrelated earlier run of the same workflow, or fail when the workflow has never run.
+        console_print(f"[warning]Skipping monitoring of {workflow_name} - it was not triggered.[/]")
+        return
 
     workflow_run_id = get_workflow_run_id(
         workflow_name=workflow_name,
