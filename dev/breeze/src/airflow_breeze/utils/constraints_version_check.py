@@ -86,6 +86,15 @@ def is_valid_version(version_str: str, latest_version: Version) -> bool:
         return False
 
 
+def is_newer_version(candidate: str, reference: str) -> bool:
+    from packaging import version
+
+    try:
+        return version.parse(candidate) > version.parse(reference)
+    except version.InvalidVersion:
+        return False
+
+
 def count_versions_between(releases: dict[str, Any], current_version: str, latest_version: str):
     from packaging import version
 
@@ -474,6 +483,10 @@ def process_packages(
             releases = data["releases"]
             latest_version_with_cooldown = get_latest_version_with_cooldown(releases, cooldown_days)
             latest_version = latest_version_with_cooldown or data["info"]["version"]
+            if is_newer_version(pinned_version, latest_version):
+                # Constraints pick a fresh release up right away, while the cooldown still hides
+                # it from `latest`. The pin is ahead, not behind: nothing to upgrade to or explain.
+                latest_version = pinned_version
             latest_release_date = get_release_dates(releases, latest_version)
             constraint_release_date = get_release_dates(releases, pinned_version)
             is_latest_version = pinned_version == latest_version

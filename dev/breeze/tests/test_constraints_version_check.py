@@ -105,6 +105,20 @@ def test_baseline_is_not_resolved_without_explain_why(mock_baseline, mock_explai
     mock_baseline.assert_not_called()
 
 
+@mock.patch(f"{MODULE}.explain_package_upgrade")
+@mock.patch(f"{MODULE}.resolve_baseline_versions")
+@mock.patch(f"{MODULE}.get_latest_version_with_cooldown", return_value="1.0.0")
+def test_pin_newer_than_cooldown_latest_is_up_to_date(mock_cooldown, mock_baseline, mock_explain, pypi):
+    # Constraints already moved to 2.0.0 while the cooldown still reports 1.0.0 as latest.
+    outdated_count, _, explanations, status_counts = _run_process_packages([("pkg-a", "2.0.0")])
+
+    assert outdated_count == 0
+    assert explanations == []
+    assert status_counts["ok"] == 1
+    mock_explain.assert_not_called()
+    mock_baseline.assert_not_called()
+
+
 @mock.patch(f"{MODULE}.update_pyproject_dependency")
 @mock.patch(f"{MODULE}.preserve_files")
 @mock.patch(f"{MODULE}.sync_and_freeze")
