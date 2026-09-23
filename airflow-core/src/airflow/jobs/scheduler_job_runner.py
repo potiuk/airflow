@@ -99,7 +99,7 @@ from airflow.models.connection_test import (
 )
 from airflow.models.dag import DagModel
 from airflow.models.dag_version import DagVersion, _resolve_version_data
-from airflow.models.dagbag import DBDagBag
+from airflow.models.dagbag import DBDagBag, dag_cache_conf
 from airflow.models.dagbundle import DagBundleModel
 from airflow.models.dagrun import DagRun
 from airflow.models.dagwarning import DagWarning, DagWarningType
@@ -298,6 +298,25 @@ def _get_current_dr_task_concurrency(states: Iterable[TaskInstanceState]) -> Sub
     )
 
 
+def _create_scheduler_dag_bag() -> DBDagBag:
+    """
+    Build the scheduler's DagBag from the ``[scheduler]`` cache options.
+
+    Defaults to an LRU cache of 512 versions with no TTL. A size limit is the only hard ceiling:
+    each re-check resets an entry's expiry, so a TTL reclaims a version only once its runs finish
+    and it stops being requested, bounding memory by the concurrently active set rather than
+    outright. 512 is meant to sit above the versions-with-runs-in-flight working set of a typical
+    deployment, so eviction costs a re-fetch only where that working set is genuinely larger.
+    """
+    cache_size, cache_ttl = dag_cache_conf("scheduler", size_fallback=512, ttl_fallback=0)
+    return DBDagBag(
+        load_op_links=False,
+        cache_size=cache_size,
+        cache_ttl=cache_ttl,
+        stats_prefix="scheduler.dag_bag",
+    )
+
+
 class SchedulerJobRunner(BaseJobRunner, LoggingMixin):
     """
     SchedulerJobRunner runs for a specific time interval and schedules jobs that are ready to run.
@@ -370,7 +389,7 @@ class SchedulerJobRunner(BaseJobRunner, LoggingMixin):
         if log:
             self._log = log
 
-        self.scheduler_dag_bag = DBDagBag(load_op_links=False)
+        self.scheduler_dag_bag = _create_scheduler_dag_bag()
 
         # Set of (dag_id, asset_name, asset_uri) tuples for trigger policies that
         # are permanently unreachable for the rollup window's cardinality — the

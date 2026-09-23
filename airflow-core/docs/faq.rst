@@ -717,22 +717,29 @@ The API server caches serialized Dag objects in memory. Over time, as Dag versio
 
 There are two complementary approaches:
 
-**1. Bounded DAG caching (available since Airflow 3.3.0)**
+**1. Dag cache eviction (available since Airflow 3.2.2)**
 
-The API server supports LRU+TTL caching that bounds how many serialized Dag versions are kept
-in memory. Configure this in the ``[api]`` section:
+The API server can evict cached serialized Dag versions by size, by age, or both. Configure
+this in the ``[api]`` section:
 
 .. code-block:: ini
 
     [api]
-    dag_cache_size = 64    ; max cached versions (0 = unbounded, pre-3.2 behavior)
-    dag_cache_ttl = 3600   ; seconds before a cached entry expires (0 = LRU only)
+    dag_cache_size = 64    ; max cached versions (0 = no size limit)
+    dag_cache_ttl = 3600   ; seconds before an idle cached entry expires (0 = no TTL)
+
+``dag_cache_size`` is the only hard ceiling on memory. Each re-check resets a cached entry's
+expiry, so ``dag_cache_ttl`` reclaims only the Dag versions that stop being requested for the
+whole interval; versions that keep being requested are kept. It therefore trims the versions
+that accumulate over time, but memory still tracks the set of versions in active use. Setting
+both to 0 uses an unbounded dict with no eviction, matching the behavior before 3.2.2.
 
 The cache is keyed by Dag version ID. After a Dag is updated, the API server may serve the
 previous version until the cached entry expires (controlled by ``dag_cache_ttl``).
 
 See :ref:`config:api__dag_cache_size` and :ref:`config:api__dag_cache_ttl` for the full
-configuration reference.
+configuration reference. The scheduler has the same pair of options under ``[scheduler]``
+(see :ref:`faq:scheduler-memory-growth`).
 
 **2. Gunicorn with rolling worker restarts (available since Airflow 3.2.0)**
 
@@ -758,8 +765,47 @@ See :ref:`config:api__server_type`, :ref:`config:api__worker_refresh_interval`, 
 .. note::
 
     Worker recycling handles memory growth from *any* source, not just the Dag cache.
-    For production deployments, using both bounded caching and gunicorn worker recycling
+    For production deployments, using both cache eviction and gunicorn worker recycling
     provides the best results.
+
+.. _faq:scheduler-memory-growth:
+
+How to prevent scheduler memory growth?
+----------------------------------------
+
+The scheduler caches deserialized Dag objects, so before 3.4.0 its memory grew with every Dag
+version it had ever seen (see :ref:`faq:dag-version-inflation`) until the process was restarted or
+OOM killed. The cache is now bounded by default. Tune it in the ``[scheduler]`` section:
+
+.. code-block:: ini
+
+    [scheduler]
+    dag_cache_size = 512   ; max cached versions, evicting least recently used
+    dag_cache_ttl = 0      ; seconds before an idle cached entry expires (0 = no TTL)
+
+The defaults cap the cache at 512 Dag versions and evict the least recently used one beyond
+that, so memory cannot grow with the number of versions the scheduler has ever seen. The
+scheduler reaches the cache through the Dag version of each active Dag run, so its working set is
+the versions with runs in flight; 512 is meant to sit above that for a typical deployment.
+
+If the scheduler is still OOM killed, lower ``dag_cache_size``. Raise it if you have more Dag
+versions with runs in flight than the limit, since a limit below the working set evicts versions
+that are still being scheduled and costs a database fetch and a deserialization on the next loop
+— watch ``scheduler.dag_bag.cache_miss`` to tell the two apart. Setting ``dag_cache_size = 0``
+switches to no size limit, leaving eviction to ``dag_cache_ttl``, which bounds memory by the
+concurrently active set rather than outright: each re-check resets an entry's expiry, so a TTL
+reclaims a version only once its runs finish and it stops being requested. Setting both to 0 uses
+an unbounded dict with no eviction, matching the behavior before 3.4.0.
+
+Neither option affects how quickly the scheduler picks up a Dag change. A Dag update that creates
+a new version is seen immediately, because the new version is a different cache key. A version
+rewritten in place is re-checked against its current hash once
+:ref:`config:core__min_serialized_dag_update_interval` has elapsed since the entry was last
+validated, so that option, not ``dag_cache_ttl``, bounds how long a rewritten version can be
+served stale. The same applies to the API server.
+
+See :ref:`config:scheduler__dag_cache_size` and :ref:`config:scheduler__dag_cache_ttl` for the
+full configuration reference.
 
 
 MySQL and MySQL variant Databases
