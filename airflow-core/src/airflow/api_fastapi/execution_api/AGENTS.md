@@ -88,3 +88,12 @@ The task-sdk client tests use a mocked server, and the endpoint tests use a hand
 ## Token Scope Infrastructure
 
 Token types (`"execution"`, `"workload"`, `"callback"`, `"dag_processor_session"`, `"dag_processor"`, `"dag_parse"`), route-level enforcement via `ExecutionAPIRoute` + `require_auth`, and the `ti:self` path-parameter validation are documented in the module docstring of `security.py`. A route that admits `dag_processor` or `dag_parse` tokens for Connection, Variable, XCom, Dag run or task-instance reads must also bind the request to a granted Dag bundle (`SelectedDagBundle` or `DagInGrantedBundle`); the `/jobs` routes bind to the `job_id` claim instead. `test_token_scope_boundaries.py` lists the bundle-bound routes and the parse-time messages that use them.
+
+## Runtime verification
+
+A task reaches this API from a supervisor process under the scheduler, so verify a change here with
+a triggered Dag run, following the
+[Dag run recipe](../../../../../task-sdk/AGENTS.md#runtime-verification) against the instance
+started by the
+[runtime verification skill](../../../../../.agents/skills/airflow-runtime-verification/SKILL.md).
+`airflow dags test` alone is not enough: it calls these routes inside its own process.

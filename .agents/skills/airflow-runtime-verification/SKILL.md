@@ -25,73 +25,63 @@ substitute environment.
 
 ## Workflow
 
-Replace `<run>` with a short name for this verification (lowercase letters, digits, dashes) and
-`<web>`, `<ssh>`, `<flower>`, `<postgres>` with four free host ports, for example `31080`, `31022`,
-`31055`, `31032`. Use a new `<run>` for every start. Run every command from the root of the
-checkout under test.
+Replace `<run>` with a short name for this verification (lowercase letters, digits, dashes). Use a
+new `<run>` for every start. Run every command from the root of the checkout under test. The
+scripts below live in [`scripts/`](scripts/) next to this file; call them by their literal path, so
+that permission rules and command guards can see what runs.
 
 1. **Start Airflow in its own compose project.** Run this as a background command; it keeps running
    until the instance is removed.
 
    ```bash
-   mkdir -p files/verify/<run>
-   ANSWER=no WEB_HOST_PORT=<web> SSH_PORT=<ssh> FLOWER_HOST_PORT=<flower> POSTGRES_HOST_PORT=<postgres> \
-     breeze shell --project-name verify-<run> --backend postgres --python 3.11 --quiet \
-     "AIRFLOW__CORE__LOAD_EXAMPLES=False AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_ALL_ADMINS=True airflow standalone" \
-     > files/verify/<run>/standalone.log 2>&1 < /dev/null
+   .agents/skills/airflow-runtime-verification/scripts/start.sh <run> --backend postgres --python 3.11
    ```
 
-   `airflow standalone` runs the API server, the scheduler, the Dag processor and the triggerer with
-   the `LocalExecutor`. `--project-name` and the four ports keep the instance apart from the default
-   Breeze environment and from other runs. Use the Python version and the backend the task names;
-   pass both every time, because Breeze remembers the last ones used. With `--backend mysql` the
-   database port is `MYSQL_HOST_PORT`; `sqlite` publishes none. Without
-   `AIRFLOW__CORE__LOAD_EXAMPLES=False` the instance parses the example Dags of core and of every
-   provider. `ANSWER=no` answers the question Breeze asks when the CI image is older than the
-   checkout ("Do you want to build the image"): the start goes on with the image that exists.
+   It picks four free host ports, writes them to `files/verify/<run>/instance.env` (`WEB_PORT` is
+   `<web>` in the recipes) and runs `airflow standalone` in `breeze shell --project-name
+   verify-<run>`, with its output in `files/verify/<run>/standalone.log`. `airflow standalone` runs
+   the API server, the scheduler, the Dag processor and the triggerer with the `LocalExecutor`, with
+   the example Dags off and every user an administrator. Use the Python version and the backend the
+   task names (`postgres`, `mysql` or `sqlite`); pass both every time, because Breeze remembers the
+   last ones used. The script sets `ANSWER=no`, which answers the question Breeze asks when the CI
+   image is older than the checkout ("Do you want to build the image"): the start goes on with the
+   image that exists.
 
 2. **Wait until every component is healthy.** An open port is not enough.
 
    ```bash
-   for attempt in $(seq 1 60); do
-     healthy=$(curl -sf http://localhost:<web>/api/v2/monitor/health | grep -o '"status":"healthy"' | wc -l)
-     [ "$healthy" -eq 4 ] && echo "healthy" && break
-     sleep 5
-   done
+   .agents/skills/airflow-runtime-verification/scripts/wait-healthy.sh <run>
    ```
 
-   The four are `metadatabase`, `scheduler`, `triggerer` and `dag_processor`. If the loop ends
-   without printing `healthy`, the reason is at the end of `files/verify/<run>/standalone.log`.
+   It waits up to 300 seconds (a second argument changes that) for `metadatabase`, `scheduler`,
+   `triggerer` and `dag_processor` to report healthy. On a timeout it exits with `1` and prints the
+   end of `standalone.log`, which holds the reason.
 
-3. **Check that the instance runs this checkout.** Find the container, then the sources it mounts:
+3. **Check that the instance runs this checkout.**
 
    ```bash
-   docker ps --filter label=com.docker.compose.project=verify-<run> \
-     --filter label=com.docker.compose.service=airflow --format '{{.Names}} {{.Ports}}'
-   docker inspect <container> \
-     --format '{{range .Mounts}}{{if eq .Destination "/opt/airflow/airflow-core"}}{{.Source}}{{end}}{{end}}'
+   .agents/skills/airflow-runtime-verification/scripts/check-checkout.sh <run>
    ```
 
-   The first command prints the container name, which ends in a random suffix and changes with
-   every start, and its ports, which must contain `<web>->8080`. The second must print `airflow-core`
-   of this checkout (Docker Desktop on macOS puts `/host_mnt` in front of the path). Repeat the check
-   whenever a result is surprising. The scheduler and the API server load the Python sources when
-   they start: after editing `airflow-core/` or `task-sdk/`, remove the instance and start it again.
+   It exits with `1` unless the container of the run publishes `<web>` on port 8080 and mounts
+   `airflow-core` of this checkout, and prints the container name, which changes with every start.
+   Repeat the check whenever a result is surprising. The scheduler and the API server load the
+   Python sources when they start: after editing `airflow-core/` or `task-sdk/`, remove the
+   instance and start it again.
 
-4. **Drive it the way a user would.** Prove the change on the surface the user of the change
-   touches, and read the result back from a second one.
+4. **Drive it the way a user would, with the recipes of the changed area.** The commands that
+   verify an area live next to its code, in the `## Runtime verification` section of an
+   `AGENTS.md`. For every changed file, read each `AGENTS.md` between its directory and the root
+   of the checkout, and follow the `## Runtime verification` sections you find. Read them yourself
+   even when the harness loads only the root `AGENTS.md`.
 
-   | Surface | How | Recipe |
-   |---|---|---|
-   | Dag authoring and task execution | a Dag file in `files/dags/`, the Dags folder of Breeze | [`references/dag-run.md`](references/dag-run.md) |
-   | REST API | `curl http://localhost:<web>/api/v2/...` | [`references/rest-api-and-ui.md`](references/rest-api-and-ui.md) |
-   | CLI | `breeze exec --project-name verify-<run> -- -c "AIRFLOW__CORE__LOAD_EXAMPLES=False airflow ..."` | [`references/dag-run.md`](references/dag-run.md) |
-   | UI | Playwright against `http://localhost:<web>/` | [`references/rest-api-and-ui.md`](references/rest-api-and-ui.md) |
+   Prove the change on the surface the user of the change touches, and read the result back from a
+   second one, using the section of that surface. When no `AGENTS.md` on the path of a changed file
+   has the section, use the Dag run in [`task-sdk/AGENTS.md`](../../../task-sdk/AGENTS.md#runtime-verification)
+   and report that the area has no recipe yet.
 
-   `breeze exec` runs what follows `--` with `bash` in the running container of that project, with
-   the Breeze environment and the Dags folder set up. Breeze prints its own checks first; the output
-   of the command comes last. The CLI process reads its own configuration, so the command repeats
-   `AIRFLOW__CORE__LOAD_EXAMPLES=False`.
+   The recipes use `<web>` and `verify-<run>` from step 1, `<dag_id>` for the Dag under test and
+   `<dag_run_id>` for its run.
 
 5. **Keep the evidence.** Save what proves the result under `files/verify/<run>/`: the request and
    the response with its status code, the command with its output and exit code, the screenshot.
@@ -106,7 +96,7 @@ checkout under test.
 6. **Remove the instance.**
 
    ```bash
-   breeze down --project-name verify-<run>
+   .agents/skills/airflow-runtime-verification/scripts/stop.sh <run>
    ```
 
    The background command from step 1 then exits with code 143; that is expected. Delete the Dag
@@ -143,11 +133,17 @@ checkout under test.
   curl -s -H "Authorization: Bearer <access_token>" http://localhost:<web>/api/v2/dags
   ```
 
-- The API server serves the compiled UI from `airflow-core/src/airflow/ui/dist`. A new worktree has
-  no build, and a build made before a UI change shows the old UI without an error. Run
-  `prek run compile-ui-assets --hook-stage manual --all-files` before the first UI check and after
-  every UI change, then reload the page.
 - `files/dags/` belongs to the checkout, so every instance started from it parses the same files.
   Start each Dag file name and Dag id with `verify_`, so they are easy to find and to delete.
 - Breeze also writes the task logs to `logs/` in the checkout. Git ignores that folder and
   `breeze down` does not empty it.
+
+## Adding a recipe for an area
+
+Add a `## Runtime verification` section to the `AGENTS.md` of the area, or create that file with
+the license header. Keep the section short and specific to the area:
+
+- a link back to this skill and the placeholders it uses;
+- the commands that exercise the area through a user path, and the output that proves the change;
+- how to read the result back from a second surface;
+- the pitfalls of that area only. Pitfalls of the instance itself belong here.

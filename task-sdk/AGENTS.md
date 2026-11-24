@@ -1,17 +1,22 @@
 <!-- SPDX-License-Identifier: Apache-2.0
      https://www.apache.org/licenses/LICENSE-2.0 -->
 
-# A Dag run, from the file to the result
+# Task SDK — Agent Instructions
+
+## Runtime verification
 
 A user writes a Dag with `airflow.sdk`, saves it in the Dags folder, sees it parsed, triggers it and
 reads the outcome: the run state, the task states, the XCom values and the task logs. Most changes
 to the scheduler, the Dag processor, the executor, the Task SDK supervisor and task runner, and the
-Execution API show here.
+Execution API show here. This is also the baseline recipe for a change in an area that has no
+`## Runtime verification` section of its own.
 
-The instance from [`SKILL.md`](../SKILL.md) is up and healthy. `<web>` is its port, `verify-<run>`
-its compose project, `<dag_id>` the id of the Dag under test.
+These steps run against the instance started by the
+[runtime verification skill](../.agents/skills/airflow-runtime-verification/SKILL.md), up and
+healthy. `<web>` is its port, `verify-<run>` its compose project, `<dag_id>` the id of the Dag under
+test.
 
-## Write the Dag
+### Write the Dag
 
 Save it in `files/dags/`, for example as `files/dags/verify_probe.py`. Use the changed behaviour in
 the smallest realistic way and print the value the change affects, with a marker word that is easy
@@ -39,39 +44,24 @@ def verify_probe():
 verify_probe()
 ```
 
-## Parse, trigger, wait
+### Parse, trigger, wait
 
-1. Wait until the Dag is parsed. The Dag processor looks for new files every 5 seconds:
+```bash
+.agents/skills/airflow-runtime-verification/scripts/trigger-dag.sh <run> <dag_id> '{"key": "value"}'
+```
 
-   ```bash
-   curl -s -o /dev/null -w '%{http_code}\n' http://localhost:<web>/api/v2/dags/<dag_id>
-   ```
+It waits up to a minute for the Dag to be parsed (the Dag processor looks for new files every 5
+seconds), unpauses it, triggers a run through `POST /api/v2/dags/<dag_id>/dagRuns` with the run
+configuration given as the optional third argument, and polls the run for up to 10 minutes. It
+prints `dag_run_id=...` and `state=...`, and exits with `0` when the run succeeds, `2` when it fails
+and `1` on any other error. When the Dag is not parsed in time it prints
+`GET /api/v2/importErrors`: a file that fails to import is listed there with its traceback.
 
-   `200` means parsed. If it is still `404` after half a minute, read
-   `curl -s http://localhost:<web>/api/v2/importErrors`: a file that fails to import is listed there
-   with its traceback.
+Put the `dag_run_id` in double quotes wherever a later command uses it. To drive the API by hand,
+note that a new Dag starts paused, a run of a paused Dag stays `queued` until the Dag is unpaused,
+and a trigger body without `logical_date` is rejected with `422`.
 
-2. Unpause and trigger. A new Dag starts paused, and a run of a paused Dag stays `queued` until
-   the Dag is unpaused.
-
-   ```bash
-   curl -s -X PATCH -H 'Content-Type: application/json' \
-     http://localhost:<web>/api/v2/dags/<dag_id> -d '{"is_paused": false}'
-   curl -s -X POST -H 'Content-Type: application/json' \
-     http://localhost:<web>/api/v2/dags/<dag_id>/dagRuns -d '{"logical_date": null}'
-   ```
-
-   The second response holds `dag_run_id`. Put it in double quotes wherever a later command uses
-   it. A body without `logical_date` is rejected with `422`. Add `"conf": {...}` to pass run
-   configuration.
-
-3. Poll the run until `state` is `success` or `failed`:
-
-   ```bash
-   curl -s "http://localhost:<web>/api/v2/dags/<dag_id>/dagRuns/<dag_run_id>"
-   ```
-
-## Read the result
+### Read the result
 
 - Task states and try numbers: `GET .../dagRuns/<dag_run_id>/taskInstances`.
 - XCom: `GET .../dagRuns/<dag_run_id>/taskInstances/emit/xcomEntries/return_value` returns
@@ -84,14 +74,14 @@ verify_probe()
     | grep -o 'VERIFY received probe-ok'
   ```
 
-- Second surface, the CLI:
+- Second surface, the CLI ([recipe](../airflow-core/src/airflow/cli/AGENTS.md#runtime-verification)):
 
   ```bash
   breeze exec --project-name verify-<run> -- \
     -c "AIRFLOW__CORE__LOAD_EXAMPLES=False airflow dags list-runs <dag_id> -o plain"
   ```
 
-## Variables, Connections and retries
+### Variables, Connections and retries
 
 Create a Variable and a Connection through the public API. Both calls return `201`:
 
@@ -133,7 +123,7 @@ def fail_first_try() -> None:
 For the retried task, `.../taskInstances/fail_first_try/logs/1` holds the failed try and `logs/2`
 the next one. Without `retry_delay` the retry waits 5 minutes.
 
-## `airflow dags test`
+### `airflow dags test`
 
 ```bash
 breeze exec --project-name verify-<run> -- \

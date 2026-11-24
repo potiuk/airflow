@@ -220,7 +220,7 @@ repos:
           (?x)
           ^\.github/.*\.md$|
           ^\.claude/|
-          ^\.agents/|
+          ^\.agents/.*\.md$|
           ^(?:.*/)?AGENTS\.md$|
           ^(?:.*/)?CLAUDE\.md$|
           ^(?:.*/)?SKILL\.md$
